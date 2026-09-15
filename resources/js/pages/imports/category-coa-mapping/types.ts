@@ -5,15 +5,9 @@ import type ExcelJS from 'exceljs';
 import type { CategoryCoaSheetConfig } from '@/lib/ppmp/sheet-config';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
+import type { RawSheet } from '@/lib/raw-extract';
 
-export type CcmStep =
-    | 'upload'
-    | 'calibrate'
-    | 'verifyFormat'
-    | 'extract'
-    | 'review';
-
-export type CalibrationMode = 'shared' | 'per-sheet';
+export type CcmStep = 'upload' | 'calibrate' | 'verify' | 'extract' | 'review';
 
 export type VerifyFormatResult = {
     valid: boolean;
@@ -95,7 +89,7 @@ export type CategoryCoaMappingState = {
     sheets: string[];
     workbook: ExcelJS.Workbook | null;
     fileName: string | null;
-    selectedSheets: string[];
+    selectedSheet: string | null;
     loading: boolean;
     error: string | null;
 
@@ -107,20 +101,14 @@ export type CategoryCoaMappingState = {
     hasFormatResult: boolean;
     formatValid: boolean;
     canReview: boolean;
+    canExtract: boolean;
+    hasAnyExtract: boolean;
 
     // calibration
-    calibrationMode: CalibrationMode;
-    setCalibrationMode: (m: CalibrationMode) => void;
-    sharedConfig: CategoryCoaSheetConfig | null;
-    setSharedConfig: Dispatch<SetStateAction<CategoryCoaSheetConfig | null>>;
-    calibrations: Record<string, CategoryCoaSheetConfig>;
-    setCalibrations: Dispatch<
-        SetStateAction<Record<string, CategoryCoaSheetConfig>>
-    >;
-    currentSheet: string;
-    setCurrentSheet: (s: string) => void;
-    getEffectiveConfig: (sheet: string) => CategoryCoaSheetConfig;
-    ensureCalibrationsInitialized: () => void;
+    config: CategoryCoaSheetConfig | null;
+    setConfig: Dispatch<SetStateAction<CategoryCoaSheetConfig | null>>;
+    getEffectiveConfig: () => CategoryCoaSheetConfig;
+    ensureConfigInitialized: () => void;
 
     // upload
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -146,14 +134,14 @@ export type CategoryCoaMappingState = {
     isSaving: boolean;
     handleBulkCreateMappings: () => void;
 
-    // shared ppmp raw extract (after verify, strict)
+    // shared ppmp raw extract
     ppmpExtractResults: Record<string, PpmpExtractResult>;
-    setPpmpExtractResults: Dispatch<SetStateAction<Record<string, PpmpExtractResult>>>;
+    setPpmpExtractResults: Dispatch<
+        SetStateAction<Record<string, PpmpExtractResult>>
+    >;
     ppmpRawItems: RawPpmpItem[];
     setPpmpRawItems: Dispatch<SetStateAction<RawPpmpItem[]>>;
     handlePpmpExtract: () => void;
-    canExtract: boolean;
-    hasAnyExtract: boolean;
 
     // page props
     existingCategories: ExistingCategory[];

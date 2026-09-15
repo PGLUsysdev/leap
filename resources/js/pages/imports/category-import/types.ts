@@ -9,7 +9,6 @@ import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
 import type { RawSheet } from '@/lib/raw-extract';
 
 export type CimpStep = 'upload' | 'calibrate' | 'verify' | 'extract' | 'import';
-export type CalibrationMode = 'shared' | 'per-sheet';
 
 export type VerifyResult = {
     valid: boolean;
@@ -114,7 +113,7 @@ export type CategoryImportState = {
     sheets: string[];
     workbook: ExcelJS.Workbook | null;
     fileName: string | null;
-    selectedSheets: string[];
+    selectedSheet: string | null;
     loading: boolean;
     error: string | null;
 
@@ -128,22 +127,10 @@ export type CategoryImportState = {
     canExtract: boolean;
 
     // calibration
-    calibrationMode: CalibrationMode;
-    setCalibrationMode: (m: CalibrationMode) => void;
-    sharedConfig: SharedSheetConfig | null;
-    setSharedConfig: Dispatch<SetStateAction<SharedSheetConfig | null>>;
-    calibrations: Record<string, SharedSheetConfig>;
-    setCalibrations: Dispatch<
-        SetStateAction<Record<string, SharedSheetConfig>>
-    >;
-    currentSheet: string;
-    setCurrentSheet: (s: string) => void;
-    getEffectiveConfig: (sheet: string) => SharedSheetConfig;
-    ensureCalibrationsInitialized: () => void;
-    handleApplySharedToAll: () => void;
-    handleCopyCurrentToAll: () => void;
-    updateSharedConfig: (patch: Partial<SharedSheetConfig>) => void;
-    updateCurrentCalibration: (patch: Partial<SharedSheetConfig>) => void;
+    config: SharedSheetConfig | null;
+    setConfig: Dispatch<SetStateAction<SharedSheetConfig | null>>;
+    getEffectiveConfig: () => SharedSheetConfig;
+    ensureConfigInitialized: () => void;
 
     // upload
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -159,7 +146,7 @@ export type CategoryImportState = {
     skipProblematic: boolean;
     setSkipProblematic: (v: boolean) => void;
 
-    // extract — legacy unique + new shared raw ppmp extract
+    // extract
     extractResult: ExtractResult | null;
     setExtractResult: Dispatch<SetStateAction<ExtractResult | null>>;
     extractionStats: ExtractionStats | null;

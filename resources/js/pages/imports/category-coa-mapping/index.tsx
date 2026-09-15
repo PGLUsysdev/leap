@@ -27,7 +27,6 @@ import { index as categoryCoaMappingIndex } from '@/routes/category-coa-mapping'
 import { index as importsIndex } from '@/routes/imports';
 
 import type {
-    CalibrationMode,
     CategoryCoaMappingState,
     CcmStep,
     EffectiveVerificationState,
@@ -54,14 +53,7 @@ export default function CategoryCoaMappingImport({
     existingMappings = [],
 }: CategoryCoaMappingProps) {
     const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
-    const [calibrationMode, setCalibrationMode] =
-        useState<CalibrationMode>('shared');
-    const [sharedConfig, setSharedConfig] =
-        useState<CategoryCoaSheetConfig | null>(null);
-    const [calibrations, setCalibrations] = useState<
-        Record<string, CategoryCoaSheetConfig>
-    >({});
-    const [currentSheet, setCurrentSheet] = useState<string>('');
+    const [config, setConfig] = useState<CategoryCoaSheetConfig | null>(null);
     const [ppmpExtractResults, setPpmpExtractResults] = useState<
         Record<string, PpmpExtractResult>
     >({});
@@ -83,9 +75,7 @@ export default function CategoryCoaMappingImport({
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
             setSelectedSheet(null);
-            setCurrentSheet('');
-            setSharedConfig(null);
-            setCalibrations({});
+            setConfig(null);
             setPpmpExtractResults({});
             setPpmpRawItems([]);
             setRawSheets({});
@@ -98,13 +88,13 @@ export default function CategoryCoaMappingImport({
 
     const canCalibrate = selectedSheet !== null;
     const rowsCalibrated =
-        !!sharedConfig &&
-        sharedConfig.rowConfig.headerRow !== '' &&
-        sharedConfig.rowConfig.headerRow != null &&
-        sharedConfig.rowConfig.additionalItemsHeaderRow !== '' &&
-        sharedConfig.rowConfig.additionalItemsHeaderRow != null &&
-        sharedConfig.rowConfig.nonProcurementHeaderRow !== '' &&
-        sharedConfig.rowConfig.nonProcurementHeaderRow != null;
+        !!config &&
+        config.rowConfig.headerRow !== '' &&
+        config.rowConfig.headerRow != null &&
+        config.rowConfig.additionalItemsHeaderRow !== '' &&
+        config.rowConfig.additionalItemsHeaderRow != null &&
+        config.rowConfig.nonProcurementHeaderRow !== '' &&
+        config.rowConfig.nonProcurementHeaderRow != null;
     const canVerifyFormat =
         selectedSheet !== null && !!workbook && rowsCalibrated;
     const hasFormatResult =
@@ -116,30 +106,14 @@ export default function CategoryCoaMappingImport({
     const canReview =
         canExtract && hasAnyExtract && !!verification && verification.total > 0;
 
-    function getEffectiveConfig(sheet: string): CategoryCoaSheetConfig {
-        if (calibrationMode === 'shared' && sharedConfig) return sharedConfig;
-
-        return calibrations[sheet] ?? sharedConfig ?? getDefaultMappingConfig();
+    function getEffectiveConfig(): CategoryCoaSheetConfig {
+        return config ?? getDefaultMappingConfig();
     }
 
-    function ensureCalibrationsInitialized() {
-        if (sharedConfig) return;
+    function ensureConfigInitialized() {
+        if (config) return;
 
-        const def = getDefaultMappingConfig();
-        setSharedConfig(def);
-        const clones: Record<string, CategoryCoaSheetConfig> = {};
-
-        if (selectedSheet) {
-            clones[selectedSheet] = {
-                ...def,
-                columnConfig: { ...def.columnConfig },
-                rowConfig: { ...def.rowConfig },
-            };
-        }
-
-        setCalibrations(clones);
-
-        if (!currentSheet && selectedSheet) setCurrentSheet(selectedSheet);
+        setConfig(getDefaultMappingConfig());
     }
 
     const effectiveVerification =
@@ -254,11 +228,14 @@ export default function CategoryCoaMappingImport({
         );
     }
 
-    function verifyFormatForSheet(sheet: string): VerifyFormatResult | null {
-        if (!workbook || !sheet) return null;
+    function verifyFormatForSheet(): VerifyFormatResult | null {
+        if (!workbook || !selectedSheet) return null;
 
-        const effective = getEffectiveConfig(sheet);
-        const result = verifyPpmpSheet(workbook, sheet, effective);
+        const result = verifyPpmpSheet(
+            workbook,
+            selectedSheet,
+            getEffectiveConfig(),
+        );
 
         return {
             valid: result.valid,
@@ -274,7 +251,9 @@ export default function CategoryCoaMappingImport({
         setPpmpRawItems([]);
         if (!workbook || !selectedSheet) return;
 
-        const result = verifyFormatForSheet(selectedSheet);
+        if (!config) ensureConfigInitialized();
+
+        const result = verifyFormatForSheet();
 
         if (!result) return;
 
@@ -287,21 +266,23 @@ export default function CategoryCoaMappingImport({
     function handlePpmpExtract() {
         if (!workbook || !selectedSheet) return;
 
-        const cfg = getEffectiveConfig(selectedSheet);
-        const res = extractPpmpSheet(workbook, selectedSheet, cfg);
+        const res = extractPpmpSheet(
+            workbook,
+            selectedSheet,
+            getEffectiveConfig(),
+        );
 
         setPpmpExtractResults({ [selectedSheet]: res });
         setPpmpRawItems(res.rawItems);
         setRawSheets(
-            extractRawSheets(workbook, [selectedSheet], (s) =>
-                getEffectiveConfig(s),
+            extractRawSheets(workbook, [selectedSheet], () =>
+                getEffectiveConfig(),
             ),
         );
     }
 
     function handleSheetChange(sheet: string | null) {
         setSelectedSheet(sheet);
-        setCurrentSheet(sheet ?? '');
         setActiveFormatSheet(sheet ?? '');
         setFormatResults({});
         setVerification(null);
@@ -567,7 +548,7 @@ export default function CategoryCoaMappingImport({
 
         if (!ws) return;
 
-        const effective = getEffectiveConfig(sheet);
+        const effective = getEffectiveConfig();
 
         if (
             effective.rowConfig.headerRow === '' ||
@@ -770,16 +751,10 @@ export default function CategoryCoaMappingImport({
         hasAnyExtract,
         canReview,
 
-        calibrationMode,
-        setCalibrationMode,
-        sharedConfig,
-        setSharedConfig,
-        calibrations,
-        setCalibrations,
-        currentSheet,
-        setCurrentSheet,
+        config,
+        setConfig,
         getEffectiveConfig,
-        ensureCalibrationsInitialized,
+        ensureConfigInitialized,
 
         handleFileChange,
         handleSheetToggle,
@@ -827,7 +802,7 @@ export default function CategoryCoaMappingImport({
                     disabled: !canCalibrate,
                 },
                 {
-                    value: 'verifyFormat',
+                    value: 'verify',
                     label: '3. Verify',
                     disabled: !canVerifyFormat,
                 },
@@ -854,20 +829,14 @@ export default function CategoryCoaMappingImport({
                 selectedSheet={selectedSheet}
                 onSheetChange={handleSheetChange}
                 onNext={() => {
-                    ensureCalibrationsInitialized();
+                    ensureConfigInitialized();
                     setStep('calibrate');
                 }}
             />
             <ImportPpmpCalibrateStep
-                calibrationMode={calibrationMode}
-                setCalibrationMode={setCalibrationMode}
-                sharedConfig={sharedConfig}
-                setSharedConfig={setSharedConfig}
-                calibrations={calibrations}
-                setCalibrations={setCalibrations}
-                currentSheet={currentSheet}
-                setCurrentSheet={setCurrentSheet}
                 selectedSheet={selectedSheet}
+                config={config}
+                setConfig={setConfig}
                 getDefaultConfig={getDefaultMappingConfig}
                 onInvalidate={() => {
                     setVerification(null);
@@ -875,41 +844,19 @@ export default function CategoryCoaMappingImport({
                     setActiveFormatSheet(selectedSheet ?? '');
                     setCoaOverrides({});
                 }}
-                verifyMarks={(() => {
-                    const marks: Record<string, boolean> = {};
-
-                    for (const [sheet, result] of Object.entries(
-                        formatResults,
-                    )) {
-                        if (result) {
-                            marks[sheet] = result.valid;
-                        }
-                    }
-
-                    return marks;
-                })()}
                 onBack={() => setStep('upload')}
-                onNext={() => setStep('verifyFormat')}
+                onNext={() => setStep('verify')}
                 canNext={canVerifyFormat}
                 nextLabel="Next: Verify Format"
             />
             <ImportPpmpVerifyStep
-                tabsValue="verifyFormat"
+                tabsValue="verify"
                 title="Verify Sheet Format — check calibration and structure (all 3 sections)"
-                description={
-                    <>
-                        Checks the selected sheet with current calibration (
-                        {calibrationMode === 'shared'
-                            ? `shared header ${sharedConfig?.rowConfig.headerRow === '' || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow}`
-                            : `per-sheet`}
-                        ). Validates cat → coa(s) → items → cat - TOTAL per
-                        section.
-                    </>
-                }
+                description="Checks the selected sheet with current calibration. Validates cat → coa(s) → items → cat - TOTAL per section."
                 verifyButtonLabel="Verify Format"
                 canVerify={canVerifyFormat}
                 onVerify={handleVerifyFormat}
-                selectedSheet={selectedSheet}
+                selectedSheets={selectedSheet ? [selectedSheet] : []}
                 results={formatResults}
                 hasResult={hasFormatResult}
                 allValid={formatValid}
@@ -931,7 +878,7 @@ export default function CategoryCoaMappingImport({
                     handlePpmpExtract();
                     handleLogRelationships();
                 }}
-                onBack={() => setStep('verifyFormat')}
+                onBack={() => setStep('verify')}
                 backLabel="Back: Verify"
                 onNext={() => setStep('review')}
                 canNext={canReview}

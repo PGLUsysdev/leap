@@ -23,7 +23,6 @@ import { index as categoryImportIndex } from '@/routes/category-import';
 import { index as importsIndex } from '@/routes/imports';
 
 import type {
-    CalibrationMode,
     CategoryImportState,
     CimpStep,
     ExtractResult,
@@ -40,15 +39,7 @@ export default function CategoryImport({
     existingCategories = [],
 }: CategoryImportProps) {
     const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
-    const [calibrationMode, setCalibrationMode] =
-        useState<CalibrationMode>('shared');
-    const [sharedConfig, setSharedConfig] = useState<SharedSheetConfig | null>(
-        null,
-    );
-    const [calibrations, setCalibrations] = useState<
-        Record<string, SharedSheetConfig>
-    >({});
-    const [currentSheet, setCurrentSheet] = useState<string>('');
+    const [config, setConfig] = useState<SharedSheetConfig | null>(null);
     const [verifyResults, setVerifyResults] = useState<
         Record<string, VerifyResult>
     >({});
@@ -69,9 +60,7 @@ export default function CategoryImport({
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
             setSelectedSheet(null);
-            setCurrentSheet('');
-            setSharedConfig(null);
-            setCalibrations({});
+            setConfig(null);
             setVerifyResults({});
             setActiveVerifySheet('');
             setExtractResult(null);
@@ -81,21 +70,15 @@ export default function CategoryImport({
             setStep('upload');
         });
 
-    function getEffectiveConfig(sheet: string): SharedSheetConfig {
-        if (calibrationMode === 'shared' && sharedConfig) return sharedConfig;
-
-        return calibrations[sheet] ?? sharedConfig ?? getDefaultSharedConfig();
-    }
-
     const canCalibrate = selectedSheet !== null;
     const rowsCalibrated =
-        !!sharedConfig &&
-        sharedConfig.rowConfig.headerRow !== '' &&
-        sharedConfig.rowConfig.headerRow != null &&
-        sharedConfig.rowConfig.additionalItemsHeaderRow !== '' &&
-        sharedConfig.rowConfig.additionalItemsHeaderRow != null &&
-        sharedConfig.rowConfig.nonProcurementHeaderRow !== '' &&
-        sharedConfig.rowConfig.nonProcurementHeaderRow != null;
+        !!config &&
+        config.rowConfig.headerRow !== '' &&
+        config.rowConfig.headerRow != null &&
+        config.rowConfig.additionalItemsHeaderRow !== '' &&
+        config.rowConfig.additionalItemsHeaderRow != null &&
+        config.rowConfig.nonProcurementHeaderRow !== '' &&
+        config.rowConfig.nonProcurementHeaderRow != null;
     const canVerify = canCalibrate && !!workbook && rowsCalibrated;
     const allVerifyValid =
         selectedSheet !== null && !!verifyResults[selectedSheet]?.valid;
@@ -115,21 +98,18 @@ export default function CategoryImport({
         };
     }, [extractResult]);
 
-    const verifyMarks = useMemo(() => {
-        const marks: Record<string, boolean> = {};
+    function getEffectiveConfig(): SharedSheetConfig {
+        return config ?? getDefaultSharedConfig();
+    }
 
-        for (const [sheet, result] of Object.entries(verifyResults)) {
-            if (result) {
-                marks[sheet] = result.valid;
-            }
-        }
+    function ensureConfigInitialized() {
+        if (config) return;
 
-        return marks;
-    }, [verifyResults]);
+        setConfig(getDefaultSharedConfig());
+    }
 
     function handleSheetChange(sheet: string | null) {
         setSelectedSheet(sheet);
-        setCurrentSheet(sheet ?? '');
         setActiveVerifySheet(sheet ?? '');
         setVerifyResults({});
         setExtractResult(null);
@@ -147,54 +127,6 @@ export default function CategoryImport({
 
     function handleSheetSelect(sheet: string) {
         handleSheetChange(sheet);
-    }
-
-    function ensureCalibrationsInitialized() {
-        if (sharedConfig) return;
-
-        const def = getDefaultSharedConfig();
-        setSharedConfig(def);
-
-        if (selectedSheet) {
-            setCalibrations({ [selectedSheet]: { ...def } });
-        }
-
-        if (!currentSheet && selectedSheet) setCurrentSheet(selectedSheet);
-    }
-
-    function handleApplySharedToAll() {
-        if (!sharedConfig || !selectedSheet) return;
-
-        setCalibrations({ [selectedSheet]: { ...sharedConfig } });
-    }
-
-    function handleCopyCurrentToAll() {
-        const src = calibrations[currentSheet] ?? sharedConfig;
-
-        if (!src || !selectedSheet) return;
-
-        setCalibrations({ [selectedSheet]: { ...src } });
-    }
-
-    function updateSharedConfig(patch: Partial<SharedSheetConfig>) {
-        setSharedConfig((prev) => ({
-            ...(prev ?? getDefaultSharedConfig()),
-            ...patch,
-        }));
-    }
-
-    function updateCurrentCalibration(patch: Partial<SharedSheetConfig>) {
-        if (!currentSheet) return;
-
-        setCalibrations((prev) => ({
-            ...prev,
-            [currentSheet]: {
-                ...(prev[currentSheet] ??
-                    sharedConfig ??
-                    getDefaultSharedConfig()),
-                ...patch,
-            },
-        }));
     }
 
     function verifySheet(sheet: string, cfg: SharedSheetConfig): VerifyResult {
@@ -218,9 +150,9 @@ export default function CategoryImport({
 
         if (!workbook || !selectedSheet) return;
 
-        if (!sharedConfig) ensureCalibrationsInitialized();
+        if (!config) ensureConfigInitialized();
 
-        const cfg = getEffectiveConfig(selectedSheet);
+        const cfg = getEffectiveConfig();
         const result = verifySheet(selectedSheet, cfg);
 
         setVerifyResults({ [selectedSheet]: result });
@@ -230,14 +162,14 @@ export default function CategoryImport({
     function handlePpmpExtract() {
         if (!workbook || !selectedSheet) return;
 
-        const cfg = getEffectiveConfig(selectedSheet);
+        const cfg = getEffectiveConfig();
         const res = extractPpmpSheet(workbook, selectedSheet, cfg);
 
         setPpmpExtractResults({ [selectedSheet]: res });
         setPpmpRawItems(res.rawItems);
         setRawSheets(
-            extractRawSheets(workbook, [selectedSheet], (s) =>
-                getEffectiveConfig(s),
+            extractRawSheets(workbook, [selectedSheet], () =>
+                getEffectiveConfig(),
             ),
         );
     }
@@ -247,7 +179,7 @@ export default function CategoryImport({
         if (!workbook || !selectedSheet) return;
 
         const sheet = selectedSheet;
-        const cfg = getEffectiveConfig(sheet);
+        const cfg = getEffectiveConfig();
 
         const dataColumn = cfg.columnConfig.category;
         const coaColumn = cfg.columnConfig.coa;
@@ -431,7 +363,7 @@ export default function CategoryImport({
             const loc = {
                 sheet: c.sheet,
                 row: c.row,
-                col: getEffectiveConfig(c.sheet).columnConfig.category,
+                col: getEffectiveConfig().columnConfig.category,
                 address: c.address,
             };
 
@@ -529,20 +461,10 @@ export default function CategoryImport({
         hasAnyVerify,
         canExtract,
 
-        calibrationMode,
-        setCalibrationMode,
-        sharedConfig,
-        setSharedConfig,
-        calibrations,
-        setCalibrations,
-        currentSheet,
-        setCurrentSheet,
+        config,
+        setConfig,
         getEffectiveConfig,
-        ensureCalibrationsInitialized,
-        handleApplySharedToAll,
-        handleCopyCurrentToAll,
-        updateSharedConfig,
-        updateCurrentCalibration,
+        ensureConfigInitialized,
 
         handleFileChange,
         handleSheetToggle,
@@ -618,28 +540,20 @@ export default function CategoryImport({
                 selectedSheet={selectedSheet}
                 onSheetChange={handleSheetChange}
                 onNext={() => {
-                    ensureCalibrationsInitialized();
+                    ensureConfigInitialized();
                     setStep('calibrate');
                 }}
             />
             <ImportPpmpCalibrateStep
-                calibrationMode={calibrationMode}
-                setCalibrationMode={setCalibrationMode}
-                sharedConfig={sharedConfig}
-                setSharedConfig={setSharedConfig}
-                calibrations={calibrations}
-                setCalibrations={setCalibrations}
-                currentSheet={currentSheet}
-                setCurrentSheet={setCurrentSheet}
                 selectedSheet={selectedSheet}
+                config={config}
+                setConfig={setConfig}
                 getDefaultConfig={getDefaultSharedConfig}
                 onInvalidate={() => {
                     setVerifyResults({});
                     setExtractResult(null);
                 }}
-                verifyMarks={verifyMarks}
                 showGroupsSummary
-                showEffectiveBadges
                 onBack={() => setStep('upload')}
                 onNext={() => setStep('verify')}
                 canNext={canVerify}
@@ -648,16 +562,11 @@ export default function CategoryImport({
             <ImportPpmpVerifyStep
                 tabsValue="verify"
                 title="Verify procurement format per sheet (categories not in additional)"
-                description={
-                    <>
-                        Checks the selected sheet with its calibration (
-                        {calibrationMode}) — cat → coa(s) → items → cat - total.
-                    </>
-                }
+                description="Checks the selected sheet with its calibration — cat → coa(s) → items → cat - total."
                 verifyButtonLabel="Verify Sheet"
                 canVerify={canVerify}
                 onVerify={handleVerify}
-                selectedSheet={selectedSheet}
+                selectedSheets={selectedSheet ? [selectedSheet] : []}
                 results={verifyResults}
                 hasResult={hasAnyVerify}
                 allValid={allVerifyValid}

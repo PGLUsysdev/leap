@@ -11,7 +11,6 @@ import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 export type PriceListSheetConfig = SharedSheetConfig;
 
 export type PliStep = 'upload' | 'calibrate' | 'verify' | 'extract' | 'review';
-export type CalibrationMode = 'shared' | 'per-sheet';
 export type ReviewFilter = 'all' | 'errors' | 'duplicates' | 'longDesc';
 
 export type VerifyResult = {
@@ -96,7 +95,7 @@ export type PriceListImportState = {
     sheets: string[];
     workbook: ExcelJS.Workbook | null;
     fileName: string | null;
-    selectedSheets: string[];
+    selectedSheet: string | null;
     loading: boolean;
     error: string | null;
     isMounted: boolean;
@@ -111,22 +110,10 @@ export type PriceListImportState = {
     canReview: boolean;
 
     // calibration
-    calibrationMode: CalibrationMode;
-    setCalibrationMode: (m: CalibrationMode) => void;
-    sharedConfig: PriceListSheetConfig | null;
-    setSharedConfig: Dispatch<SetStateAction<PriceListSheetConfig | null>>;
-    calibrations: Record<string, PriceListSheetConfig>;
-    setCalibrations: Dispatch<
-        SetStateAction<Record<string, PriceListSheetConfig>>
-    >;
-    currentSheet: string;
-    setCurrentSheet: (s: string) => void;
-    getEffectiveConfig: (sheet: string) => PriceListSheetConfig;
-    ensureCalibrationsInitialized: () => void;
-    handleApplySharedToAll: () => void;
-    handleCopyCurrentToAll: () => void;
-    updateSharedConfig: (patch: Partial<PriceListSheetConfig>) => void;
-    updateCurrentCalibration: (patch: Partial<PriceListSheetConfig>) => void;
+    config: PriceListSheetConfig | null;
+    setConfig: Dispatch<SetStateAction<PriceListSheetConfig | null>>;
+    getEffectiveConfig: () => PriceListSheetConfig;
+    ensureConfigInitialized: () => void;
 
     // upload
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -192,14 +179,16 @@ export type PriceListImportState = {
     importing: boolean;
     handleImport: () => void;
 
-    // shared ppmp raw extract (after verify, strict)
+    // shared ppmp raw extract
     ppmpExtractResults: Record<string, PpmpExtractResult>;
-    setPpmpExtractResults: import('react').Dispatch<import('react').SetStateAction<Record<string, PpmpExtractResult>>>;
+    setPpmpExtractResults: Dispatch<
+        SetStateAction<Record<string, PpmpExtractResult>>
+    >;
     ppmpRawItems: RawPpmpItem[];
-    setPpmpRawItems: import('react').Dispatch<import('react').SetStateAction<RawPpmpItem[]>>;
+    setPpmpRawItems: Dispatch<SetStateAction<RawPpmpItem[]>>;
     handlePpmpExtract: () => void;
     rawSheets: Record<string, RawSheet>;
-    setRawSheets: import('react').Dispatch<import('react').SetStateAction<Record<string, RawSheet>>>;
+    setRawSheets: Dispatch<SetStateAction<Record<string, RawSheet>>>;
 
     // page props
     existingCategories: ExistingCategory[];

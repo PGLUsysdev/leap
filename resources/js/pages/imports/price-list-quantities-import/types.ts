@@ -19,8 +19,6 @@ export type PliQtyStep =
     | 'extract'
     | 'review';
 
-export type CalibrationMode = 'shared' | 'per-sheet';
-
 export type MappedItem = ReturnType<typeof matchQuantityItems>[number];
 
 export type ExistingOffice = {
@@ -66,9 +64,9 @@ export type PriceListQuantitiesImportState = {
     // workbook
     workbook: ExcelJS.Workbook | null;
     sheets: string[];
-    selectedSheets: string[];
+    selectedSheet: string | null;
     fileName: string | null;
-    error: string;
+    error: string | null;
 
     // pipeline
     step: PliQtyStep;
@@ -78,25 +76,15 @@ export type PriceListQuantitiesImportState = {
     hasAnyVerify: boolean;
     allVerifyValid: boolean;
     canReview: boolean;
+    canExtract: boolean;
+    hasAnyExtract: boolean;
     canImport: boolean;
 
     // calibration
-    calibrationMode: CalibrationMode;
-    setCalibrationMode: (m: CalibrationMode) => void;
-    sharedConfig: QuantitiesSheetConfig | null;
-    setSharedConfig: Dispatch<SetStateAction<QuantitiesSheetConfig | null>>;
-    calibrations: Record<string, QuantitiesSheetConfig>;
-    setCalibrations: Dispatch<
-        SetStateAction<Record<string, QuantitiesSheetConfig>>
-    >;
-    currentSheet: string;
-    setCurrentSheet: (s: string) => void;
-    getEffectiveConfig: (sheet: string) => QuantitiesSheetConfig;
-    ensureCalibrationsInitialized: () => void;
-    handleApplySharedToAll: () => void;
-    handleCopyCurrentToAll: () => void;
-    updateSharedConfig: (patch: Partial<QuantitiesSheetConfig>) => void;
-    updateCurrentCalibration: (patch: Partial<QuantitiesSheetConfig>) => void;
+    config: QuantitiesSheetConfig | null;
+    setConfig: Dispatch<SetStateAction<QuantitiesSheetConfig | null>>;
+    getEffectiveConfig: () => QuantitiesSheetConfig;
+    ensureConfigInitialized: () => void;
 
     // upload / extract / verify
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -112,16 +100,25 @@ export type PriceListQuantitiesImportState = {
     activeVerifySheet: string;
     setActiveVerifySheet: (s: string) => void;
 
-    // shared ppmp raw extract (after verify, strict)
-    ppmpExtractResults: Record<string, import('@/lib/ppmp/extract').PpmpExtractResult>;
-    setPpmpExtractResults: Dispatch<SetStateAction<Record<string, import('@/lib/ppmp/extract').PpmpExtractResult>>>;
+    // shared ppmp raw extract
+    ppmpExtractResults: Record<
+        string,
+        import('@/lib/ppmp/extract').PpmpExtractResult
+    >;
+    setPpmpExtractResults: Dispatch<
+        SetStateAction<
+            Record<string, import('@/lib/ppmp/extract').PpmpExtractResult>
+        >
+    >;
     ppmpRawItems: import('@/lib/ppmp/extract').RawPpmpItem[];
-    setPpmpRawItems: Dispatch<SetStateAction<import('@/lib/ppmp/extract').RawPpmpItem[]>>;
+    setPpmpRawItems: Dispatch<
+        SetStateAction<import('@/lib/ppmp/extract').RawPpmpItem[]>
+    >;
     rawSheets: Record<string, import('@/lib/raw-extract').RawSheet>;
-    setRawSheets: Dispatch<SetStateAction<Record<string, import('@/lib/raw-extract').RawSheet>>>;
+    setRawSheets: Dispatch<
+        SetStateAction<Record<string, import('@/lib/raw-extract').RawSheet>>
+    >;
     handlePpmpExtract: () => void;
-    canExtract: boolean;
-    hasAnyExtract: boolean;
 
     // extract results / review
     extractResults: Record<string, QuantitiesExtractResult>;

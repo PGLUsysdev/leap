@@ -25,7 +25,6 @@ import type {
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 
 import type {
-    CalibrationMode,
     ExistingFundingSource,
     ExistingOffice,
     ExistingOutput,
@@ -65,14 +64,7 @@ export default function PriceListQuantitiesImport({
 }: PriceListQuantitiesImportProps) {
     const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
     const [step, setStep] = useState<PliQtyStep>('upload');
-    const [calibrationMode, setCalibrationMode] =
-        useState<CalibrationMode>('shared');
-    const [sharedConfig, setSharedConfig] =
-        useState<QuantitiesSheetConfig | null>(null);
-    const [calibrations, setCalibrations] = useState<
-        Record<string, QuantitiesSheetConfig>
-    >({});
-    const [currentSheet, setCurrentSheet] = useState<string>('');
+    const [config, setConfig] = useState<QuantitiesSheetConfig | null>(null);
     const [extractResults, setExtractResults] = useState<
         Record<string, QuantitiesExtractResult>
     >({});
@@ -111,9 +103,7 @@ export default function PriceListQuantitiesImport({
         useImportWorkbook(() => {
             setSelectedSheet(null);
             setStep('upload');
-            setSharedConfig(null);
-            setCalibrations({});
-            setCurrentSheet('');
+            setConfig(null);
             setPpmpExtractResults({});
             setPpmpRawItems([]);
             setRawSheets({});
@@ -230,13 +220,13 @@ export default function PriceListQuantitiesImport({
 
     const canCalibrate = selectedSheet !== null;
     const rowsCalibrated =
-        !!sharedConfig &&
-        sharedConfig.rowConfig.headerRow !== '' &&
-        sharedConfig.rowConfig.headerRow != null &&
-        sharedConfig.rowConfig.additionalItemsHeaderRow !== '' &&
-        sharedConfig.rowConfig.additionalItemsHeaderRow != null &&
-        sharedConfig.rowConfig.nonProcurementHeaderRow !== '' &&
-        sharedConfig.rowConfig.nonProcurementHeaderRow != null;
+        !!config &&
+        config.rowConfig.headerRow !== '' &&
+        config.rowConfig.headerRow != null &&
+        config.rowConfig.additionalItemsHeaderRow !== '' &&
+        config.rowConfig.additionalItemsHeaderRow != null &&
+        config.rowConfig.nonProcurementHeaderRow !== '' &&
+        config.rowConfig.nonProcurementHeaderRow != null;
     const canVerify = canCalibrate && !!workbook && rowsCalibrated;
     const hasAnyVerify =
         selectedSheet !== null && !!verifyResults[selectedSheet];
@@ -362,14 +352,14 @@ export default function PriceListQuantitiesImport({
         );
     }
 
-    function getEffectiveConfig(sheet: string): QuantitiesSheetConfig {
-        if (calibrationMode === 'shared' && sharedConfig) {
-            return sharedConfig;
-        }
+    function getEffectiveConfig(): QuantitiesSheetConfig {
+        return config ?? getDefaultQuantitiesConfig();
+    }
 
-        return (
-            calibrations[sheet] ?? sharedConfig ?? getDefaultQuantitiesConfig()
-        );
+    function ensureConfigInitialized() {
+        if (config) return;
+
+        setConfig(getDefaultQuantitiesConfig());
     }
 
     function runExtraction() {
@@ -380,7 +370,7 @@ export default function PriceListQuantitiesImport({
         const result = extractQuantitiesSheet(
             workbook,
             selectedSheet,
-            getEffectiveConfig(selectedSheet),
+            getEffectiveConfig(),
         );
 
         setExtractResults({ [selectedSheet]: result });
@@ -395,14 +385,14 @@ export default function PriceListQuantitiesImport({
             return;
         }
 
-        if (!sharedConfig) {
-            ensureCalibrationsInitialized();
+        if (!config) {
+            ensureConfigInitialized();
         }
 
         const result = verifyPpmpSheet(
             workbook,
             selectedSheet,
-            getEffectiveConfig(selectedSheet),
+            getEffectiveConfig(),
         );
 
         setVerifyResults({
@@ -423,21 +413,23 @@ export default function PriceListQuantitiesImport({
     function handlePpmpExtract() {
         if (!workbook || !selectedSheet) return;
 
-        const cfg = getEffectiveConfig(selectedSheet);
-        const res = extractPpmpSheet(workbook, selectedSheet, cfg);
+        const res = extractPpmpSheet(
+            workbook,
+            selectedSheet,
+            getEffectiveConfig(),
+        );
 
         setPpmpExtractResults({ [selectedSheet]: res });
         setPpmpRawItems(res.rawItems);
         setRawSheets(
-            extractRawSheets(workbook, [selectedSheet], (s) =>
-                getEffectiveConfig(s),
+            extractRawSheets(workbook, [selectedSheet], () =>
+                getEffectiveConfig(),
             ),
         );
     }
 
     function handleSheetChange(sheet: string | null) {
         setSelectedSheet(sheet);
-        setCurrentSheet(sheet ?? '');
         setActiveVerifySheet(sheet ?? '');
         setActiveExtractSheet('');
         setPpmpExtractResults({});
@@ -450,82 +442,6 @@ export default function PriceListQuantitiesImport({
     // Kept for downstream compatibility (ReviewAndImport uses this by name).
     function handleSheetToggle(name: string) {
         handleSheetChange(name);
-    }
-
-    function ensureCalibrationsInitialized() {
-        if (sharedConfig) {
-            return;
-        }
-
-        const def = getDefaultQuantitiesConfig();
-        setSharedConfig(def);
-
-        if (selectedSheet) {
-            setCalibrations({
-                [selectedSheet]: {
-                    ...def,
-                    columnConfig: { ...def.columnConfig },
-                    rowConfig: { ...def.rowConfig },
-                },
-            });
-        }
-
-        if (!currentSheet && selectedSheet) {
-            setCurrentSheet(selectedSheet);
-        }
-    }
-
-    function handleApplySharedToAll() {
-        if (!sharedConfig || !selectedSheet) {
-            return;
-        }
-
-        setCalibrations({
-            [selectedSheet]: {
-                ...sharedConfig,
-                columnConfig: { ...sharedConfig.columnConfig },
-                rowConfig: { ...sharedConfig.rowConfig },
-            },
-        });
-    }
-
-    function handleCopyCurrentToAll() {
-        const src = calibrations[currentSheet] ?? sharedConfig;
-
-        if (!src || !selectedSheet) {
-            return;
-        }
-
-        setCalibrations({
-            [selectedSheet]: {
-                ...src,
-                columnConfig: { ...src.columnConfig },
-                rowConfig: { ...src.rowConfig },
-            },
-        });
-    }
-
-    function updateSharedConfig(patch: Partial<QuantitiesSheetConfig>) {
-        setSharedConfig((prev) => ({
-            ...(prev ?? getDefaultQuantitiesConfig()),
-            ...patch,
-        }));
-    }
-
-    function updateCurrentCalibration(patch: Partial<QuantitiesSheetConfig>) {
-        if (!currentSheet) {
-            return;
-        }
-
-        setCalibrations((prev) => ({
-            ...prev,
-            [currentSheet]: {
-                ...(prev[currentSheet] ??
-                    sharedConfig ??
-                    getDefaultQuantitiesConfig()),
-                ...patch,
-            },
-        }));
     }
 
     const s: PriceListQuantitiesImportState = {
@@ -546,20 +462,10 @@ export default function PriceListQuantitiesImport({
         hasAnyExtract,
         canImport,
 
-        calibrationMode,
-        setCalibrationMode,
-        sharedConfig,
-        setSharedConfig,
-        calibrations,
-        setCalibrations,
-        currentSheet,
-        setCurrentSheet,
+        config,
+        setConfig,
         getEffectiveConfig,
-        ensureCalibrationsInitialized,
-        handleApplySharedToAll,
-        handleCopyCurrentToAll,
-        updateSharedConfig,
-        updateCurrentCalibration,
+        ensureConfigInitialized,
 
         handleFileChange,
         handleSheetToggle,
@@ -685,20 +591,14 @@ export default function PriceListQuantitiesImport({
                 selectedSheet={selectedSheet}
                 onSheetChange={handleSheetChange}
                 onNext={() => {
-                    ensureCalibrationsInitialized();
+                    ensureConfigInitialized();
                     setStep('calibrate');
                 }}
             />
             <ImportPpmpCalibrateStep
-                calibrationMode={calibrationMode}
-                setCalibrationMode={setCalibrationMode}
-                sharedConfig={sharedConfig}
-                setSharedConfig={setSharedConfig}
-                calibrations={calibrations}
-                setCalibrations={setCalibrations}
-                currentSheet={currentSheet}
-                setCurrentSheet={setCurrentSheet}
                 selectedSheet={selectedSheet}
+                config={config}
+                setConfig={setConfig}
                 getDefaultConfig={getDefaultQuantitiesConfig}
                 onInvalidate={() => {
                     setExtractResults({});
@@ -727,7 +627,7 @@ export default function PriceListQuantitiesImport({
                 verifyButtonLabel="Run Verify"
                 canVerify={canVerify}
                 onVerify={handleVerify}
-                selectedSheet={selectedSheet}
+                selectedSheets={selectedSheet ? [selectedSheet] : []}
                 results={verifyResults}
                 hasResult={hasAnyVerify}
                 allValid={allVerifyValid}
