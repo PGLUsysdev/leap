@@ -80,10 +80,6 @@ export default function CategoryCoaMappingImport({
     >({});
     const [activeFormatSheet, setActiveFormatSheet] = useState<string>('');
 
-    // Compatibility shim — downstream shells still expect string[].
-    // Single-sheet page, so this is always 0 or 1 entries.
-    const selectedSheets = selectedSheet ? [selectedSheet] : [];
-
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
             setSelectedSheet(null);
@@ -689,7 +685,6 @@ export default function CategoryCoaMappingImport({
         }
 
         const uniquePairs = [...seen.values()];
-        const duplicates = combinedAllPairs.length - uniquePairs.length;
 
         const mappingSet = new Set(
             existingMappings.map(
@@ -755,32 +750,13 @@ export default function CategoryCoaMappingImport({
             missingMapping,
             verifiedPairs,
         });
-
-        console.log(`[Category COA Mapping] Relationships — ${sheet}`, {
-            sheet,
-            sections,
-            combined: {
-                totalPairs: combinedAllPairs.length,
-                uniqueCount: uniquePairs.length,
-                duplicates,
-            },
-            db: {
-                total: uniquePairs.length,
-                catFound,
-                coaFound,
-                mappingFound,
-                missingCat,
-                missingCoa,
-                missingMapping,
-            },
-        });
     }
 
     const s: CategoryCoaMappingState = {
         sheets,
         workbook,
         fileName,
-        selectedSheets,
+        selectedSheet,
         loading,
         error,
 
@@ -891,7 +867,7 @@ export default function CategoryCoaMappingImport({
                 setCalibrations={setCalibrations}
                 currentSheet={currentSheet}
                 setCurrentSheet={setCurrentSheet}
-                selectedSheets={selectedSheets}
+                selectedSheet={selectedSheet}
                 getDefaultConfig={getDefaultMappingConfig}
                 onInvalidate={() => {
                     setVerification(null);
@@ -922,9 +898,7 @@ export default function CategoryCoaMappingImport({
                 title="Verify Sheet Format — check calibration and structure (all 3 sections)"
                 description={
                     <>
-                        Checks {selectedSheets.length} sheet
-                        {selectedSheets.length === 1 ? '' : 's'} with current
-                        calibration (
+                        Checks the selected sheet with current calibration (
                         {calibrationMode === 'shared'
                             ? `shared header ${sharedConfig?.rowConfig.headerRow === '' || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow}`
                             : `per-sheet`}
@@ -932,10 +906,10 @@ export default function CategoryCoaMappingImport({
                         section.
                     </>
                 }
-                verifyButtonLabel={`Verify Format${selectedSheets.length > 1 ? ` (${selectedSheets.length} sheets)` : ''}`}
+                verifyButtonLabel="Verify Format"
                 canVerify={canVerifyFormat}
                 onVerify={handleVerifyFormat}
-                selectedSheets={selectedSheets}
+                selectedSheet={selectedSheet}
                 results={formatResults}
                 hasResult={hasFormatResult}
                 allValid={formatValid}
@@ -947,7 +921,7 @@ export default function CategoryCoaMappingImport({
                 nextLabel={`Next: Extract${hasFormatResult && !formatValid ? ' (blocked)' : ''}`}
             />
             <ImportExtractStep
-                sheets={selectedSheets}
+                sheet={selectedSheet}
                 canExtract={canExtract}
                 hasAnyVerify={canExtract}
                 allVerifyValid={canExtract}

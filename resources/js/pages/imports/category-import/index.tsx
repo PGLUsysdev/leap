@@ -66,10 +66,6 @@ export default function CategoryImport({
     const [skipProblematic, setSkipProblematic] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
-    // Compatibility shim — downstream shells still expect string[].
-    // Single-sheet page, so this is always 0 or 1 entries.
-    const selectedSheets = selectedSheet ? [selectedSheet] : [];
-
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
             setSelectedSheet(null);
@@ -521,7 +517,7 @@ export default function CategoryImport({
         sheets,
         workbook,
         fileName,
-        selectedSheets,
+        selectedSheet,
         loading,
         error,
 
@@ -635,7 +631,7 @@ export default function CategoryImport({
                 setCalibrations={setCalibrations}
                 currentSheet={currentSheet}
                 setCurrentSheet={setCurrentSheet}
-                selectedSheets={selectedSheets}
+                selectedSheet={selectedSheet}
                 getDefaultConfig={getDefaultSharedConfig}
                 onInvalidate={() => {
                     setVerifyResults({});
@@ -654,15 +650,14 @@ export default function CategoryImport({
                 title="Verify procurement format per sheet (categories not in additional)"
                 description={
                     <>
-                        Checks selected sheet ({selectedSheets.length}) with its
-                        calibration ({calibrationMode}) — cat → coa(s) → items →
-                        cat - total.
+                        Checks the selected sheet with its calibration (
+                        {calibrationMode}) — cat → coa(s) → items → cat - total.
                     </>
                 }
-                verifyButtonLabel={`Verify ${selectedSheets.length} Sheet${selectedSheets.length === 1 ? '' : 's'}`}
+                verifyButtonLabel="Verify Sheet"
                 canVerify={canVerify}
                 onVerify={handleVerify}
-                selectedSheets={selectedSheets}
+                selectedSheet={selectedSheet}
                 results={verifyResults}
                 hasResult={hasAnyVerify}
                 allValid={allVerifyValid}
@@ -675,23 +670,24 @@ export default function CategoryImport({
                         (a, r) => a + (r.valid ? 0 : r.errors.length),
                         0,
                     ),
-                    invalidSheetCount: selectedSheets.filter(
-                        (sh) => !verifyResults[sh]?.valid,
-                    ).length,
+                    invalidSheetCount:
+                        selectedSheet && !verifyResults[selectedSheet]?.valid
+                            ? 1
+                            : 0,
                 }}
                 onBack={() => setStep('calibrate')}
                 onNext={() => setStep('extract')}
                 canNext={canExtract}
                 nextLabel={
                     allVerifyValid
-                        ? `Next: Extract (${selectedSheets.length} sheets)`
+                        ? 'Next: Extract'
                         : skipProblematic && hasAnyVerify
                           ? 'Next: Extract (skipping problematic)'
                           : 'Fix verification first'
                 }
             />
             <ImportExtractStep
-                sheets={selectedSheets}
+                sheet={selectedSheet}
                 canExtract={canExtract}
                 hasAnyVerify={hasAnyVerify}
                 allVerifyValid={allVerifyValid}

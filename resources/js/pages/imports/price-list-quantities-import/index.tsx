@@ -107,10 +107,6 @@ export default function PriceListQuantitiesImport({
     const [excludeUnclassified, setExcludeUnclassified] = useState(true);
     const [importing, setImporting] = useState(false);
 
-    // Compatibility shim — downstream shells still expect string[].
-    // Single-sheet page, so this is always 0 or 1 entries.
-    const selectedSheets = selectedSheet ? [selectedSheet] : [];
-
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
             setSelectedSheet(null);
@@ -535,7 +531,7 @@ export default function PriceListQuantitiesImport({
     const s: PriceListQuantitiesImportState = {
         workbook,
         sheets,
-        selectedSheets,
+        selectedSheet,
         fileName,
         error,
 
@@ -702,7 +698,7 @@ export default function PriceListQuantitiesImport({
                 setCalibrations={setCalibrations}
                 currentSheet={currentSheet}
                 setCurrentSheet={setCurrentSheet}
-                selectedSheets={selectedSheets}
+                selectedSheet={selectedSheet}
                 getDefaultConfig={getDefaultQuantitiesConfig}
                 onInvalidate={() => {
                     setExtractResults({});
@@ -721,17 +717,17 @@ export default function PriceListQuantitiesImport({
                 title="Verify quantities format per sheet"
                 description={
                     <>
-                        Runs against the selected sheet ({selectedSheets.length}
-                        ) using its calibration — sane ranges with procurement
-                        data, unit + COA per item row, numeric quantities
-                        (amount columns skipped), quantities in at least one
-                        month. Extraction stays locked until the sheet passes.
+                        Runs against the selected sheet using its calibration —
+                        sane ranges with procurement data, unit + COA per item
+                        row, numeric quantities (amount columns skipped),
+                        quantities in at least one month. Extraction stays
+                        locked until the sheet passes.
                     </>
                 }
-                verifyButtonLabel={`Run Verify (${selectedSheets.length} sheets)`}
+                verifyButtonLabel="Run Verify"
                 canVerify={canVerify}
                 onVerify={handleVerify}
-                selectedSheets={selectedSheets}
+                selectedSheet={selectedSheet}
                 results={verifyResults}
                 hasResult={hasAnyVerify}
                 allValid={allVerifyValid}
@@ -743,7 +739,7 @@ export default function PriceListQuantitiesImport({
                 nextLabel="Next: Extract"
             />
             <ImportExtractStep
-                sheets={selectedSheets}
+                sheet={selectedSheet}
                 canExtract={canExtract}
                 hasAnyVerify={hasAnyVerify}
                 allVerifyValid={allVerifyValid}

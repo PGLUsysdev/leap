@@ -98,10 +98,6 @@ export default function PriceListImport({
     const [excludeMissingCategory, setExcludeMissingCategory] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
 
-    // Compatibility shim — downstream shells still expect string[].
-    // Single-sheet page, so this is always 0 or 1 entries.
-    const selectedSheets = selectedSheet ? [selectedSheet] : [];
-
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
             setSelectedSheet(null);
@@ -871,7 +867,7 @@ export default function PriceListImport({
         sheets,
         workbook,
         fileName,
-        selectedSheets,
+        selectedSheet,
         loading,
         error,
         isMounted,
@@ -1040,7 +1036,7 @@ export default function PriceListImport({
                 setCalibrations={setCalibrations}
                 currentSheet={currentSheet}
                 setCurrentSheet={setCurrentSheet}
-                selectedSheets={selectedSheets}
+                selectedSheet={selectedSheet}
                 getDefaultConfig={getDefaultSharedConfig}
                 onInvalidate={() => {
                     setVerifyResults({});
@@ -1074,14 +1070,14 @@ export default function PriceListImport({
                 title="Verify price list format per sheet"
                 description={
                     <>
-                        Checks selected sheet ({selectedSheets.length}) — cat →
-                        coa(s) → items → cat - total.
+                        Checks the selected sheet — cat → coa(s) → items → cat -
+                        total.
                     </>
                 }
-                verifyButtonLabel={`Run Verify (${selectedSheets.length} sheets)`}
+                verifyButtonLabel="Run Verify"
                 canVerify={canVerify}
                 onVerify={handleVerify}
-                selectedSheets={selectedSheets}
+                selectedSheet={selectedSheet}
                 results={verifyResults}
                 hasResult={hasAnyVerify}
                 allValid={allVerifyValid}
@@ -1093,7 +1089,7 @@ export default function PriceListImport({
                 nextLabel={`Next: Extract ${allVerifyValid ? '✓' : '(fix errors first)'}`}
             />
             <ImportExtractStep
-                sheets={selectedSheets}
+                sheet={selectedSheet}
                 canExtract={canVerify && hasAnyVerify && allVerifyValid}
                 hasAnyVerify={hasAnyVerify}
                 allVerifyValid={allVerifyValid}
