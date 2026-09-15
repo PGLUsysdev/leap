@@ -42,14 +42,13 @@ export type PpmpVerifyResult = {
 
 type PpmpSheetCfg = SharedSheetConfig | QuantitiesSheetConfig;
 
-function hasQtyStart(
-    cfg: PpmpSheetCfg,
-): cfg is QuantitiesSheetConfig {
+function hasQtyStart(cfg: PpmpSheetCfg): cfg is QuantitiesSheetConfig {
     return (
         'qtyStart' in cfg.columnConfig &&
-        typeof (cfg.columnConfig as unknown as { qtyStart?: string }).qtyStart ===
-            'string' &&
-        (cfg.columnConfig as QuantitiesSheetConfig['columnConfig']).qtyStart !== ''
+        typeof (cfg.columnConfig as unknown as { qtyStart?: string })
+            .qtyStart === 'string' &&
+        (cfg.columnConfig as QuantitiesSheetConfig['columnConfig']).qtyStart !==
+            ''
     );
 }
 
@@ -96,7 +95,14 @@ export function verifyPpmpSheet(
         return makeFail('Workbook not loaded');
     }
 
-    console.log('[verifyPpmpSheet] sheetName:', sheetName, 'type:', typeof sheetName, 'isArray:', Array.isArray(sheetName));
+    console.log(
+        '[verifyPpmpSheet] sheetName:',
+        sheetName,
+        'type:',
+        typeof sheetName,
+        'isArray:',
+        Array.isArray(sheetName),
+    );
     const rawName = Array.isArray(sheetName)
         ? String((sheetName as unknown[])[0] ?? sheetName)
         : typeof sheetName === 'string'
@@ -109,9 +115,7 @@ export function verifyPpmpSheet(
         workbook.getWorksheet(rawName) ??
         workbook.getWorksheet(trimmedName) ??
         (Number.isFinite(numId) ? workbook.getWorksheet(numId) : undefined) ??
-        workbook.worksheets.find(
-            (w) => w.name.trim() === trimmedName,
-        ) ??
+        workbook.worksheets.find((w) => w.name.trim() === trimmedName) ??
         workbook.worksheets.find(
             (w) => w.name.trim().toLowerCase() === trimmedName.toLowerCase(),
         );
@@ -150,10 +154,7 @@ export function verifyPpmpSheet(
         ]);
     }
 
-    if (
-        additionalItemsHeaderRow === '' ||
-        additionalItemsHeaderRow == null
-    ) {
+    if (additionalItemsHeaderRow === '' || additionalItemsHeaderRow == null) {
         return makeFail('Additional Items Header Row is required', [
             {
                 row: 0,
@@ -179,9 +180,16 @@ export function verifyPpmpSheet(
     if (hasQtyStart(cfg)) {
         const qtyStartNum = columnToNumber(cfg.columnConfig.qtyStart);
         if (qtyStartNum <= 0) {
-            return makeFail('Qty Start column is required — check calibration', [
-                { row: 0, message: 'Qty Start column is required — check calibration' },
-            ]);
+            return makeFail(
+                'Qty Start column is required — check calibration',
+                [
+                    {
+                        row: 0,
+                        message:
+                            'Qty Start column is required — check calibration',
+                    },
+                ],
+            );
         }
         qtyCols = Array.from({ length: 12 }, (_, i) =>
             numberToColumn(qtyStartNum + i * 2),
@@ -233,7 +241,9 @@ export function verifyPpmpSheet(
             ? countData(procurementStart, procurementEnd)
             : countData(
                   procurementStart,
-                  nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : lastRow,
+                  nonProcurementHeaderRow
+                      ? nonProcurementHeaderRow - 1
+                      : lastRow,
               ),
         additional: additionalItemsHeaderRow
             ? countData(additionalStart, additionalEnd)
@@ -263,7 +273,8 @@ export function verifyPpmpSheet(
     } else if (groups.procurement === 0) {
         errors.push({
             row: procurementStart,
-            message: 'No data found in procurement group — check header calibration',
+            message:
+                'No data found in procurement group — check header calibration',
         });
     }
 
@@ -330,7 +341,8 @@ export function verifyPpmpSheet(
                 const isFalsyCoa = !coaNorm;
                 const isFalsyItem = !itemRaw;
 
-                if (isFalsyItem && isFalsyCoa && isFalsyUnit && isFalsyPrice) continue;
+                if (isFalsyItem && isFalsyCoa && isFalsyUnit && isFalsyPrice)
+                    continue;
 
                 if (coaNorm && dataRaw) {
                     itemCount++;
@@ -346,7 +358,9 @@ export function verifyPpmpSheet(
 
                 // Quantities qty-numeric check per row (only for quantities sheets)
                 if (qtyCols && dataRaw && coaNorm) {
-                    const qtyRaws = qtyCols.map((c) => cellText(row.getCell(c)));
+                    const qtyRaws = qtyCols.map((c) =>
+                        cellText(row.getCell(c)),
+                    );
                     qtyRaws.forEach((q, i) => {
                         if (q && parseQty(q) === null) {
                             errors.push({
@@ -488,49 +502,22 @@ export function verifyPpmpSheet(
                 continue;
             }
 
-            if (coaLabelMode === 'with-label') {
-                let isCoaLabel = false;
-                let nextCoaRaw: string | null = null;
-                let nextCoaNorm: string | null = null;
-                if (r + 1 <= lastRow) {
-                    nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
-                    nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
-                    if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) {
-                        isCoaLabel = true;
-                    }
-                }
-                if (isCoaLabel) {
-                    if (!currentCat) {
-                        // Allow top-level catch: will be validated by next cat start if missing?
-                        // But keep strict: COA without active category is error unless we're at section start sentinel.
-                        // Use same behavior as before: error if no active cat.
-                        // However sheet-grouping allows sentinel for additional/non-proc — here we are in procurement only, so error.
+            if (coaLabelMode === 'with-label' && currentCat) {
+                // We're inside a category, and this row has only F populated.
+                // In with-label mode that makes it a COA label.
+                // (A bare F-only row OUTSIDE a category falls through to
+                // the "new category" branch below.)
+                if (currentCoa) {
+                    if (currentCoa.items === 0) {
                         errors.push({
-                            row: r,
-                            message: `COA "${dataRaw}" at row ${r} found without active category (${sectionName})`,
+                            row: currentCoa.coaRow,
+                            message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA (${sectionName})`,
                         });
-                        continue;
                     }
-                    if (currentCoa) {
-                        if (currentCoa.items === 0) {
-                            errors.push({
-                                row: currentCoa.coaRow,
-                                message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA (${sectionName})`,
-                            });
-                        }
-                        currentCat.coas.push(currentCoa);
-                    }
-                    currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
-                    continue;
+                    currentCat.coas.push(currentCoa);
                 }
-
-                if (nextCoaNorm && dataNorm) {
-                    errors.push({
-                        row: r,
-                        message: `COA label "${dataRaw}" at row ${r} mismatched next D "${nextCoaRaw}" after normalize (expected same) — not treated as category`,
-                    });
-                    continue;
-                }
+                currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
+                continue;
             }
 
             if (currentCat) {
@@ -591,9 +578,6 @@ export function verifyPpmpSheet(
 
         // Quantities qty-numeric validation for procurement item rows when qtyCols present
         if (qtyCols) {
-            // Re-scan procurement item rows for qty numeric (unit already handled in generic path? not for quantities)
-            // We already check qty numeric in the additional branch; for procurement we need to check here as well.
-            // Scan procurement rows that were items (coa && data): re-validate qty cells
             for (let r = startRow; r <= endRow && r <= lastRow; r++) {
                 const row = ws.getRow(r);
                 const coaRaw = cellText(row.getCell(coaColumn));
@@ -601,11 +585,8 @@ export function verifyPpmpSheet(
                 if (!coaRaw || !dataRaw) continue;
                 const qtyRaws = qtyCols.map((c) => cellText(row.getCell(c)));
                 const hasAnyQty = qtyRaws.some((q) => !!q);
-                // Only check numeric, not required - same as verifyQuantitiesSheet (qty optional per row)
                 qtyRaws.forEach((q, i) => {
                     if (q && parseQty(q) === null) {
-                        // Avoid duplicate if already pushed in additional path (not here)
-                        // Check if already exists for this row+month to avoid double push
                         const dup = errors.some(
                             (e) =>
                                 e.row === r &&
@@ -622,10 +603,6 @@ export function verifyPpmpSheet(
                 void hasAnyQty;
             }
 
-            // Also check that at least one procurement row exists (generic already does groups check)
-            // and that every qty cell is numeric already handled. No extra required qty-per-row check for now
-            // (quantities-extract's verify requires unit, we keep that as separate: unit check below)
-            // Unit check for quantities: every item row has unit
             for (let r = startRow; r <= endRow && r <= lastRow; r++) {
                 const row = ws.getRow(r);
                 const coaRaw = cellText(row.getCell(coaColumn));
