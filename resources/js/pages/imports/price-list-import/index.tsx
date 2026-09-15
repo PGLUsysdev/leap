@@ -1141,7 +1141,7 @@ export default function PriceListImport({
             <ImportUploadStep
                 fileInputId="price-list-file"
                 fileLabel="Excel File (.xlsx only)"
-                fileDescription="Select an .xlsx price list export (PPMP template)."
+                fileDescription="Select a PPMP workbook (.xlsx)."
                 error={error}
                 loading={loading}
                 onFileChange={handleFileChange}

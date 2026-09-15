@@ -1160,7 +1160,7 @@ export default function CategoryCoaMappingImport({
             <ImportUploadStep
                 fileInputId="category-coa-mapping-file"
                 fileLabel="Excel File (.xlsx only)"
-                fileDescription="Select an .xlsx file. Only .xlsx is accepted (ExcelJS)."
+                fileDescription="Select a PPMP workbook (.xlsx)."
                 error={error}
                 loading={loading}
                 onFileChange={handleFileChange}

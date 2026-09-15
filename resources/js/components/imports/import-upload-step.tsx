@@ -20,41 +20,33 @@ interface ImportUploadStepProps {
     onFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
 
     sheets: string[];
-    selectedSheets: string[];
+    /** Currently picked sheet, or null when nothing is selected. */
+    selectedSheet: string | null;
     sheetPickerLabel?: string;
-    onSheetsChange: (sheets: string[]) => void;
+    onSheetChange: (sheet: string | null) => void;
 
     onNext: () => void;
-    nextDisabled?: boolean;
     nextLabel?: string;
 }
 
 export function ImportUploadStep({
     fileInputId,
     fileLabel = 'Excel File (.xlsx only)',
-    fileDescription = 'Select an .xlsx file. Only .xlsx is accepted (ExcelJS).',
+    fileDescription = 'Select a PPMP workbook (.xlsx). Only .xlsx is accepted (ExcelJS).',
     error,
     loading = false,
     onFileChange,
 
     sheets,
-    selectedSheets,
+    selectedSheet,
     sheetPickerLabel,
-    onSheetsChange,
+    onSheetChange,
 
     onNext,
-    nextDisabled,
     nextLabel = 'Next: Calibrate',
 }: ImportUploadStepProps) {
-    const pickerLabel = sheetPickerLabel ?? 'Sheets — select one';
-
-    const isDisabled = nextDisabled ?? selectedSheets.length === 0;
-
-    const toggleItems = sheets.map((sheet) => (
-        <ToggleGroupItem key={sheet} value={sheet}>
-            {sheet}
-        </ToggleGroupItem>
-    ));
+    const pickerLabel = sheetPickerLabel ?? 'Sheet — select one';
+    const isDisabled = selectedSheet === null;
 
     return (
         <TabsContent value="upload" className="mt-4 flex flex-col gap-4">
@@ -78,27 +70,39 @@ export function ImportUploadStep({
 
             {!loading && sheets.length > 0 && (
                 <Field>
-                    <FieldLabel>{pickerLabel}</FieldLabel>
+                    <FieldLabel id="sheet-picker-label">
+                        {pickerLabel}
+                    </FieldLabel>
 
                     <ToggleGroup
-                        value={selectedSheets}
-                        onValueChange={(groupValue) => {
-                            onSheetsChange(groupValue);
-                        }}
+                        multiple={false}
+                        value={selectedSheet ? [selectedSheet] : []}
+                        onValueChange={(value) =>
+                            onSheetChange(value[0] ?? null)
+                        }
+                        aria-labelledby="sheet-picker-label"
                         className="flex flex-wrap justify-start"
                     >
-                        {toggleItems}
+                        {sheets.map((sheet) => (
+                            <ToggleGroupItem key={sheet} value={sheet}>
+                                {sheet}
+                            </ToggleGroupItem>
+                        ))}
                     </ToggleGroup>
 
                     <FieldDescription>
                         Selected:{' '}
                         <span className="text-foreground font-medium">
-                            {selectedSheets.length > 0
-                                ? selectedSheets.join(', ')
-                                : 'none'}
+                            {selectedSheet ?? 'none'}
                         </span>
                     </FieldDescription>
                 </Field>
+            )}
+
+            {!loading && sheets.length === 0 && !error && (
+                <p className="text-muted-foreground text-sm">
+                    No sheets found in this workbook.
+                </p>
             )}
 
             <div className="flex justify-end">

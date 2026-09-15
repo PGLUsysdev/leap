@@ -696,7 +696,7 @@ export default function CategoryImport({
             <ImportUploadStep
                 fileInputId="category-import-file"
                 fileLabel="Excel File (.xlsx only)"
-                fileDescription="Select an .xlsx file. Only .xlsx is accepted (ExcelJS)."
+                fileDescription="Select a PPMP workbook (.xlsx)."
                 error={error}
                 loading={loading}
                 onFileChange={handleFileChange}
@@ -737,9 +737,9 @@ export default function CategoryImport({
                 title="Verify procurement format per sheet (categories not in additional)"
                 description={
                     <>
-                        Checks each selected sheet ({selectedSheets.length}) with
-                        its calibration ({calibrationMode}) — cat → coa(s) →
-                        items → cat - total. Per-sheet results below.
+                        Checks each selected sheet ({selectedSheets.length})
+                        with its calibration ({calibrationMode}) — cat → coa(s)
+                        → items → cat - total. Per-sheet results below.
                     </>
                 }
                 verifyButtonLabel={`Verify ${selectedSheets.length} Sheet${selectedSheets.length === 1 ? '' : 's'}`}
