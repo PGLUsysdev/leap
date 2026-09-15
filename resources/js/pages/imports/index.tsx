@@ -1,3 +1,5 @@
+// resources/js/pages/imports/index.tsx
+
 import { Head, Link } from '@inertiajs/react';
 import {
     ArrowRight,

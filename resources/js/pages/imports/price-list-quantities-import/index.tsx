@@ -1,3 +1,5 @@
+// resources/js/pages/imports/price-list-quantities-import/index.tsx
+
 import { router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
@@ -817,12 +819,9 @@ export default function PriceListQuantitiesImport({
                 }}
                 showQtyStart
                 onBack={() => setStep('upload')}
-                onNext={() => {
-                    handleVerify();
-                    setStep('verify');
-                }}
+                onNext={() => setStep('verify')}
                 canNext={canVerify}
-                nextLabel="Run verification"
+                nextLabel="Next: Verify Format"
             />
             <ImportPpmpVerifyStep
                 tabsValue="verify"
@@ -832,9 +831,9 @@ export default function PriceListQuantitiesImport({
                         Runs against each selected sheet (
                         {selectedSheets.length}) using its calibration — sane
                         ranges with procurement data, unit + COA per item row,
-                        numeric quantities (amount columns skipped),
-                        quantities in at least one month. Extraction stays
-                        locked until every sheet passes.
+                        numeric quantities (amount columns skipped), quantities
+                        in at least one month. Extraction stays locked until
+                        every sheet passes.
                     </>
                 }
                 verifyButtonLabel={`Run Verify (${selectedSheets.length} sheets)`}
@@ -847,9 +846,9 @@ export default function PriceListQuantitiesImport({
                 activeSheet={activeVerifySheet}
                 onActiveChange={setActiveVerifySheet}
                 onBack={() => setStep('calibrate')}
-                onNext={runExtraction}
+                onNext={() => setStep('extract')}
                 canNext={allVerifyValid}
-                nextLabel="Run extraction"
+                nextLabel="Next: Extract"
             />
             <ImportExtractStep
                 sheets={selectedSheets}

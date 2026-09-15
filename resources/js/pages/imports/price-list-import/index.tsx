@@ -1212,10 +1212,7 @@ export default function PriceListImport({
                 activeSheet={activeVerifySheet}
                 onActiveChange={setActiveVerifySheet}
                 onBack={() => setStep('calibrate')}
-                onNext={() => {
-                    handleExtract();
-                    setStep('review');
-                }}
+                onNext={() => setStep('extract')}
                 canNext={isMounted ? allVerifyValid : true}
                 nextLabel={`Next: Extract ${allVerifyValid ? '✓' : '(fix errors first)'}`}
             />
