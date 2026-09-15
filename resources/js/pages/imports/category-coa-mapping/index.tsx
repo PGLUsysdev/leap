@@ -17,11 +17,8 @@ import {
     type PpmpExtractResult,
     type RawPpmpItem,
 } from '@/lib/ppmp/extract';
-import type {
-    CategoryCoaSheetConfig,
-    CategoryCoaColumnConfig,
-    CategoryCoaRowConfig,
-} from '@/lib/ppmp/sheet-config';
+import { extractRawSheets, type RawSheet } from '@/lib/raw-extract';
+import type { CategoryCoaSheetConfig } from '@/lib/ppmp/sheet-config';
 import { verifyPpmpSheet } from '@/lib/ppmp/verify';
 import { index as categoryCoaMappingIndex } from '@/routes/category-coa-mapping';
 import { index as importsIndex } from '@/routes/imports';
@@ -37,10 +34,9 @@ import type {
     VerifiedPair,
     VerifyFormatResult,
 } from './types';
-import { CalibrateStep } from './steps/calibrate-step';
-import { VerifyFormatStep } from './steps/verify-format-step';
-import { VerifyMapStep } from './steps/verify-map-step';
-import { ExtractStep } from './steps/extract-step';
+import { ImportPpmpCalibrateStep } from '@/components/imports/import-ppmp-calibrate-step';
+import { ImportPpmpExtractShell } from '@/components/imports/import-extract-step';
+import { ImportPpmpVerifyStep } from '@/components/imports/import-verify-step';
 import { ReviewStep } from './steps/review-step';
 
 interface CategoryCoaMappingProps {
@@ -67,6 +63,7 @@ export default function CategoryCoaMappingImport({
         Record<string, PpmpExtractResult>
     >({});
     const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
+    const [rawSheets, setRawSheets] = useState<Record<string, RawSheet>>({});
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>(
         {},
     );
@@ -79,7 +76,6 @@ export default function CategoryCoaMappingImport({
         Record<string, VerifyFormatResult>
     >({});
     const [activeFormatSheet, setActiveFormatSheet] = useState<string>('');
-    const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
 
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
@@ -89,9 +85,9 @@ export default function CategoryCoaMappingImport({
             setCalibrations({});
             setPpmpExtractResults({});
             setPpmpRawItems([]);
+            setRawSheets({});
             setFormatResults({});
             setActiveFormatSheet('');
-            setActiveVerifySheet('');
             setVerification(null);
             setCoaOverrides({});
             setStep('upload');
@@ -114,7 +110,6 @@ export default function CategoryCoaMappingImport({
     const formatValid =
         selectedSheets.length > 0 &&
         selectedSheets.every((s) => formatResults[s]?.valid);
-    const canVerifyMap = canVerifyFormat && hasFormatResult && formatValid;
     const canExtract = canVerifyFormat && hasFormatResult && formatValid;
     const hasAnyExtract = ppmpRawItems.length > 0;
     const canReview =
@@ -145,40 +140,6 @@ export default function CategoryCoaMappingImport({
 
         if (!currentSheet && selectedSheets[0])
             setCurrentSheet(selectedSheets[0]);
-    }
-
-    function handleApplySharedToAll() {
-        if (!sharedConfig) return;
-
-        const next: Record<string, CategoryCoaSheetConfig> = {};
-
-        for (const s of selectedSheets) {
-            next[s] = {
-                ...sharedConfig,
-                columnConfig: { ...sharedConfig.columnConfig },
-                rowConfig: { ...sharedConfig.rowConfig },
-            };
-        }
-
-        setCalibrations(next);
-    }
-
-    function handleCopyCurrentToAll() {
-        const src = calibrations[currentSheet] ?? sharedConfig;
-
-        if (!src) return;
-
-        const next: Record<string, CategoryCoaSheetConfig> = {};
-
-        for (const s of selectedSheets) {
-            next[s] = {
-                ...src,
-                columnConfig: { ...src.columnConfig },
-                rowConfig: { ...src.rowConfig },
-            };
-        }
-
-        setCalibrations(next);
     }
 
     const effectiveVerification =
@@ -242,36 +203,6 @@ export default function CategoryCoaMappingImport({
                 effMissingCoa,
             };
         }, [verification, coaOverrides, existingCoas, existingMappings]);
-
-    function handleCoaOverrideChange(
-        rowKey: string,
-        selectedValue: string | null,
-    ) {
-        if (!selectedValue) {
-            setCoaOverrides((prev) => {
-                const next = { ...prev };
-                delete next[rowKey];
-
-                return next;
-            });
-
-            return;
-        }
-
-        const idMatch = selectedValue.match(/^coa:(\d+)/);
-
-        if (idMatch) {
-            const id = Number(idMatch[1]);
-            setCoaOverrides((prev) => ({ ...prev, [rowKey]: id }));
-        } else {
-            const found = existingCoas.find(
-                (c) => `${c.path} — ${c.account_title}` === selectedValue,
-            );
-
-            if (found)
-                setCoaOverrides((prev) => ({ ...prev, [rowKey]: found.id }));
-        }
-    }
 
     function handleClearOverride(rowKey: string) {
         setCoaOverrides((prev) => {
@@ -394,7 +325,6 @@ export default function CategoryCoaMappingImport({
         setActiveFormatSheet(firstInvalid ?? flatSheets[0] ?? '');
         setVerification(null);
         setCoaOverrides({});
-        setActiveVerifySheet(firstInvalid ?? flatSheets[0] ?? '');
 
         if (Object.keys(next).length) {
             console.table(
@@ -424,18 +354,22 @@ export default function CategoryCoaMappingImport({
         }
         setPpmpExtractResults(next);
         setPpmpRawItems(allRaw);
+        const raws = extractRawSheets(workbook, flatSheets, (s) =>
+            getEffectiveConfig(s),
+        );
+        setRawSheets(raws);
     }
 
     function handleSheetToggle(sheet: string) {
         setPpmpExtractResults({});
         setPpmpRawItems([]);
+        setRawSheets({});
         setSelectedSheets((prev) => {
             const next = prev.includes(sheet)
                 ? prev.filter((s) => s !== sheet)
                 : [...prev, sheet];
             setFormatResults({});
             setActiveFormatSheet(next[0] ?? '');
-            setActiveVerifySheet(next[0] ?? '');
             setVerification(null);
             setCoaOverrides({});
 
@@ -481,127 +415,6 @@ export default function CategoryCoaMappingImport({
         if (picked && !selectedSheets.includes(picked)) {
             handleSheetToggle(picked);
         }
-    }
-
-    function handleRowConfigChange(patch: Partial<CategoryCoaRowConfig>) {
-        if (calibrationMode === 'shared') {
-            setSharedConfig((prev) => {
-                const base = prev ?? getDefaultMappingConfig();
-
-                return { ...base, rowConfig: { ...base.rowConfig, ...patch } };
-            });
-        } else {
-            if (!currentSheet) return;
-
-            setCalibrations((prev) => ({
-                ...prev,
-                [currentSheet]: {
-                    ...(prev[currentSheet] ??
-                        sharedConfig ??
-                        getDefaultMappingConfig()),
-                    rowConfig: {
-                        ...(
-                            prev[currentSheet] ??
-                            sharedConfig ??
-                            getDefaultMappingConfig()
-                        ).rowConfig,
-                        ...patch,
-                    },
-                },
-            }));
-        }
-
-        setVerification(null);
-        setFormatResults({});
-        setActiveFormatSheet(selectedSheets[0] ?? '');
-        setActiveVerifySheet(selectedSheets[0] ?? '');
-        setCoaOverrides({});
-    }
-
-    function handleColumnConfigChange(patch: Partial<CategoryCoaColumnConfig>) {
-        if (calibrationMode === 'shared') {
-            setSharedConfig((prev) => {
-                const base = prev ?? getDefaultMappingConfig();
-
-                return {
-                    ...base,
-                    columnConfig: { ...base.columnConfig, ...patch },
-                };
-            });
-        } else {
-            if (!currentSheet) return;
-
-            setCalibrations((prev) => ({
-                ...prev,
-                [currentSheet]: {
-                    ...(prev[currentSheet] ??
-                        sharedConfig ??
-                        getDefaultMappingConfig()),
-                    columnConfig: {
-                        ...(
-                            prev[currentSheet] ??
-                            sharedConfig ??
-                            getDefaultMappingConfig()
-                        ).columnConfig,
-                        ...patch,
-                    },
-                },
-            }));
-        }
-
-        setVerification(null);
-        setFormatResults({});
-        setActiveFormatSheet(selectedSheets[0] ?? '');
-        setActiveVerifySheet(selectedSheets[0] ?? '');
-        setCoaOverrides({});
-    }
-
-    function handleCoaLabelModeChange(
-        value: CategoryCoaSheetConfig['coaLabelMode'],
-    ) {
-        if (calibrationMode === 'shared') {
-            setSharedConfig((prev) => ({
-                ...(prev ?? getDefaultMappingConfig()),
-                coaLabelMode: value,
-            }));
-        } else {
-            if (!currentSheet) return;
-
-            setCalibrations((prev) => ({
-                ...prev,
-                [currentSheet]: {
-                    ...(prev[currentSheet] ??
-                        sharedConfig ??
-                        getDefaultMappingConfig()),
-                    coaLabelMode: value,
-                },
-            }));
-        }
-
-        setVerification(null);
-        setFormatResults({});
-        setActiveFormatSheet(selectedSheets[0] ?? '');
-        setActiveVerifySheet(selectedSheets[0] ?? '');
-        setCoaOverrides({});
-    }
-
-    function handleResetCalibration() {
-        if (calibrationMode === 'shared') {
-            setSharedConfig(getDefaultMappingConfig());
-        } else {
-            if (currentSheet) {
-                setCalibrations((prev) => ({
-                    ...prev,
-                    [currentSheet]: getDefaultMappingConfig(),
-                }));
-            }
-        }
-
-        setVerification(null);
-        setFormatResults({});
-        setActiveFormatSheet(selectedSheets[0] ?? '');
-        setActiveVerifySheet(selectedSheets[0] ?? '');
-        setCoaOverrides({});
     }
 
     function extractRelationshipsForSection(
@@ -1253,119 +1066,6 @@ export default function CategoryCoaMappingImport({
         );
     }
 
-    function handleLog() {
-        if (!workbook || selectedSheets.length === 0) return;
-
-        const sheet = currentSheet || selectedSheets[0];
-        const ws = workbook.getWorksheet(sheet);
-        const effective = getEffectiveConfig(sheet);
-        console.log(`[Category COA Mapping] Sheet: ${sheet}`, ws);
-        console.log(`Workbook sheets:`, sheets);
-        console.log(`File:`, fileName);
-        console.log(`Calibration (columnConfig):`, effective.columnConfig);
-        console.log(`Calibration (rowConfig):`, effective.rowConfig);
-        console.log(`Calibration (coaLabelMode):`, effective.coaLabelMode);
-        console.log(`Calibration (full):`, effective);
-
-        if (ws) {
-            console.log(
-                `Row count:`,
-                ws.rowCount,
-                `Actual row count:`,
-                ws.actualRowCount,
-            );
-            console.log(
-                `Preview with calibration — headerRow ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow} → data starts ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow + 1}, category ${effective.columnConfig.category}, description ${effective.columnConfig.description}, coa ${effective.columnConfig.coa}, coaLabelMode ${effective.coaLabelMode}, additional ${effective.rowConfig.additionalItemsHeaderRow === '' || effective.rowConfig.additionalItemsHeaderRow == null ? '—' : effective.rowConfig.additionalItemsHeaderRow}, nonProc ${effective.rowConfig.nonProcurementHeaderRow === '' || effective.rowConfig.nonProcurementHeaderRow == null ? '—' : effective.rowConfig.nonProcurementHeaderRow}`,
-            );
-
-            if (
-                effective.rowConfig.headerRow === '' ||
-                effective.rowConfig.headerRow == null
-            ) {
-                return;
-            }
-
-            const startRow = effective.rowConfig.headerRow + 1;
-            const endRow = Math.min(startRow + 9, ws.rowCount);
-            const rows: Array<{
-                row: number;
-                category: string | null;
-                coa: string | null;
-                sentinel: string | null;
-                section: string;
-            }> = [];
-
-            for (let r = startRow; r <= endRow; r++) {
-                if (
-                    r === effective.rowConfig.additionalItemsHeaderRow ||
-                    r === effective.rowConfig.nonProcurementHeaderRow
-                ) {
-                    rows.push({
-                        row: r,
-                        category: '[HEADER ROW]',
-                        coa: '[HEADER ROW]',
-                        sentinel: null,
-                        section: 'header',
-                    });
-                    continue;
-                }
-
-                const row = ws.getRow(r);
-                const cat = cellText(
-                    row.getCell(effective.columnConfig.category),
-                );
-                const coa = cellText(row.getCell(effective.columnConfig.coa));
-                let sentinel: string | null = null;
-                let section = 'procurement';
-
-                if (
-                    effective.rowConfig.additionalItemsHeaderRow &&
-                    r > effective.rowConfig.additionalItemsHeaderRow
-                ) {
-                    if (
-                        effective.rowConfig.nonProcurementHeaderRow &&
-                        r > effective.rowConfig.nonProcurementHeaderRow
-                    ) {
-                        section = 'non-procurement';
-
-                        if (!cat && coa)
-                            sentinel = 'Non-Procurement (Uncategorized) [277]';
-                    } else {
-                        section = 'additional';
-
-                        if (!cat && coa)
-                            sentinel = 'Additional Items (Uncategorized) [276]';
-                    }
-                } else if (
-                    effective.rowConfig.nonProcurementHeaderRow &&
-                    r > effective.rowConfig.nonProcurementHeaderRow
-                ) {
-                    section = 'non-procurement';
-
-                    if (!cat && coa)
-                        sentinel = 'Non-Procurement (Uncategorized) [277]';
-                }
-
-                if (!cat && coa && !sentinel && section === 'procurement') {
-                    sentinel = '— (no category, no sentinel)';
-                }
-
-                rows.push({ row: r, category: cat, coa, sentinel, section });
-            }
-
-            console.table(rows);
-            console.log(
-                'Sentinels: 276=Additional (is_additional), 277=Non-Proc (is_non_procurement+is_additional) — COA-only rows map to these when section headers calibrated',
-            );
-
-            for (let r = 1; r <= Math.min(5, ws.rowCount); r++) {
-                const row = ws.getRow(r);
-                const values = (row.values as unknown[])?.slice(1);
-                console.log(`Row ${r} raw:`, values);
-            }
-        }
-    }
-
     const s: CategoryCoaMappingState = {
         sheets,
         workbook,
@@ -1380,7 +1080,6 @@ export default function CategoryCoaMappingImport({
         canVerifyFormat,
         hasFormatResult,
         formatValid,
-        canVerifyMap,
         canExtract,
         hasAnyExtract,
         canReview,
@@ -1395,12 +1094,6 @@ export default function CategoryCoaMappingImport({
         setCurrentSheet,
         getEffectiveConfig,
         ensureCalibrationsInitialized,
-        handleApplySharedToAll,
-        handleCopyCurrentToAll,
-        handleRowConfigChange,
-        handleColumnConfigChange,
-        handleCoaLabelModeChange,
-        handleResetCalibration,
 
         handleFileChange,
         handleSheetToggle,
@@ -1415,14 +1108,9 @@ export default function CategoryCoaMappingImport({
         verification,
         setVerification,
         effectiveVerification,
-        activeVerifySheet,
-        setActiveVerifySheet,
         coaOverrides,
         setCoaOverrides,
-        handleCoaOverrideChange,
         handleClearOverride,
-        handleLog,
-        handleLogRelationships,
         isSaving,
         handleBulkCreateMappings,
 
@@ -1478,7 +1166,6 @@ export default function CategoryCoaMappingImport({
                 onFileChange={handleFileChange}
                 sheets={sheets}
                 selectedSheets={selectedSheets}
-                selectionMode="single"
                 onSheetsChange={handleSheetsChange}
                 onNext={() => {
                     ensureCalibrationsInitialized();
@@ -1486,10 +1173,86 @@ export default function CategoryCoaMappingImport({
                 }}
                 nextDisabled={selectedSheets.length === 0}
             />
-            <CalibrateStep s={s} />
-            <VerifyFormatStep s={s} />
-            <VerifyMapStep s={s} />
-            <ExtractStep s={s} />
+            <ImportPpmpCalibrateStep
+                calibrationMode={calibrationMode}
+                setCalibrationMode={setCalibrationMode}
+                sharedConfig={sharedConfig}
+                setSharedConfig={setSharedConfig}
+                calibrations={calibrations}
+                setCalibrations={setCalibrations}
+                currentSheet={currentSheet}
+                setCurrentSheet={setCurrentSheet}
+                selectedSheets={selectedSheets}
+                getDefaultConfig={getDefaultMappingConfig}
+                onInvalidate={() => {
+                    setVerification(null);
+                    setFormatResults({});
+                    setActiveFormatSheet(selectedSheets[0] ?? '');
+                    setCoaOverrides({});
+                }}
+                verifyMarks={(() => {
+                    const marks: Record<string, boolean> = {};
+
+                    for (const [sheet, result] of Object.entries(
+                        formatResults,
+                    )) {
+                        if (result) {
+                            marks[sheet] = result.valid;
+                        }
+                    }
+
+                    return marks;
+                })()}
+                onBack={() => setStep('upload')}
+                onNext={() => setStep('verifyFormat')}
+                canNext={canVerifyFormat}
+                nextLabel="Next: Verify Format"
+            />
+            <ImportPpmpVerifyStep
+                tabsValue="verifyFormat"
+                title="Verify Sheet Format — check calibration and structure (all 3 sections)"
+                description={
+                    <>
+                        Checks {selectedSheets.length} sheet
+                        {selectedSheets.length === 1 ? '' : 's'} with current
+                        calibration (
+                        {calibrationMode === 'shared'
+                            ? `shared header ${sharedConfig?.rowConfig.headerRow === '' || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow}`
+                            : `per-sheet`}
+                        ). Validates cat → coa(s) → items → cat - TOTAL per
+                        section.
+                    </>
+                }
+                verifyButtonLabel={`Verify Format${selectedSheets.length > 1 ? ` (${selectedSheets.length} sheets)` : ''}`}
+                canVerify={canVerifyFormat}
+                onVerify={handleVerifyFormat}
+                selectedSheets={selectedSheets}
+                results={formatResults}
+                hasResult={hasFormatResult}
+                allValid={formatValid}
+                activeSheet={activeFormatSheet}
+                onActiveChange={setActiveFormatSheet}
+                onBack={() => setStep('calibrate')}
+                onNext={() => setStep('extract')}
+                canNext={hasFormatResult && formatValid}
+                nextLabel={`Next: Extract${hasFormatResult && !formatValid ? ' (blocked)' : ''}`}
+            />
+            <ImportPpmpExtractShell
+                sheets={selectedSheets}
+                canExtract={canExtract}
+                hasAnyVerify={canExtract}
+                allVerifyValid={canExtract}
+                rawItems={ppmpRawItems}
+                rawSheets={rawSheets}
+                onRunExtract={() => {
+                    handlePpmpExtract();
+                    handleLogRelationships();
+                }}
+                onBack={() => setStep('verifyFormat')}
+                onNext={() => setStep('review')}
+                canNext={canReview}
+                nextLabel="Next: Review & Save"
+            />
             <ReviewStep s={s} />
         </ImportPageShell>
     );

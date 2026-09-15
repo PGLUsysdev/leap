@@ -1,7 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
 import type { CategoryReviewRow, CategoryReviewTableMeta } from '../types';
 
 const columnHelper = createColumnHelper<CategoryReviewRow>();
@@ -173,30 +172,6 @@ export function getCategoryReviewColumns(sheetTotal: number) {
                     {row.original.firstAddress || '—'}
                 </div>
             ),
-        }),
-        columnHelper.display({
-            id: 'additional',
-            size: 90,
-            header: () => <div className="px-1 text-center">Additional</div>,
-            cell: ({ row, table }) => {
-                const meta = table.options.meta as
-                    | CategoryReviewTableMeta
-                    | undefined;
-                const n = row.original.normalized;
-
-                return (
-                    <div className="flex justify-center px-1">
-                        <Switch
-                            checked={meta?.isAdditionalDraft[n] ?? false}
-                            onCheckedChange={(checked) =>
-                                meta?.toggleAdditional(n, checked === true)
-                            }
-                            size="sm"
-                            aria-label={`Mark ${row.original.raw} as additional`}
-                        />
-                    </div>
-                );
-            },
         }),
     ];
 }

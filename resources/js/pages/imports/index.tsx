@@ -56,14 +56,14 @@ const IMPORT_SOURCES: ImportSource[] = [
                 icon: FileSpreadsheet,
                 badge: 'Categories',
             },
-            // {
-            //     title: 'Category–COA Mappings',
-            //     description:
-            //         'Bulk import Category ↔ COA mappings from XLSX. Calibrate, verify format, and create mappings in bulk.',
-            //     href: categoryCoaMappingIndex().url,
-            //     icon: Tags,
-            //     badge: 'Mappings',
-            // },
+            {
+                title: 'Category–COA Mappings',
+                description:
+                    'Bulk import Category ↔ COA mappings from XLSX. Calibrate, verify format, and create mappings in bulk.',
+                href: categoryCoaMappingIndex().url,
+                icon: Tags,
+                badge: 'Mappings',
+            },
             // {
             //     title: 'Price List Import',
             //     description:

@@ -2,11 +2,7 @@
 
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import type ExcelJS from 'exceljs';
-import type {
-    CategoryCoaSheetConfig,
-    CategoryCoaColumnConfig,
-    CategoryCoaRowConfig,
-} from '@/lib/ppmp/sheet-config';
+import type { CategoryCoaSheetConfig } from '@/lib/ppmp/sheet-config';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
 
@@ -14,7 +10,6 @@ export type CcmStep =
     | 'upload'
     | 'calibrate'
     | 'verifyFormat'
-    | 'verifyMap'
     | 'extract'
     | 'review';
 
@@ -111,7 +106,6 @@ export type CategoryCoaMappingState = {
     canVerifyFormat: boolean;
     hasFormatResult: boolean;
     formatValid: boolean;
-    canVerifyMap: boolean;
     canReview: boolean;
 
     // calibration
@@ -127,14 +121,6 @@ export type CategoryCoaMappingState = {
     setCurrentSheet: (s: string) => void;
     getEffectiveConfig: (sheet: string) => CategoryCoaSheetConfig;
     ensureCalibrationsInitialized: () => void;
-    handleApplySharedToAll: () => void;
-    handleCopyCurrentToAll: () => void;
-    handleRowConfigChange: (patch: Partial<CategoryCoaRowConfig>) => void;
-    handleColumnConfigChange: (patch: Partial<CategoryCoaColumnConfig>) => void;
-    handleCoaLabelModeChange: (
-        value: CategoryCoaSheetConfig['coaLabelMode'],
-    ) => void;
-    handleResetCalibration: () => void;
 
     // upload
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -154,17 +140,9 @@ export type CategoryCoaMappingState = {
     verification: VerificationState | null;
     setVerification: Dispatch<SetStateAction<VerificationState | null>>;
     effectiveVerification: EffectiveVerificationState | null;
-    activeVerifySheet: string;
-    setActiveVerifySheet: (s: string) => void;
     coaOverrides: Record<string, number>;
     setCoaOverrides: Dispatch<SetStateAction<Record<string, number>>>;
-    handleCoaOverrideChange: (
-        rowKey: string,
-        selectedValue: string | null,
-    ) => void;
     handleClearOverride: (rowKey: string) => void;
-    handleLog: () => void;
-    handleLogRelationships: () => void;
     isSaving: boolean;
     handleBulkCreateMappings: () => void;
 

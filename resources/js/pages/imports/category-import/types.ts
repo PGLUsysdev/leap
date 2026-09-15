@@ -107,8 +107,6 @@ export type CategoryReviewTableMeta = TableMeta<CategoryReviewRow> & {
     selected: Set<string>;
     toggleOne: (normalized: string, checked: boolean) => void;
     setSelected: (next: Set<string>) => void;
-    isAdditionalDraft: Record<string, boolean>;
-    toggleAdditional: (normalized: string, checked: boolean) => void;
 };
 
 export type CategoryImportState = {
@@ -177,8 +175,6 @@ export type CategoryImportState = {
     handlePpmpExtract: () => void;
     selected: Set<string>;
     setSelected: Dispatch<SetStateAction<Set<string>>>;
-    isAdditionalDraft: Record<string, boolean>;
-    setIsAdditionalDraft: Dispatch<SetStateAction<Record<string, boolean>>>;
     importing: boolean;
     handleImport: () => void;
 

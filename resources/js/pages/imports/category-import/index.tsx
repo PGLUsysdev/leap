@@ -4,6 +4,7 @@ import { router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
 import { ImportPpmpCalibrateStep } from '@/components/imports/import-ppmp-calibrate-step';
+import { ImportPpmpVerifyStep } from '@/components/imports/import-verify-step';
 import { ImportUploadStep } from '@/components/imports/import-upload-step';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { cellText } from '@/lib/excel/cell-helpers';
@@ -28,8 +29,7 @@ import type {
     ExtractResult,
     VerifyResult,
 } from './types';
-import { VerifyStep } from './steps/verify-step';
-import { ExtractStep } from './steps/extract-step';
+import { ImportExtractStep } from '@/components/imports/import-extract-step';
 import { ImportStep } from './steps/import-step';
 
 interface CategoryImportProps {
@@ -65,9 +65,6 @@ export default function CategoryImport({
     const [importing, setImporting] = useState(false);
     const [skipProblematic, setSkipProblematic] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
-    const [isAdditionalDraft, setIsAdditionalDraft] = useState<
-        Record<string, boolean>
-    >({});
 
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
@@ -576,7 +573,6 @@ export default function CategoryImport({
             skippedProblematic,
         });
         setSelected(new Set(unique.map((u) => u.normalized)));
-        setIsAdditionalDraft({});
     }
 
     function handleImport() {
@@ -595,7 +591,6 @@ export default function CategoryImport({
                 categories: toImport.map((u) => ({
                     name: u.raw,
                     normalized: u.normalized,
-                    is_additional: isAdditionalDraft[u.normalized] ?? false,
                 })),
             } as never,
             {
@@ -660,8 +655,6 @@ export default function CategoryImport({
         handlePpmpExtract,
         selected,
         setSelected,
-        isAdditionalDraft,
-        setIsAdditionalDraft,
         importing,
         handleImport,
 
@@ -739,8 +732,65 @@ export default function CategoryImport({
                 canNext={canVerify}
                 nextLabel="Next: Verify Format"
             />
-            <VerifyStep s={s} />
-            <ExtractStep s={s} />
+            <ImportPpmpVerifyStep
+                tabsValue="verify"
+                title="Verify procurement format per sheet (categories not in additional)"
+                description={
+                    <>
+                        Checks each selected sheet ({selectedSheets.length}) with
+                        its calibration ({calibrationMode}) — cat → coa(s) →
+                        items → cat - total. Per-sheet results below.
+                    </>
+                }
+                verifyButtonLabel={`Verify ${selectedSheets.length} Sheet${selectedSheets.length === 1 ? '' : 's'}`}
+                canVerify={canVerify}
+                onVerify={handleVerify}
+                selectedSheets={selectedSheets}
+                results={verifyResults}
+                hasResult={hasAnyVerify}
+                allValid={allVerifyValid}
+                activeSheet={activeVerifySheet}
+                onActiveChange={setActiveVerifySheet}
+                skip={{
+                    checked: skipProblematic,
+                    onChange: setSkipProblematic,
+                    problematicCount: Object.values(verifyResults).reduce(
+                        (a, r) => a + (r.valid ? 0 : r.errors.length),
+                        0,
+                    ),
+                    invalidSheetCount: selectedSheets.filter(
+                        (sh) => !verifyResults[sh]?.valid,
+                    ).length,
+                }}
+                onBack={() => setStep('calibrate')}
+                onNext={() => setStep('extract')}
+                canNext={canExtract}
+                nextLabel={
+                    allVerifyValid
+                        ? `Next: Extract (${selectedSheets.length} sheets)`
+                        : skipProblematic && hasAnyVerify
+                          ? 'Next: Extract (skipping problematic)'
+                          : 'Fix verification first'
+                }
+            />
+            <ImportExtractStep
+                family="ppmp"
+                sheets={selectedSheets}
+                canExtract={canExtract}
+                hasAnyVerify={hasAnyVerify}
+                allVerifyValid={allVerifyValid}
+                ppmpItems={ppmpRawItems}
+                rawSheets={rawSheets}
+                onRunExtract={handlePpmpExtract}
+                onBack={() => setStep('verify')}
+                backLabel="Back: Verify"
+                onNext={() => {
+                    handleExtract();
+                    setStep('import');
+                }}
+                canNext={ppmpRawItems.length > 0}
+                nextLabel="Next: Import"
+            />
             <ImportStep s={s} />
         </ImportPageShell>
     );

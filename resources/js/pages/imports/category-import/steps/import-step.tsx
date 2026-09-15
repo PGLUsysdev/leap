@@ -21,8 +21,6 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
         handleExtract,
         selected,
         setSelected,
-        isAdditionalDraft,
-        setIsAdditionalDraft,
         existingCategories,
         importing,
         handleImport,
@@ -80,15 +78,8 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                 });
             },
             setSelected: (next) => setSelected(next),
-            isAdditionalDraft,
-            toggleAdditional: (normalized, checked) => {
-                setIsAdditionalDraft((prev) => ({
-                    ...prev,
-                    [normalized]: checked,
-                }));
-            },
         }),
-        [selected, setSelected, isAdditionalDraft, setIsAdditionalDraft],
+        [selected, setSelected],
     );
 
     function handleOnlyNew() {
@@ -202,7 +193,6 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                     data={rows}
                     columns={columns}
                     meta={meta}
-                    pageSize={50}
                     withColgroup
                     className="h-[520px]"
                 >
