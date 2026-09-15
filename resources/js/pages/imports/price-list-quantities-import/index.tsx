@@ -63,7 +63,7 @@ export default function PriceListQuantitiesImport({
     existingFundingSources,
     existingOutputs,
 }: PriceListQuantitiesImportProps) {
-    const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+    const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
     const [step, setStep] = useState<PliQtyStep>('upload');
     const [calibrationMode, setCalibrationMode] =
         useState<CalibrationMode>('shared');
@@ -107,9 +107,13 @@ export default function PriceListQuantitiesImport({
     const [excludeUnclassified, setExcludeUnclassified] = useState(true);
     const [importing, setImporting] = useState(false);
 
+    // Compatibility shim — downstream shells still expect string[].
+    // Single-sheet page, so this is always 0 or 1 entries.
+    const selectedSheets = selectedSheet ? [selectedSheet] : [];
+
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
-            setSelectedSheets([]);
+            setSelectedSheet(null);
             setStep('upload');
             setSharedConfig(null);
             setCalibrations({});
@@ -228,7 +232,7 @@ export default function PriceListQuantitiesImport({
             : '';
     }, [existingOutputs, selectedAipOutputId]);
 
-    const canCalibrate = selectedSheets.length > 0;
+    const canCalibrate = selectedSheet !== null;
     const rowsCalibrated =
         !!sharedConfig &&
         sharedConfig.rowConfig.headerRow !== '' &&
@@ -238,10 +242,10 @@ export default function PriceListQuantitiesImport({
         sharedConfig.rowConfig.nonProcurementHeaderRow !== '' &&
         sharedConfig.rowConfig.nonProcurementHeaderRow != null;
     const canVerify = canCalibrate && !!workbook && rowsCalibrated;
-    const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
+    const hasAnyVerify =
+        selectedSheet !== null && !!verifyResults[selectedSheet];
     const allVerifyValid =
-        selectedSheets.length > 0 &&
-        selectedSheets.every((s) => verifyResults[s]?.valid);
+        selectedSheet !== null && !!verifyResults[selectedSheet]?.valid;
     const canReview = canVerify && hasAnyVerify && allVerifyValid;
     const canExtract = canVerify && hasAnyVerify && allVerifyValid;
     const hasAnyExtract = ppmpRawItems.length > 0;
@@ -258,13 +262,7 @@ export default function PriceListQuantitiesImport({
         }
 
         return next;
-    }, [
-        extractResults,
-        existingCategories,
-        existingCoas,
-        existingMappings,
-        existingPriceLists,
-    ]);
+    }, [extractResults, existingPriceLists]);
 
     const importSheets = Object.keys(mappedBySheet);
     const effectiveImportSheet =
@@ -357,12 +355,10 @@ export default function PriceListQuantitiesImport({
                 ppa_id: selectedPpaId,
                 aip_output_id: selectedAipOutputId,
                 ppa_funding_source_id: selectedPpaFundingSourceId,
-                items: importableItems
-                    .filter((m) => m.status === 'matched' && m.monthTotal > 0)
-                    .map((m) => ({
-                        ppmp_price_list_id: m.priceListId,
-                        qtys: m.qtys,
-                    })),
+                items: importableItems.map((m) => ({
+                    ppmp_price_list_id: m.priceListId,
+                    qtys: m.qtys,
+                })),
             } as never,
             {
                 onFinish: () => setImporting(false),
@@ -381,30 +377,25 @@ export default function PriceListQuantitiesImport({
     }
 
     function runExtraction() {
-        if (!workbook || !allVerifyValid) {
+        if (!workbook || !selectedSheet || !allVerifyValid) {
             return;
         }
 
-        const next: Record<string, QuantitiesExtractResult> = {};
+        const result = extractQuantitiesSheet(
+            workbook,
+            selectedSheet,
+            getEffectiveConfig(selectedSheet),
+        );
 
-        for (const sheet of selectedSheets) {
-            const result = extractQuantitiesSheet(
-                workbook,
-                sheet,
-                getEffectiveConfig(sheet),
-            );
-            next[sheet] = result;
-        }
-
-        setExtractResults(next);
-        setActiveExtractSheet(selectedSheets[0] ?? '');
+        setExtractResults({ [selectedSheet]: result });
+        setActiveExtractSheet(selectedSheet);
         setStep('review');
     }
 
     function handleVerify() {
         setPpmpExtractResults({});
         setPpmpRawItems([]);
-        if (!workbook || selectedSheets.length === 0) {
+        if (!workbook || !selectedSheet) {
             return;
         }
 
@@ -412,143 +403,57 @@ export default function PriceListQuantitiesImport({
             ensureCalibrationsInitialized();
         }
 
-        const flatSheets = (selectedSheets as unknown[])
-            .flat(Infinity)
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
-        console.log(
-            '[verify] selectedSheets raw:',
-            selectedSheets,
-            'flatSheets:',
-            flatSheets,
+        const result = verifyPpmpSheet(
+            workbook,
+            selectedSheet,
+            getEffectiveConfig(selectedSheet),
         );
-        if (flatSheets.length !== selectedSheets.length) {
-            console.warn(
-                '[verify] flattened nested',
-                selectedSheets,
-                '→',
-                flatSheets,
-            );
-            setSelectedSheets(flatSheets);
-        }
 
-        const availableNames = workbook
-            ? workbook.worksheets.map((ws) => ws.name)
-            : sheets;
-        const missing = flatSheets.filter((s) => !availableNames.includes(s));
-        if (missing.length > 0) {
-            console.warn(
-                '[verify] stale selectedSheets:',
-                flatSheets,
-                'available:',
-                availableNames,
-                'missing:',
-                missing,
-            );
-        }
-
-        const next: Record<string, PpmpVerifyResult> = {};
-
-        for (const sheet of flatSheets) {
-            const result = verifyPpmpSheet(
-                workbook,
-                sheet,
-                getEffectiveConfig(sheet),
-            );
-            next[sheet] = {
+        setVerifyResults({
+            [selectedSheet]: {
                 valid: result.valid,
                 message: result.message,
                 errors: result.errors,
                 warnings: result.warnings,
                 groups: result.groups,
                 details: result.details,
-            };
-        }
-
-        setVerifyResults(next);
-        const firstInvalid = flatSheets.find((s) => !next[s]?.valid);
-        setActiveVerifySheet(firstInvalid ?? flatSheets[0] ?? '');
+            },
+        });
+        setActiveVerifySheet(selectedSheet);
         setExtractResults({});
         setActiveExtractSheet('');
     }
 
     function handlePpmpExtract() {
-        if (!workbook || selectedSheets.length === 0) return;
-        const flatSheets = (selectedSheets as unknown[])
-            .flat(Infinity)
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
-        const next: Record<string, PpmpExtractResult> = {};
-        const allRaw: RawPpmpItem[] = [];
-        for (const sheet of flatSheets) {
-            const cfg = getEffectiveConfig(sheet);
-            const res = extractPpmpSheet(workbook, sheet, cfg);
-            next[sheet] = res;
-            allRaw.push(...res.rawItems);
-        }
-        setPpmpExtractResults(next);
-        setPpmpRawItems(allRaw);
+        if (!workbook || !selectedSheet) return;
+
+        const cfg = getEffectiveConfig(selectedSheet);
+        const res = extractPpmpSheet(workbook, selectedSheet, cfg);
+
+        setPpmpExtractResults({ [selectedSheet]: res });
+        setPpmpRawItems(res.rawItems);
         setRawSheets(
-            extractRawSheets(workbook, flatSheets, (s) =>
+            extractRawSheets(workbook, [selectedSheet], (s) =>
                 getEffectiveConfig(s),
             ),
         );
     }
 
-    function handleSheetToggle(name: string) {
-        setSelectedSheets((prev) => {
-            const next = prev.includes(name)
-                ? prev.filter((s) => s !== name)
-                : [...prev, name];
-
-            if (next.length > 0 && !next.includes(currentSheet)) {
-                setCurrentSheet(next[0]);
-            }
-
-            if (next.length === 0) {
-                setCurrentSheet('');
-            }
-
-            return next;
-        });
+    function handleSheetChange(sheet: string | null) {
+        setSelectedSheet(sheet);
+        setCurrentSheet(sheet ?? '');
+        setActiveVerifySheet(sheet ?? '');
+        setActiveExtractSheet('');
         setPpmpExtractResults({});
         setPpmpRawItems([]);
         setRawSheets({});
         setExtractResults({});
         setVerifyResults({});
-        setActiveExtractSheet('');
-        setActiveVerifySheet('');
     }
 
-    /**
-     * Single-sheet mode: the shared picker emits `[picked]` or `[]`.
-     * Deselect anything else, then select the picked sheet. The page's
-     * `handleSheetToggle` resets downstream results on each call.
-     */
-    function handleSheetsChange(next: unknown) {
-        console.log(
-            '[price-list-quantities handleSheetsChange] raw next:',
-            next,
-            'selectedSheets before:',
-            selectedSheets,
-        );
-        const flat = (
-            Array.isArray(next) ? (next as unknown[]).flat(Infinity) : []
-        )
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
-        console.log('[price-list-quantities handleSheetsChange] flat:', flat);
-        const picked = flat[0] ?? '';
-
-        for (const sheet of selectedSheets) {
-            if (sheet !== picked) {
-                handleSheetToggle(String(sheet));
-            }
-        }
-
-        if (picked && !selectedSheets.includes(picked)) {
-            handleSheetToggle(picked);
-        }
+    // Kept for downstream compatibility (ReviewAndImport uses this by name).
+    function handleSheetToggle(name: string) {
+        handleSheetChange(name);
     }
 
     function ensureCalibrationsInitialized() {
@@ -558,59 +463,50 @@ export default function PriceListQuantitiesImport({
 
         const def = getDefaultQuantitiesConfig();
         setSharedConfig(def);
-        const clones: Record<string, QuantitiesSheetConfig> = {};
 
-        for (const s of selectedSheets) {
-            clones[s] = {
-                ...def,
-                columnConfig: { ...def.columnConfig },
-                rowConfig: { ...def.rowConfig },
-            };
+        if (selectedSheet) {
+            setCalibrations({
+                [selectedSheet]: {
+                    ...def,
+                    columnConfig: { ...def.columnConfig },
+                    rowConfig: { ...def.rowConfig },
+                },
+            });
         }
 
-        setCalibrations(clones);
-
-        if (!currentSheet && selectedSheets[0]) {
-            setCurrentSheet(selectedSheets[0]);
+        if (!currentSheet && selectedSheet) {
+            setCurrentSheet(selectedSheet);
         }
     }
 
     function handleApplySharedToAll() {
-        if (!sharedConfig) {
+        if (!sharedConfig || !selectedSheet) {
             return;
         }
 
-        const next: Record<string, QuantitiesSheetConfig> = {};
-
-        for (const s of selectedSheets) {
-            next[s] = {
+        setCalibrations({
+            [selectedSheet]: {
                 ...sharedConfig,
                 columnConfig: { ...sharedConfig.columnConfig },
                 rowConfig: { ...sharedConfig.rowConfig },
-            };
-        }
-
-        setCalibrations(next);
+            },
+        });
     }
 
     function handleCopyCurrentToAll() {
         const src = calibrations[currentSheet] ?? sharedConfig;
 
-        if (!src) {
+        if (!src || !selectedSheet) {
             return;
         }
 
-        const next: Record<string, QuantitiesSheetConfig> = {};
-
-        for (const s of selectedSheets) {
-            next[s] = {
+        setCalibrations({
+            [selectedSheet]: {
                 ...src,
                 columnConfig: { ...src.columnConfig },
                 rowConfig: { ...src.rowConfig },
-            };
-        }
-
-        setCalibrations(next);
+            },
+        });
     }
 
     function updateSharedConfig(patch: Partial<QuantitiesSheetConfig>) {
@@ -786,19 +682,16 @@ export default function PriceListQuantitiesImport({
         >
             <ImportUploadStep
                 fileInputId="price-list-quantities-file"
-                fileLabel="Excel File (.xlsx only)"
-                fileDescription="Select a PPMP workbook (.xlsx)."
                 error={error}
                 loading={loading}
                 onFileChange={handleFileChange}
                 sheets={sheets}
-                selectedSheets={selectedSheets}
-                onSheetsChange={handleSheetsChange}
+                selectedSheet={selectedSheet}
+                onSheetChange={handleSheetChange}
                 onNext={() => {
                     ensureCalibrationsInitialized();
                     setStep('calibrate');
                 }}
-                nextDisabled={!canCalibrate}
             />
             <ImportPpmpCalibrateStep
                 calibrationMode={calibrationMode}
@@ -828,12 +721,11 @@ export default function PriceListQuantitiesImport({
                 title="Verify quantities format per sheet"
                 description={
                     <>
-                        Runs against each selected sheet (
-                        {selectedSheets.length}) using its calibration — sane
-                        ranges with procurement data, unit + COA per item row,
-                        numeric quantities (amount columns skipped), quantities
-                        in at least one month. Extraction stays locked until
-                        every sheet passes.
+                        Runs against the selected sheet ({selectedSheets.length}
+                        ) using its calibration — sane ranges with procurement
+                        data, unit + COA per item row, numeric quantities
+                        (amount columns skipped), quantities in at least one
+                        month. Extraction stays locked until the sheet passes.
                     </>
                 }
                 verifyButtonLabel={`Run Verify (${selectedSheets.length} sheets)`}

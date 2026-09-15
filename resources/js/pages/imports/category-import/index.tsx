@@ -39,7 +39,7 @@ interface CategoryImportProps {
 export default function CategoryImport({
     existingCategories = [],
 }: CategoryImportProps) {
-    const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+    const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
     const [calibrationMode, setCalibrationMode] =
         useState<CalibrationMode>('shared');
     const [sharedConfig, setSharedConfig] = useState<SharedSheetConfig | null>(
@@ -66,9 +66,13 @@ export default function CategoryImport({
     const [skipProblematic, setSkipProblematic] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
+    // Compatibility shim — downstream shells still expect string[].
+    // Single-sheet page, so this is always 0 or 1 entries.
+    const selectedSheets = selectedSheet ? [selectedSheet] : [];
+
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
-            setSelectedSheets([]);
+            setSelectedSheet(null);
             setCurrentSheet('');
             setSharedConfig(null);
             setCalibrations({});
@@ -87,7 +91,7 @@ export default function CategoryImport({
         return calibrations[sheet] ?? sharedConfig ?? getDefaultSharedConfig();
     }
 
-    const canCalibrate = selectedSheets.length > 0;
+    const canCalibrate = selectedSheet !== null;
     const rowsCalibrated =
         !!sharedConfig &&
         sharedConfig.rowConfig.headerRow !== '' &&
@@ -98,9 +102,9 @@ export default function CategoryImport({
         sharedConfig.rowConfig.nonProcurementHeaderRow != null;
     const canVerify = canCalibrate && !!workbook && rowsCalibrated;
     const allVerifyValid =
-        selectedSheets.length > 0 &&
-        selectedSheets.every((s) => verifyResults[s]?.valid);
-    const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
+        selectedSheet !== null && !!verifyResults[selectedSheet]?.valid;
+    const hasAnyVerify =
+        selectedSheet !== null && !!verifyResults[selectedSheet];
     const canExtract = canVerify && hasAnyVerify && allVerifyValid;
     const canImport =
         canExtract && !!extractResult && extractResult.unique.length > 0;
@@ -127,49 +131,26 @@ export default function CategoryImport({
         return marks;
     }, [verifyResults]);
 
+    function handleSheetChange(sheet: string | null) {
+        setSelectedSheet(sheet);
+        setCurrentSheet(sheet ?? '');
+        setActiveVerifySheet(sheet ?? '');
+        setVerifyResults({});
+        setExtractResult(null);
+        setPpmpExtractResults({});
+        setPpmpRawItems([]);
+        setRawSheets({});
+        setSkipProblematic(false);
+        setSelected(new Set());
+    }
+
+    // Kept for downstream compatibility (ImportStep uses these by name).
     function handleSheetToggle(sheet: string) {
-        setSelectedSheets((prev) => {
-            const next = prev.includes(sheet)
-                ? prev.filter((s) => s !== sheet)
-                : [...prev, sheet];
-            setVerifyResults({});
-            setActiveVerifySheet(next[0] ?? '');
-            setExtractResult(null);
-            setPpmpExtractResults({});
-            setPpmpRawItems([]);
-            setRawSheets({});
-            setSkipProblematic(false);
-
-            if (next.length > 0 && !next.includes(currentSheet))
-                setCurrentSheet(next[0]);
-
-            if (next.length === 0) setCurrentSheet('');
-
-            return next;
-        });
+        handleSheetChange(sheet);
     }
 
     function handleSheetSelect(sheet: string) {
-        handleSheetToggle(sheet);
-    }
-
-    function handleSheetsChange(next: unknown) {
-        const flat = (
-            Array.isArray(next) ? (next as unknown[]).flat(Infinity) : []
-        )
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
-        const picked = flat[0] ?? '';
-
-        for (const sheet of selectedSheets) {
-            if (sheet !== picked) {
-                handleSheetToggle(String(sheet));
-            }
-        }
-
-        if (picked && !selectedSheets.includes(picked)) {
-            handleSheetToggle(picked);
-        }
+        handleSheetChange(sheet);
     }
 
     function ensureCalibrationsInitialized() {
@@ -177,36 +158,26 @@ export default function CategoryImport({
 
         const def = getDefaultSharedConfig();
         setSharedConfig(def);
-        const clones: Record<string, SharedSheetConfig> = {};
 
-        for (const s of selectedSheets) clones[s] = { ...def };
+        if (selectedSheet) {
+            setCalibrations({ [selectedSheet]: { ...def } });
+        }
 
-        setCalibrations(clones);
-
-        if (!currentSheet && selectedSheets[0])
-            setCurrentSheet(selectedSheets[0]);
+        if (!currentSheet && selectedSheet) setCurrentSheet(selectedSheet);
     }
 
     function handleApplySharedToAll() {
-        if (!sharedConfig) return;
+        if (!sharedConfig || !selectedSheet) return;
 
-        const next: Record<string, SharedSheetConfig> = {};
-
-        for (const s of selectedSheets) next[s] = { ...sharedConfig };
-
-        setCalibrations(next);
+        setCalibrations({ [selectedSheet]: { ...sharedConfig } });
     }
 
     function handleCopyCurrentToAll() {
         const src = calibrations[currentSheet] ?? sharedConfig;
 
-        if (!src) return;
+        if (!src || !selectedSheet) return;
 
-        const next: Record<string, SharedSheetConfig> = {};
-
-        for (const s of selectedSheets) next[s] = { ...src };
-
-        setCalibrations(next);
+        setCalibrations({ [selectedSheet]: { ...src } });
     }
 
     function updateSharedConfig(patch: Partial<SharedSheetConfig>) {
@@ -249,257 +220,204 @@ export default function CategoryImport({
         setPpmpRawItems([]);
         setRawSheets({});
 
-        if (!workbook || selectedSheets.length === 0) return;
+        if (!workbook || !selectedSheet) return;
 
         if (!sharedConfig) ensureCalibrationsInitialized();
 
-        const flatSheets = (selectedSheets as unknown[])
-            .flat(Infinity)
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
-        if (flatSheets.length !== selectedSheets.length) {
-            setSelectedSheets(flatSheets);
-        }
+        const cfg = getEffectiveConfig(selectedSheet);
+        const result = verifySheet(selectedSheet, cfg);
 
-        const next: Record<string, VerifyResult> = {};
-
-        for (const sheet of flatSheets) {
-            const cfg = getEffectiveConfig(sheet);
-            const result = verifySheet(sheet, cfg);
-            next[sheet] = result;
-        }
-
-        setVerifyResults(next);
-        const firstInvalid = flatSheets.find((s) => !next[s]?.valid);
-        setActiveVerifySheet(firstInvalid ?? flatSheets[0] ?? '');
+        setVerifyResults({ [selectedSheet]: result });
+        setActiveVerifySheet(selectedSheet);
     }
 
     function handlePpmpExtract() {
-        if (!workbook || selectedSheets.length === 0) return;
+        if (!workbook || !selectedSheet) return;
 
-        const flatSheets = (selectedSheets as unknown[])
-            .flat(Infinity)
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
-        const next: Record<string, PpmpExtractResult> = {};
-        const allRaw: RawPpmpItem[] = [];
-        for (const sheet of flatSheets) {
-            const cfg = getEffectiveConfig(sheet);
-            const res = extractPpmpSheet(workbook, sheet, cfg);
-            next[sheet] = res;
-            allRaw.push(...res.rawItems);
-        }
-        setPpmpExtractResults(next);
-        setPpmpRawItems(allRaw);
-        const raws = extractRawSheets(workbook, flatSheets, (s) =>
-            getEffectiveConfig(s),
+        const cfg = getEffectiveConfig(selectedSheet);
+        const res = extractPpmpSheet(workbook, selectedSheet, cfg);
+
+        setPpmpExtractResults({ [selectedSheet]: res });
+        setPpmpRawItems(res.rawItems);
+        setRawSheets(
+            extractRawSheets(workbook, [selectedSheet], (s) =>
+                getEffectiveConfig(s),
+            ),
         );
-        setRawSheets(raws);
     }
 
     function handleExtract() {
         handlePpmpExtract();
-        if (!workbook || selectedSheets.length === 0) return;
+        if (!workbook || !selectedSheet) return;
 
-        const flatForUnique = (selectedSheets as unknown[])
-            .flat(Infinity)
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
+        const sheet = selectedSheet;
+        const cfg = getEffectiveConfig(sheet);
+
+        const dataColumn = cfg.columnConfig.category;
+        const coaColumn = cfg.columnConfig.coa;
+        const itemColumn = cfg.columnConfig.itemNumber;
+        const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } =
+            cfg.rowConfig;
+        const { coaLabelMode } = cfg;
+
+        if (headerRow === '' || headerRow == null) return;
+        if (additionalItemsHeaderRow === '' || additionalItemsHeaderRow == null)
+            return;
+        if (nonProcurementHeaderRow === '' || nonProcurementHeaderRow == null)
+            return;
+
+        const ws = workbook.getWorksheet(sheet);
+
+        if (!ws) return;
+
         const filtered: ExtractResult['filtered'] = [];
         const excludedTotal: ExtractResult['excludedTotal'] = [];
         const excludedCoa: ExtractResult['excludedCoa'] = [];
         const skippedCoaNotEmpty: ExtractResult['skippedCoaNotEmpty'] = [];
         const skippedProblematic: ExtractResult['skippedProblematic'] = [];
 
-        const problematicBySheet = new Map<
-            string,
-            { rows: Set<number>; norms: Set<string> }
-        >();
+        const probRows = new Set<number>();
+        const probNorms = new Set<string>();
 
         if (skipProblematic) {
-            for (const sheet of selectedSheets) {
-                const vr = verifyResults[sheet];
+            const vr = verifyResults[sheet];
 
-                if (!vr || vr.valid) continue;
-
-                const rows = new Set<number>();
-                const norms = new Set<string>();
-
+            if (vr && !vr.valid) {
                 for (const e of vr.errors) {
-                    rows.add(e.row);
+                    probRows.add(e.row);
                     const quoted = e.message.match(/"([^"]+)"/g);
 
                     if (quoted) {
                         for (const q of quoted) {
                             const inner = q.slice(1, -1);
 
-                            if (inner) norms.add(normalize(inner));
+                            if (inner) probNorms.add(normalize(inner));
                         }
                     }
                 }
-
-                problematicBySheet.set(sheet, { rows, norms });
             }
         }
 
-        for (const sheet of flatForUnique) {
-            const cfg = getEffectiveConfig(sheet);
-            const dataColumn = cfg.columnConfig.category;
-            const coaColumn = cfg.columnConfig.coa;
-            const itemColumn = cfg.columnConfig.itemNumber;
-            const {
-                headerRow,
-                additionalItemsHeaderRow,
-                nonProcurementHeaderRow,
-            } = cfg.rowConfig;
-            const { coaLabelMode } = cfg;
+        const startRow = headerRow + 1;
+        const lastRow = ws.actualRowCount;
 
-            if (headerRow === '' || headerRow == null) continue;
+        for (let r = startRow; r <= lastRow; r++) {
+            const row = ws.getRow(r);
+            const coaRaw = cellText(row.getCell(coaColumn));
+            const dataRaw = cellText(row.getCell(dataColumn));
+            const itemRaw = cellText(row.getCell(itemColumn));
 
-            if (
-                additionalItemsHeaderRow === '' ||
-                additionalItemsHeaderRow == null
-            )
+            if (!dataRaw) continue;
+
+            const coaNorm = coaRaw ? normalize(coaRaw) : null;
+            const dataNorm = normalize(dataRaw);
+
+            if (dataNorm === 'description') continue;
+
+            if (additionalItemsHeaderRow && r === additionalItemsHeaderRow)
+                continue;
+
+            if (nonProcurementHeaderRow && r === nonProcurementHeaderRow)
                 continue;
 
             if (
-                nonProcurementHeaderRow === '' ||
-                nonProcurementHeaderRow == null
-            )
+                dataNorm === 'non-procurement requirements' ||
+                dataNorm === 'additional items' ||
+                dataNorm === 'procurement requirements'
+            ) {
+                continue;
+            }
+
+            if (additionalItemsHeaderRow && r > additionalItemsHeaderRow)
                 continue;
 
-            const ws = workbook!.getWorksheet(sheet);
+            if (nonProcurementHeaderRow && r > nonProcurementHeaderRow)
+                continue;
 
-            if (!ws) continue;
+            if (
+                skipProblematic &&
+                (probRows.has(r) || probNorms.has(dataNorm))
+            ) {
+                const reason = probRows.has(r)
+                    ? `row ${r} flagged in verify (${sheet})`
+                    : `normalized "${dataNorm}" flagged (${sheet})`;
+                skippedProblematic.push({
+                    row: r,
+                    raw: dataRaw,
+                    normalized: dataNorm,
+                    reason,
+                    sheet,
+                });
+                continue;
+            }
 
-            const startRow = headerRow + 1;
-            const lastRow = ws.actualRowCount;
-            const prob = problematicBySheet.get(sheet);
-            const probRows = prob?.rows ?? new Set<number>();
-            const probNorms = prob?.norms ?? new Set<string>();
+            if (
+                skipProblematic &&
+                coaNorm &&
+                (probRows.has(r) || probNorms.has(coaNorm))
+            ) {
+                skippedProblematic.push({
+                    row: r,
+                    raw: dataRaw,
+                    normalized: dataNorm,
+                    reason: `COA "${coaRaw}" flagged (${sheet})`,
+                    sheet,
+                });
+                continue;
+            }
 
-            for (let r = startRow; r <= lastRow; r++) {
-                const row = ws.getRow(r);
-                const coaRaw = cellText(row.getCell(coaColumn));
-                const dataRaw = cellText(row.getCell(dataColumn));
-                const itemRaw = cellText(row.getCell(itemColumn));
+            if (coaNorm) {
+                skippedCoaNotEmpty.push({
+                    row: r,
+                    coaRaw: coaRaw!,
+                    coaNormalized: coaNorm,
+                    raw: dataRaw,
+                    normalized: dataNorm,
+                    sheet,
+                });
+                continue;
+            }
 
-                if (!dataRaw) continue;
+            if (itemRaw && !coaNorm) {
+                continue;
+            }
 
-                const coaNorm = coaRaw ? normalize(coaRaw) : null;
-                const dataNorm = normalize(dataRaw);
-
-                if (dataNorm === 'description') continue;
-
-                if (additionalItemsHeaderRow && r === additionalItemsHeaderRow)
-                    continue;
-
-                if (nonProcurementHeaderRow && r === nonProcurementHeaderRow)
-                    continue;
-
-                if (
-                    dataNorm === 'non-procurement requirements' ||
-                    dataNorm === 'additional items' ||
-                    dataNorm === 'procurement requirements'
-                ) {
-                    continue;
-                }
-
-                if (additionalItemsHeaderRow && r > additionalItemsHeaderRow)
-                    continue;
-
-                if (nonProcurementHeaderRow && r > nonProcurementHeaderRow)
-                    continue;
-
-                if (
-                    skipProblematic &&
-                    prob &&
-                    (probRows.has(r) || probNorms.has(dataNorm))
-                ) {
-                    const reason = probRows.has(r)
-                        ? `row ${r} flagged in verify (${sheet})`
-                        : `normalized "${dataNorm}" flagged (${sheet})`;
-                    skippedProblematic.push({
-                        row: r,
-                        raw: dataRaw,
-                        normalized: dataNorm,
-                        reason,
-                        sheet,
-                    });
-                    continue;
-                }
-
-                if (
-                    skipProblematic &&
-                    prob &&
-                    coaNorm &&
-                    (probRows.has(r) || probNorms.has(coaNorm))
-                ) {
-                    skippedProblematic.push({
-                        row: r,
-                        raw: dataRaw,
-                        normalized: dataNorm,
-                        reason: `COA "${coaRaw}" flagged (${sheet})`,
-                        sheet,
-                    });
-                    continue;
-                }
-
-                if (coaNorm) {
-                    skippedCoaNotEmpty.push({
-                        row: r,
-                        coaRaw: coaRaw!,
-                        coaNormalized: coaNorm,
-                        raw: dataRaw,
-                        normalized: dataNorm,
-                        sheet,
-                    });
-                    continue;
-                }
-
-                if (itemRaw && !coaNorm) {
-                    continue;
-                }
-
-                if (isTotalRow(dataNorm)) {
-                    excludedTotal.push({
-                        row: r,
-                        raw: dataRaw,
-                        normalized: dataNorm,
-                        sheet,
-                    });
-                    continue;
-                }
-
-                if (coaLabelMode === 'with-label' && r + 1 <= lastRow) {
-                    const nextRow = ws.getRow(r + 1);
-                    const nextCoaRaw = cellText(nextRow.getCell(coaColumn));
-                    const nextCoaNorm = nextCoaRaw
-                        ? normalize(nextCoaRaw)
-                        : null;
-
-                    if (nextCoaNorm && nextCoaNorm === dataNorm) {
-                        excludedCoa.push({
-                            row: r,
-                            raw: dataRaw,
-                            normalized: dataNorm,
-                            nextRowCoaRaw: nextCoaRaw!,
-                            nextRowCoaNormalized: nextCoaNorm,
-                            sheet,
-                        });
-                        continue;
-                    }
-                }
-
-                const address = `${sheet}!${dataColumn}${r}`;
-                filtered.push({
+            if (isTotalRow(dataNorm)) {
+                excludedTotal.push({
                     row: r,
                     raw: dataRaw,
                     normalized: dataNorm,
                     sheet,
-                    address,
                 });
+                continue;
             }
+
+            if (coaLabelMode === 'with-label' && r + 1 <= lastRow) {
+                const nextRow = ws.getRow(r + 1);
+                const nextCoaRaw = cellText(nextRow.getCell(coaColumn));
+                const nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
+
+                if (nextCoaNorm && nextCoaNorm === dataNorm) {
+                    excludedCoa.push({
+                        row: r,
+                        raw: dataRaw,
+                        normalized: dataNorm,
+                        nextRowCoaRaw: nextCoaRaw!,
+                        nextRowCoaNormalized: nextCoaNorm,
+                        sheet,
+                    });
+                    continue;
+                }
+            }
+
+            const address = `${sheet}!${dataColumn}${r}`;
+            filtered.push({
+                row: r,
+                raw: dataRaw,
+                normalized: dataNorm,
+                sheet,
+                address,
+            });
         }
 
         type SeenVal = {
@@ -701,13 +619,12 @@ export default function CategoryImport({
                 loading={loading}
                 onFileChange={handleFileChange}
                 sheets={sheets}
-                selectedSheets={selectedSheets}
-                onSheetsChange={handleSheetsChange}
+                selectedSheet={selectedSheet}
+                onSheetChange={handleSheetChange}
                 onNext={() => {
                     ensureCalibrationsInitialized();
                     setStep('calibrate');
                 }}
-                nextDisabled={selectedSheets.length === 0}
             />
             <ImportPpmpCalibrateStep
                 calibrationMode={calibrationMode}
@@ -737,9 +654,9 @@ export default function CategoryImport({
                 title="Verify procurement format per sheet (categories not in additional)"
                 description={
                     <>
-                        Checks each selected sheet ({selectedSheets.length})
-                        with its calibration ({calibrationMode}) — cat → coa(s)
-                        → items → cat - total. Per-sheet results below.
+                        Checks selected sheet ({selectedSheets.length}) with its
+                        calibration ({calibrationMode}) — cat → coa(s) → items →
+                        cat - total.
                     </>
                 }
                 verifyButtonLabel={`Verify ${selectedSheets.length} Sheet${selectedSheets.length === 1 ? '' : 's'}`}

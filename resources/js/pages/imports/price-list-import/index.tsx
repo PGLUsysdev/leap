@@ -1,3 +1,5 @@
+// resources/js/pages/imports/price-list-import/index.tsx
+
 import { Link, router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import type ExcelJS from 'exceljs';
@@ -62,7 +64,7 @@ export default function PriceListImport({
     existingMappings,
     existingPriceLists,
 }: PriceListImportProps) {
-    const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+    const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
     const [calibrationMode, setCalibrationMode] =
         useState<CalibrationMode>('shared');
     const [sharedConfig, setSharedConfig] =
@@ -96,9 +98,13 @@ export default function PriceListImport({
     const [excludeMissingCategory, setExcludeMissingCategory] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
 
+    // Compatibility shim — downstream shells still expect string[].
+    // Single-sheet page, so this is always 0 or 1 entries.
+    const selectedSheets = selectedSheet ? [selectedSheet] : [];
+
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
-            setSelectedSheets([]);
+            setSelectedSheet(null);
             setCurrentSheet('');
             setSharedConfig(null);
             setCalibrations({});
@@ -128,7 +134,7 @@ export default function PriceListImport({
         );
     }
 
-    const canCalibrate = selectedSheets.length > 0;
+    const canCalibrate = selectedSheet !== null;
     const rowsCalibrated =
         !!sharedConfig &&
         sharedConfig.rowConfig.headerRow !== '' &&
@@ -139,9 +145,9 @@ export default function PriceListImport({
         sharedConfig.rowConfig.nonProcurementHeaderRow != null;
     const canVerify = canCalibrate && !!workbook && rowsCalibrated;
     const allVerifyValid =
-        selectedSheets.length > 0 &&
-        selectedSheets.every((s) => verifyResults[s]?.valid);
-    const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
+        selectedSheet !== null && !!verifyResults[selectedSheet]?.valid;
+    const hasAnyVerify =
+        selectedSheet !== null && !!verifyResults[selectedSheet];
     const canReview = canVerify && hasAnyVerify && allVerifyValid;
 
     const junctionByPair = useMemo(() => {
@@ -412,60 +418,25 @@ export default function PriceListImport({
         return verifiedItems;
     }, [verifiedItems, reviewFilter]);
 
-    function handleSheetToggle(sheet: string) {
+    function handleSheetChange(sheet: string | null) {
+        setSelectedSheet(sheet);
+        setCurrentSheet(sheet ?? '');
+        setActiveVerifySheet(sheet ?? '');
+        setVerifyResults({});
+        setRawItems([]);
+        setUniqueItems([]);
+        setSelected(new Set());
+        setCoaOverrides({});
+        setReviewFilter('all');
+        setShowDuplicateDetails(false);
         setPpmpExtractResults({});
         setPpmpRawItems([]);
-        setSelectedSheets((prev) => {
-            const next = prev.includes(sheet)
-                ? prev.filter((s) => s !== sheet)
-                : [...prev, sheet];
-            setVerifyResults({});
-            setActiveVerifySheet(next[0] ?? '');
-            setRawItems([]);
-            setUniqueItems([]);
-            setSelected(new Set());
-            setCoaOverrides({});
-            setReviewFilter('all');
-            setShowDuplicateDetails(false);
-
-            if (next.length > 0 && !next.includes(currentSheet))
-                setCurrentSheet(next[0]);
-
-            if (next.length === 0) setCurrentSheet('');
-
-            return next;
-        });
+        setRawSheets({});
     }
 
-    /**
-     * Single-sheet mode: the shared picker emits `[picked]` or `[]`.
-     * Deselect anything else, then select the picked sheet. The page's
-     * `handleSheetToggle` resets downstream results on each call.
-     */
-    function handleSheetsChange(next: unknown) {
-        console.log(
-            '[price-list handleSheetsChange] raw next:',
-            next,
-            'selectedSheets before:',
-            selectedSheets,
-        );
-        const flat = (
-            Array.isArray(next) ? (next as unknown[]).flat(Infinity) : []
-        )
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
-        console.log('[price-list handleSheetsChange] flat:', flat);
-        const picked = flat[0] ?? '';
-
-        for (const sheet of selectedSheets) {
-            if (sheet !== picked) {
-                handleSheetToggle(String(sheet));
-            }
-        }
-
-        if (picked && !selectedSheets.includes(picked)) {
-            handleSheetToggle(picked);
-        }
+    // Kept for downstream compatibility (ReviewStep uses these by name).
+    function handleSheetToggle(sheet: string) {
+        handleSheetChange(sheet);
     }
 
     function ensureCalibrationsInitialized() {
@@ -473,54 +444,44 @@ export default function PriceListImport({
 
         const def = getDefaultPriceListConfig();
         setSharedConfig(def);
-        const clones: Record<string, PriceListSheetConfig> = {};
 
-        for (const s of selectedSheets) {
-            clones[s] = {
-                ...def,
-                columnConfig: { ...def.columnConfig },
-                rowConfig: { ...def.rowConfig },
-            };
+        if (selectedSheet) {
+            setCalibrations({
+                [selectedSheet]: {
+                    ...def,
+                    columnConfig: { ...def.columnConfig },
+                    rowConfig: { ...def.rowConfig },
+                },
+            });
         }
 
-        setCalibrations(clones);
-
-        if (!currentSheet && selectedSheets[0])
-            setCurrentSheet(selectedSheets[0]);
+        if (!currentSheet && selectedSheet) setCurrentSheet(selectedSheet);
     }
 
     function handleApplySharedToAll() {
-        if (!sharedConfig) return;
+        if (!sharedConfig || !selectedSheet) return;
 
-        const next: Record<string, PriceListSheetConfig> = {};
-
-        for (const s of selectedSheets) {
-            next[s] = {
+        setCalibrations({
+            [selectedSheet]: {
                 ...sharedConfig,
                 columnConfig: { ...sharedConfig.columnConfig },
                 rowConfig: { ...sharedConfig.rowConfig },
-            };
-        }
-
-        setCalibrations(next);
+            },
+        });
     }
 
     function handleCopyCurrentToAll() {
         const src = calibrations[currentSheet] ?? sharedConfig;
 
-        if (!src) return;
+        if (!src || !selectedSheet) return;
 
-        const next: Record<string, PriceListSheetConfig> = {};
-
-        for (const s of selectedSheets) {
-            next[s] = {
+        setCalibrations({
+            [selectedSheet]: {
                 ...src,
                 columnConfig: { ...src.columnConfig },
                 rowConfig: { ...src.rowConfig },
-            };
-        }
-
-        setCalibrations(next);
+            },
+        });
     }
 
     function updateSharedConfig(patch: Partial<PriceListSheetConfig>) {
@@ -562,56 +523,15 @@ export default function PriceListImport({
     function handleVerify() {
         setPpmpExtractResults({});
         setPpmpRawItems([]);
-        if (!workbook || selectedSheets.length === 0) return;
+        if (!workbook || !selectedSheet) return;
 
         if (!sharedConfig) ensureCalibrationsInitialized();
 
-        const flatSheets = (selectedSheets as unknown[])
-            .flat(Infinity)
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
-        console.log(
-            '[verify] selectedSheets raw:',
-            selectedSheets,
-            'flatSheets:',
-            flatSheets,
-        );
-        if (flatSheets.length !== selectedSheets.length) {
-            console.warn(
-                '[verify] flattened nested',
-                selectedSheets,
-                '→',
-                flatSheets,
-            );
-            setSelectedSheets(flatSheets);
-        }
+        const cfg = getEffectiveConfig(selectedSheet);
+        const r = verifySheet(selectedSheet, cfg);
 
-        const availableNames = workbook
-            ? workbook.worksheets.map((ws) => ws.name)
-            : sheets;
-        const missing = flatSheets.filter((s) => !availableNames.includes(s));
-        if (missing.length > 0) {
-            console.warn(
-                '[verify] stale selectedSheets:',
-                flatSheets,
-                'available:',
-                availableNames,
-                'missing:',
-                missing,
-            );
-        }
-
-        const next: Record<string, VerifyResult> = {};
-
-        for (const sheet of flatSheets) {
-            const cfg = getEffectiveConfig(sheet);
-            const r = verifySheet(sheet, cfg);
-            next[sheet] = r;
-        }
-
-        setVerifyResults(next);
-        const firstInvalid = flatSheets.find((s) => !next[s]?.valid);
-        setActiveVerifySheet(firstInvalid ?? flatSheets[0] ?? '');
+        setVerifyResults({ [selectedSheet]: r });
+        setActiveVerifySheet(selectedSheet);
         setRawItems([]);
         setUniqueItems([]);
         setSelected(new Set());
@@ -621,23 +541,15 @@ export default function PriceListImport({
     }
 
     function handlePpmpExtract() {
-        if (!workbook || selectedSheets.length === 0) return;
-        const flatSheets = (selectedSheets as unknown[])
-            .flat(Infinity)
-            .map((s) => String(s).trim())
-            .filter(Boolean) as string[];
-        const next: Record<string, PpmpExtractResult> = {};
-        const allRaw: RawPpmpItem[] = [];
-        for (const sheet of flatSheets) {
-            const cfg = getEffectiveConfig(sheet);
-            const res = extractPpmpSheet(workbook, sheet, cfg);
-            next[sheet] = res;
-            allRaw.push(...res.rawItems);
-        }
-        setPpmpExtractResults(next);
-        setPpmpRawItems(allRaw);
+        if (!workbook || !selectedSheet) return;
+
+        const cfg = getEffectiveConfig(selectedSheet);
+        const res = extractPpmpSheet(workbook, selectedSheet, cfg);
+
+        setPpmpExtractResults({ [selectedSheet]: res });
+        setPpmpRawItems(res.rawItems);
         setRawSheets(
-            extractRawSheets(workbook, flatSheets, (s) =>
+            extractRawSheets(workbook, [selectedSheet], (s) =>
                 getEffectiveConfig(s),
             ),
         );
@@ -815,77 +727,75 @@ export default function PriceListImport({
     }
 
     function handleExtract() {
-        if (!workbook || selectedSheets.length === 0) return;
+        if (!workbook || !selectedSheet) return;
 
-        const all: RawItem[] = [];
+        const sheet = selectedSheet;
+        const ws = workbook.getWorksheet(sheet);
 
-        for (const sheet of selectedSheets) {
-            const ws = workbook.getWorksheet(sheet);
+        if (!ws) return;
 
-            if (!ws) continue;
+        const cfg = getEffectiveConfig(sheet);
 
-            const cfg = getEffectiveConfig(sheet);
+        if (
+            cfg.rowConfig.headerRow === '' ||
+            cfg.rowConfig.headerRow == null ||
+            cfg.rowConfig.additionalItemsHeaderRow === '' ||
+            cfg.rowConfig.additionalItemsHeaderRow == null ||
+            cfg.rowConfig.nonProcurementHeaderRow === '' ||
+            cfg.rowConfig.nonProcurementHeaderRow == null
+        )
+            return;
 
-            if (
-                cfg.rowConfig.headerRow === '' ||
-                cfg.rowConfig.headerRow == null ||
-                cfg.rowConfig.additionalItemsHeaderRow === '' ||
-                cfg.rowConfig.additionalItemsHeaderRow == null ||
-                cfg.rowConfig.nonProcurementHeaderRow === '' ||
-                cfg.rowConfig.nonProcurementHeaderRow == null
-            )
-                continue;
+        const lastRow = ws.actualRowCount;
+        const procurementStart = cfg.rowConfig.headerRow + 1;
+        const procurementEnd = cfg.rowConfig.additionalItemsHeaderRow
+            ? cfg.rowConfig.additionalItemsHeaderRow - 1
+            : cfg.rowConfig.nonProcurementHeaderRow
+              ? cfg.rowConfig.nonProcurementHeaderRow - 1
+              : lastRow;
+        const additionalStart = cfg.rowConfig.additionalItemsHeaderRow
+            ? cfg.rowConfig.additionalItemsHeaderRow + 1
+            : -1;
+        const additionalEnd = cfg.rowConfig.nonProcurementHeaderRow
+            ? cfg.rowConfig.nonProcurementHeaderRow - 1
+            : lastRow;
+        const nonProcStart = cfg.rowConfig.nonProcurementHeaderRow
+            ? cfg.rowConfig.nonProcurementHeaderRow + 1
+            : -1;
+        const nonProcEnd = lastRow;
 
-            const lastRow = ws.actualRowCount;
-            const procurementStart = cfg.rowConfig.headerRow + 1;
-            const procurementEnd = cfg.rowConfig.additionalItemsHeaderRow
-                ? cfg.rowConfig.additionalItemsHeaderRow - 1
-                : cfg.rowConfig.nonProcurementHeaderRow
-                  ? cfg.rowConfig.nonProcurementHeaderRow - 1
-                  : lastRow;
-            const additionalStart = cfg.rowConfig.additionalItemsHeaderRow
-                ? cfg.rowConfig.additionalItemsHeaderRow + 1
-                : -1;
-            const additionalEnd = cfg.rowConfig.nonProcurementHeaderRow
-                ? cfg.rowConfig.nonProcurementHeaderRow - 1
-                : lastRow;
-            const nonProcStart = cfg.rowConfig.nonProcurementHeaderRow
-                ? cfg.rowConfig.nonProcurementHeaderRow + 1
-                : -1;
-            const nonProcEnd = lastRow;
+        const all: RawItem[] = [
+            ...extractItemsForSection(
+                ws,
+                cfg,
+                'procurement',
+                procurementStart,
+                procurementEnd,
+            ),
+        ];
+
+        if (cfg.rowConfig.additionalItemsHeaderRow) {
             all.push(
                 ...extractItemsForSection(
                     ws,
                     cfg,
-                    'procurement',
-                    procurementStart,
-                    procurementEnd,
+                    'additional',
+                    additionalStart,
+                    additionalEnd,
                 ),
             );
+        }
 
-            if (cfg.rowConfig.additionalItemsHeaderRow) {
-                all.push(
-                    ...extractItemsForSection(
-                        ws,
-                        cfg,
-                        'additional',
-                        additionalStart,
-                        additionalEnd,
-                    ),
-                );
-            }
-
-            if (cfg.rowConfig.nonProcurementHeaderRow) {
-                all.push(
-                    ...extractItemsForSection(
-                        ws,
-                        cfg,
-                        'non-procurement',
-                        nonProcStart,
-                        nonProcEnd,
-                    ),
-                );
-            }
+        if (cfg.rowConfig.nonProcurementHeaderRow) {
+            all.push(
+                ...extractItemsForSection(
+                    ws,
+                    cfg,
+                    'non-procurement',
+                    nonProcStart,
+                    nonProcEnd,
+                ),
+            );
         }
 
         setRawItems(all);
@@ -928,12 +838,6 @@ export default function PriceListImport({
         setCoaOverrides({});
         setReviewFilter('all');
         setShowDuplicateDetails(false);
-        console.log('Extract price-list', {
-            raw: all.length,
-            uniqueCount: unique.length,
-            all,
-            unique,
-        });
     }
 
     function handleImport() {
@@ -943,22 +847,7 @@ export default function PriceListImport({
                 (v.status === 'ready' || v.status === 'update'),
         );
 
-        if (toImport.length === 0) {
-            console.warn(
-                'PriceListImport: nothing to import — selected',
-                [...selected],
-                'verified',
-                verifiedItems.length,
-            );
-
-            return;
-        }
-
-        console.log(
-            'PriceListImport: posting',
-            toImport.length,
-            toImport.slice(0, 3),
-        );
+        if (toImport.length === 0) return;
 
         setImporting(true);
         router.post(
@@ -974,17 +863,6 @@ export default function PriceListImport({
             } as never,
             {
                 onFinish: () => setImporting(false),
-                onError: (errors) => {
-                    console.error('PriceListImport: validation 422', errors);
-                    setImporting(false);
-                },
-                onSuccess: (page) => {
-                    console.log(
-                        'PriceListImport: success',
-                        (page.props as unknown as Record<string, unknown>)
-                            ?.flash,
-                    );
-                },
             },
         );
     }
@@ -1146,13 +1024,12 @@ export default function PriceListImport({
                 loading={loading}
                 onFileChange={handleFileChange}
                 sheets={sheets}
-                selectedSheets={selectedSheets}
-                onSheetsChange={handleSheetsChange}
+                selectedSheet={selectedSheet}
+                onSheetChange={handleSheetChange}
                 onNext={() => {
                     ensureCalibrationsInitialized();
                     setStep('calibrate');
                 }}
-                nextDisabled={selectedSheets.length === 0}
             />
             <ImportPpmpCalibrateStep
                 calibrationMode={calibrationMode}
@@ -1197,9 +1074,8 @@ export default function PriceListImport({
                 title="Verify price list format per sheet"
                 description={
                     <>
-                        Checks each selected sheet ({selectedSheets.length}) —
-                        cat → coa(s) → items → cat - total. Per-sheet results
-                        below.
+                        Checks selected sheet ({selectedSheets.length}) — cat →
+                        coa(s) → items → cat - total.
                     </>
                 }
                 verifyButtonLabel={`Run Verify (${selectedSheets.length} sheets)`}
@@ -1226,7 +1102,10 @@ export default function PriceListImport({
                 onRunExtract={handlePpmpExtract}
                 onBack={() => setStep('verify')}
                 backLabel="Back: Verify"
-                onNext={() => setStep('review')}
+                onNext={() => {
+                    handleExtract();
+                    setStep('review');
+                }}
                 canNext={
                     (rawSheets && Object.keys(rawSheets).length > 0) ||
                     ppmpRawItems.length > 0
