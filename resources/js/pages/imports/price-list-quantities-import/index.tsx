@@ -1,5 +1,4 @@
 import { router } from '@inertiajs/react';
-import ExcelJS from 'exceljs';
 import { useMemo, useState } from 'react';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
 import { ImportUploadStep } from '@/components/imports/import-upload-step';
@@ -12,14 +11,9 @@ import {
 } from '@/lib/ppmp/extract';
 import { extractRawSheets, type RawSheet } from '@/lib/raw-extract';
 import type { QuantitiesSheetConfig } from '@/lib/ppmp/sheet-config';
-import {
-    extractQuantitiesSheet,
-    verifyQuantitiesSheet,
-} from '@/lib/ppmp/quantities-extract';
-import type {
-    QuantitiesExtractResult,
-    QuantitiesVerifyResult,
-} from '@/lib/ppmp/quantities-extract';
+import { extractQuantitiesSheet } from '@/lib/ppmp/quantities-extract';
+import type { QuantitiesExtractResult } from '@/lib/ppmp/quantities-extract';
+import type { PpmpVerifyResult } from '@/lib/ppmp/verify';
 import { verifyPpmpSheet } from '@/lib/ppmp/verify';
 import { matchQuantityItems } from '@/lib/ppmp/quantities-match';
 import type {
@@ -39,11 +33,9 @@ import type {
     PriceListQuantitiesImportState,
     PliQtyStep,
 } from './types';
-import { CalibrateStep } from './steps/calibrate-step';
-import { VerifyStep } from './steps/verify-step';
-import { ExtractStep } from './steps/extract-step';
-import { ReviewStep } from './steps/review-step';
-import { ImportStep } from './steps/import-step';
+import { ImportPpmpCalibrateStep } from '@/components/imports/import-ppmp-calibrate-step';
+import { ImportPpmpVerifyStep } from '@/components/imports/import-verify-step';
+import { ImportExtractStep } from '@/components/imports/import-extract-step';
 import { ReviewAndImport } from './steps/review-import-step';
 
 interface PriceListQuantitiesImportProps {
@@ -89,7 +81,7 @@ export default function PriceListQuantitiesImport({
     const [rawSheets, setRawSheets] = useState<Record<string, RawSheet>>({});
     const [activeExtractSheet, setActiveExtractSheet] = useState<string>('');
     const [verifyResults, setVerifyResults] = useState<
-        Record<string, QuantitiesVerifyResult>
+        Record<string, PpmpVerifyResult>
     >({});
     const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
     const [hideEmptyQty, setHideEmptyQty] = useState(false);
@@ -453,7 +445,7 @@ export default function PriceListQuantitiesImport({
             );
         }
 
-        const next: Record<string, QuantitiesVerifyResult> = {};
+        const next: Record<string, PpmpVerifyResult> = {};
 
         for (const sheet of flatSheets) {
             const result = verifyPpmpSheet(
@@ -465,6 +457,8 @@ export default function PriceListQuantitiesImport({
                 valid: result.valid,
                 message: result.message,
                 errors: result.errors,
+                warnings: result.warnings,
+                groups: result.groups,
                 details: result.details,
             };
         }
@@ -797,7 +791,6 @@ export default function PriceListQuantitiesImport({
                 onFileChange={handleFileChange}
                 sheets={sheets}
                 selectedSheets={selectedSheets}
-                selectionMode="single"
                 onSheetsChange={handleSheetsChange}
                 onNext={() => {
                     ensureCalibrationsInitialized();
@@ -805,9 +798,76 @@ export default function PriceListQuantitiesImport({
                 }}
                 nextDisabled={!canCalibrate}
             />
-            <CalibrateStep s={s} />
-            <VerifyStep s={s} />
-            <ExtractStep s={s} />
+            <ImportPpmpCalibrateStep
+                calibrationMode={calibrationMode}
+                setCalibrationMode={setCalibrationMode}
+                sharedConfig={sharedConfig}
+                setSharedConfig={setSharedConfig}
+                calibrations={calibrations}
+                setCalibrations={setCalibrations}
+                currentSheet={currentSheet}
+                setCurrentSheet={setCurrentSheet}
+                selectedSheets={selectedSheets}
+                getDefaultConfig={getDefaultQuantitiesConfig}
+                onInvalidate={() => {
+                    setExtractResults({});
+                    setVerifyResults({});
+                    setActiveExtractSheet('');
+                    setActiveVerifySheet('');
+                }}
+                showQtyStart
+                onBack={() => setStep('upload')}
+                onNext={() => {
+                    handleVerify();
+                    setStep('verify');
+                }}
+                canNext={canVerify}
+                nextLabel="Run verification"
+            />
+            <ImportPpmpVerifyStep
+                tabsValue="verify"
+                title="Verify quantities format per sheet"
+                description={
+                    <>
+                        Runs against each selected sheet (
+                        {selectedSheets.length}) using its calibration — sane
+                        ranges with procurement data, unit + COA per item row,
+                        numeric quantities (amount columns skipped),
+                        quantities in at least one month. Extraction stays
+                        locked until every sheet passes.
+                    </>
+                }
+                verifyButtonLabel={`Run Verify (${selectedSheets.length} sheets)`}
+                canVerify={canVerify}
+                onVerify={handleVerify}
+                selectedSheets={selectedSheets}
+                results={verifyResults}
+                hasResult={hasAnyVerify}
+                allValid={allVerifyValid}
+                activeSheet={activeVerifySheet}
+                onActiveChange={setActiveVerifySheet}
+                onBack={() => setStep('calibrate')}
+                onNext={runExtraction}
+                canNext={allVerifyValid}
+                nextLabel="Run extraction"
+            />
+            <ImportExtractStep
+                sheets={selectedSheets}
+                canExtract={canExtract}
+                hasAnyVerify={hasAnyVerify}
+                allVerifyValid={allVerifyValid}
+                ppmpItems={ppmpRawItems}
+                rawSheets={rawSheets}
+                onRunExtract={handlePpmpExtract}
+                onBack={() => setStep('verify')}
+                backLabel="Back: Verify"
+                onNext={() => setStep('review')}
+                canNext={
+                    (rawSheets && Object.keys(rawSheets).length > 0) ||
+                    hasAnyExtract
+                }
+                nextLabel="Next: Review"
+            />
             <ReviewAndImport s={s} />
         </ImportPageShell>
     );

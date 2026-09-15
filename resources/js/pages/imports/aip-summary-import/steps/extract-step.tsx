@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/button';
 import { TabsContent } from '@/components/ui/tabs';
-import { ImportExtractStep } from '@/components/imports/import-extract-step';
 import { formatAipScheduleShort } from '@/lib/aip-summary-import/extract';
 import type { AipImportState } from '../types';
 

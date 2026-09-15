@@ -64,22 +64,22 @@ const IMPORT_SOURCES: ImportSource[] = [
                 icon: Tags,
                 badge: 'Mappings',
             },
-            // {
-            //     title: 'Price List Import',
-            //     description:
-            //         'Import price list items (price-list only). Requires official Category + Mapping to exist first.',
-            //     href: priceListImportIndex().url,
-            //     icon: Receipt,
-            //     badge: 'Price Lists',
-            // },
-            // {
-            //     title: 'Price List Quantities Import',
-            //     description:
-            //         'Import quantities against existing price list items from XLSX.',
-            //     href: priceListQuantitiesImportIndex().url,
-            //     icon: FileSpreadsheet,
-            //     badge: 'Quantities',
-            // },
+            {
+                title: 'Price List Import',
+                description:
+                    'Import price list items (price-list only). Requires official Category + Mapping to exist first.',
+                href: priceListImportIndex().url,
+                icon: Receipt,
+                badge: 'Price Lists',
+            },
+            {
+                title: 'Price List Quantities Import',
+                description:
+                    'Import quantities against existing price list items from XLSX.',
+                href: priceListQuantitiesImportIndex().url,
+                icon: FileSpreadsheet,
+                badge: 'Quantities',
+            },
         ],
     },
     {

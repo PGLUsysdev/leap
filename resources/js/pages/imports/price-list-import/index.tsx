@@ -1,6 +1,6 @@
 import { Link, router } from '@inertiajs/react';
-import type { ChangeEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import type ExcelJS from 'exceljs';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
 import { ImportUploadStep } from '@/components/imports/import-upload-step';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
@@ -40,9 +40,9 @@ import type {
     VerifiedItem,
     VerifyResult,
 } from './types';
-import { CalibrateStep } from './steps/calibrate-step';
-import { VerifyStep } from './steps/verify-step';
-import { ExtractStep } from './steps/extract-step';
+import { ImportPpmpCalibrateStep } from '@/components/imports/import-ppmp-calibrate-step';
+import { ImportPpmpVerifyStep } from '@/components/imports/import-verify-step';
+import { ImportExtractStep } from '@/components/imports/import-extract-step';
 import { ReviewStep } from './steps/review-step';
 
 function getDefaultPriceListConfig(): PriceListSheetConfig {
@@ -554,6 +554,7 @@ export default function PriceListImport({
             valid: result.valid,
             message: result.message,
             errors: result.errors,
+            groups: result.groups,
             details: result.details,
         };
     }
@@ -1146,7 +1147,6 @@ export default function PriceListImport({
                 onFileChange={handleFileChange}
                 sheets={sheets}
                 selectedSheets={selectedSheets}
-                selectionMode="single"
                 onSheetsChange={handleSheetsChange}
                 onNext={() => {
                     ensureCalibrationsInitialized();
@@ -1154,9 +1154,88 @@ export default function PriceListImport({
                 }}
                 nextDisabled={selectedSheets.length === 0}
             />
-            <CalibrateStep s={s} />
-            <VerifyStep s={s} />
-            <ExtractStep s={s} />
+            <ImportPpmpCalibrateStep
+                calibrationMode={calibrationMode}
+                setCalibrationMode={setCalibrationMode}
+                sharedConfig={sharedConfig}
+                setSharedConfig={setSharedConfig}
+                calibrations={calibrations}
+                setCalibrations={setCalibrations}
+                currentSheet={currentSheet}
+                setCurrentSheet={setCurrentSheet}
+                selectedSheets={selectedSheets}
+                getDefaultConfig={getDefaultSharedConfig}
+                onInvalidate={() => {
+                    setVerifyResults({});
+                    setRawItems([]);
+                    setUniqueItems([]);
+                    setSelected(new Set());
+                    setCoaOverrides({});
+                    setReviewFilter('all');
+                    setShowDuplicateDetails(false);
+                }}
+                verifyMarks={(() => {
+                    const marks: Record<string, boolean> = {};
+
+                    for (const [sheet, result] of Object.entries(
+                        verifyResults,
+                    )) {
+                        if (result) {
+                            marks[sheet] = result.valid;
+                        }
+                    }
+
+                    return marks;
+                })()}
+                onBack={() => setStep('upload')}
+                onNext={() => setStep('verify')}
+                canNext={isMounted ? !!sharedConfig : true}
+                nextLabel="Next: Verify Format"
+            />
+            <ImportPpmpVerifyStep
+                tabsValue="verify"
+                title="Verify price list format per sheet"
+                description={
+                    <>
+                        Checks each selected sheet ({selectedSheets.length}) —
+                        cat → coa(s) → items → cat - total. Per-sheet results
+                        below.
+                    </>
+                }
+                verifyButtonLabel={`Run Verify (${selectedSheets.length} sheets)`}
+                canVerify={canVerify}
+                onVerify={handleVerify}
+                selectedSheets={selectedSheets}
+                results={verifyResults}
+                hasResult={hasAnyVerify}
+                allValid={allVerifyValid}
+                activeSheet={activeVerifySheet}
+                onActiveChange={setActiveVerifySheet}
+                onBack={() => setStep('calibrate')}
+                onNext={() => {
+                    handleExtract();
+                    setStep('review');
+                }}
+                canNext={isMounted ? allVerifyValid : true}
+                nextLabel={`Next: Extract ${allVerifyValid ? '✓' : '(fix errors first)'}`}
+            />
+            <ImportExtractStep
+                sheets={selectedSheets}
+                canExtract={canVerify && hasAnyVerify && allVerifyValid}
+                hasAnyVerify={hasAnyVerify}
+                allVerifyValid={allVerifyValid}
+                ppmpItems={ppmpRawItems}
+                rawSheets={rawSheets}
+                onRunExtract={handlePpmpExtract}
+                onBack={() => setStep('verify')}
+                backLabel="Back: Verify"
+                onNext={() => setStep('review')}
+                canNext={
+                    (rawSheets && Object.keys(rawSheets).length > 0) ||
+                    ppmpRawItems.length > 0
+                }
+                nextLabel="Next: Review & Import"
+            />
             <ReviewStep s={s} />
         </ImportPageShell>
     );

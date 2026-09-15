@@ -18,6 +18,7 @@ export type VerifyResult = {
     valid: boolean;
     message: string;
     errors: Array<{ row: number; message: string }>;
+    groups: { procurement: number; additional: number; nonProcurement: number };
     details: string[];
 };
 

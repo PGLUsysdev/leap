@@ -774,7 +774,6 @@ export default function CategoryImport({
                 }
             />
             <ImportExtractStep
-                family="ppmp"
                 sheets={selectedSheets}
                 canExtract={canExtract}
                 hasAnyVerify={hasAnyVerify}

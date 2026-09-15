@@ -3,10 +3,8 @@
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import type ExcelJS from 'exceljs';
 import type { QuantitiesSheetConfig } from '@/lib/ppmp/sheet-config';
-import type {
-    QuantitiesExtractResult,
-    QuantitiesVerifyResult,
-} from '@/lib/ppmp/quantities-extract';
+import type { QuantitiesExtractResult } from '@/lib/ppmp/quantities-extract';
+import type { PpmpVerifyResult } from '@/lib/ppmp/verify';
 import type { matchQuantityItems } from '@/lib/ppmp/quantities-match';
 import type {
     ExistingMapping,
@@ -107,9 +105,9 @@ export type PriceListQuantitiesImportState = {
     runExtraction: () => void;
 
     // verify results
-    verifyResults: Record<string, QuantitiesVerifyResult>;
+    verifyResults: Record<string, PpmpVerifyResult>;
     setVerifyResults: Dispatch<
-        SetStateAction<Record<string, QuantitiesVerifyResult>>
+        SetStateAction<Record<string, PpmpVerifyResult>>
     >;
     activeVerifySheet: string;
     setActiveVerifySheet: (s: string) => void;

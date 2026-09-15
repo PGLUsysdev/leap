@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
+import type ExcelJS from 'exceljs';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
 import { ImportUploadStep } from '@/components/imports/import-upload-step';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
@@ -35,7 +36,7 @@ import type {
     VerifyFormatResult,
 } from './types';
 import { ImportPpmpCalibrateStep } from '@/components/imports/import-ppmp-calibrate-step';
-import { ImportPpmpExtractShell } from '@/components/imports/import-extract-step';
+import { ImportExtractStep } from '@/components/imports/import-extract-step';
 import { ImportPpmpVerifyStep } from '@/components/imports/import-verify-step';
 import { ReviewStep } from './steps/review-step';
 
@@ -859,7 +860,6 @@ export default function CategoryCoaMappingImport({
             missingMapping,
             verifiedPairs,
         });
-        setActiveVerifySheet(selectedSheets[0] ?? '');
 
         const result = {
             sheets: selectedSheets,
@@ -1237,18 +1237,19 @@ export default function CategoryCoaMappingImport({
                 canNext={hasFormatResult && formatValid}
                 nextLabel={`Next: Extract${hasFormatResult && !formatValid ? ' (blocked)' : ''}`}
             />
-            <ImportPpmpExtractShell
+            <ImportExtractStep
                 sheets={selectedSheets}
                 canExtract={canExtract}
                 hasAnyVerify={canExtract}
                 allVerifyValid={canExtract}
-                rawItems={ppmpRawItems}
+                ppmpItems={ppmpRawItems}
                 rawSheets={rawSheets}
                 onRunExtract={() => {
                     handlePpmpExtract();
                     handleLogRelationships();
                 }}
                 onBack={() => setStep('verifyFormat')}
+                backLabel="Back: Verify"
                 onNext={() => setStep('review')}
                 canNext={canReview}
                 nextLabel="Next: Review & Save"
