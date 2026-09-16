@@ -196,7 +196,7 @@ export function ReviewStep({ s }: { s: CategoryCoaMappingState }) {
             {/* ── Summary + filters ─────────────────────────────────── */}
             <div className="bg-muted/30 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2.5">
                 <span className="text-muted-foreground mr-1 text-xs font-medium">
-                    {selectedSheet ? `Sheet: ${selectedSheet}` : 'All sheets'}
+                    {selectedSheet ? `Sheet: ${selectedSheet}` : 'No sheet'}
                 </span>
                 {filterDefs.map((f) => {
                     const isActive = filter === f.value;
