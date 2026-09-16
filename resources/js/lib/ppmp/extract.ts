@@ -102,7 +102,7 @@ export function extractPpmpSheet(
 
     if (headerRow === '' || headerRow == null) return makeFail('Header Row is required — check calibration');
     if (additionalItemsHeaderRow === '' || additionalItemsHeaderRow == null) return makeFail('Additional Items Header Row is required');
-    if (nonProcurementHeaderRow === '' || nonProcurementHeaderRow == null) return makeFail('Non-Procurement Header Row is required');
+    // Non-Procurement is optional — ranges below fall back to lastRow / skip.
 
     let qtyCols: string[] | null = null;
     if (hasQtyStart(cfg)) {

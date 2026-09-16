@@ -11,7 +11,7 @@ class CategoryImportController extends Controller
 {
     private const SENTINELS = [
         ['name' => 'Additional Items (Uncategorized)', 'is_non_procurement' => false, 'is_additional' => true],
-        ['name' => 'Non-Procurement (Uncategorized)', 'is_non_procurement' => true, 'is_additional' => true],
+        ['name' => 'Non-Procurement (Uncategorized)', 'is_non_procurement' => true, 'is_additional' => false],
     ];
     public function index()
     {

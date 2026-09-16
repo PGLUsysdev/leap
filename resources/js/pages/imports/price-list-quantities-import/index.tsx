@@ -224,9 +224,7 @@ export default function PriceListQuantitiesImport({
         config.rowConfig.headerRow !== '' &&
         config.rowConfig.headerRow != null &&
         config.rowConfig.additionalItemsHeaderRow !== '' &&
-        config.rowConfig.additionalItemsHeaderRow != null &&
-        config.rowConfig.nonProcurementHeaderRow !== '' &&
-        config.rowConfig.nonProcurementHeaderRow != null;
+        config.rowConfig.additionalItemsHeaderRow != null;
     const canVerify = canCalibrate && !!workbook && rowsCalibrated;
     const hasAnyVerify =
         selectedSheet !== null && !!verifyResults[selectedSheet];

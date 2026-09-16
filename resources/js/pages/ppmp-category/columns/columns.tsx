@@ -18,7 +18,7 @@ const columns = [
         header: () => <div className="px-1">Procurement</div>,
         cell: (value) => (
             <div className="px-1 text-wrap">
-                {value.getValue() ? 'Non-Proc' : 'Procurement'}
+                {value.getValue() ? 'Non-Procurement' : 'Procurement'}
             </div>
         ),
     }),
@@ -27,7 +27,7 @@ const columns = [
         header: () => <div className="px-1">Additional</div>,
         cell: (value) => (
             <div className="px-1 text-wrap">
-                {value.getValue() ? 'Yes' : '—'}
+                {value.getValue() ? 'Yes' : 'No'}
             </div>
         ),
     }),

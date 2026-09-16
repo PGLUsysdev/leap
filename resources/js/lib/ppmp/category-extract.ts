@@ -106,14 +106,13 @@ export function extractCategoryCandidates(
     const skippedCoaNotEmpty: CategorySkippedCoa[] = [];
 
     // Procurement only: headerRow+1 .. additionalItemsHeaderRow-1.
-    // Guards mirror the previous page implementation.
+    // Non-Procurement is optional — when blank the loop simply never
+    // reaches past additionalItemsHeaderRow (line 146 below).
     if (
         headerRow === '' ||
         headerRow == null ||
         additionalItemsHeaderRow === '' ||
-        additionalItemsHeaderRow == null ||
-        nonProcurementHeaderRow === '' ||
-        nonProcurementHeaderRow == null
+        additionalItemsHeaderRow == null
     ) {
         return {
             filtered,
@@ -124,6 +123,9 @@ export function extractCategoryCandidates(
             skippedCoaNotEmpty,
         };
     }
+
+    const hasNonProc =
+        nonProcurementHeaderRow !== '' && nonProcurementHeaderRow != null;
 
     const startRow = headerRow + 1;
     const lastRow = ws.actualRowCount;
@@ -141,10 +143,10 @@ export function extractCategoryCandidates(
 
         if (dataNorm === 'description') continue;
         if (r === additionalItemsHeaderRow) continue;
-        if (r === nonProcurementHeaderRow) continue;
+        if (hasNonProc && r === nonProcurementHeaderRow) continue;
         if (SECTION_WORDS.has(dataNorm)) continue;
         if (r > additionalItemsHeaderRow) continue;
-        if (r > nonProcurementHeaderRow) continue;
+        if (hasNonProc && r > (nonProcurementHeaderRow as number)) continue;
 
         if (coaNorm) {
             skippedCoaNotEmpty.push({

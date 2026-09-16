@@ -268,7 +268,7 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="ppmp-nonproc-header-row">
-                            Non-Procurement Header Row *
+                            Non-Procurement Header Row
                         </FieldLabel>
                         <Input
                             id="ppmp-nonproc-header-row"
@@ -282,7 +282,7 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                                 })
                             }
                             className="w-20"
-                            placeholder="e.g. 1258"
+                            placeholder="Blank if none"
                         />
                     </Field>
                 </div>

@@ -92,9 +92,7 @@ export default function CategoryCoaMappingImport({
         config.rowConfig.headerRow !== '' &&
         config.rowConfig.headerRow != null &&
         config.rowConfig.additionalItemsHeaderRow !== '' &&
-        config.rowConfig.additionalItemsHeaderRow != null &&
-        config.rowConfig.nonProcurementHeaderRow !== '' &&
-        config.rowConfig.nonProcurementHeaderRow != null;
+        config.rowConfig.additionalItemsHeaderRow != null;
     const canVerifyFormat =
         selectedSheet !== null && !!workbook && rowsCalibrated;
     const hasFormatResult =
@@ -554,9 +552,7 @@ export default function CategoryCoaMappingImport({
             effective.rowConfig.headerRow === '' ||
             effective.rowConfig.headerRow == null ||
             effective.rowConfig.additionalItemsHeaderRow === '' ||
-            effective.rowConfig.additionalItemsHeaderRow == null ||
-            effective.rowConfig.nonProcurementHeaderRow === '' ||
-            effective.rowConfig.nonProcurementHeaderRow == null
+            effective.rowConfig.additionalItemsHeaderRow == null
         ) {
             return;
         }
@@ -851,7 +847,7 @@ export default function CategoryCoaMappingImport({
             />
             <ImportPpmpVerifyStep
                 tabsValue="verify"
-                title="Verify Sheet Format — check calibration and structure (all 3 sections)"
+                title="Verify Sheet Format — check calibration and structure (all calibrated sections)"
                 description="Checks the selected sheet with current calibration. Validates cat → coa(s) → items → cat - TOTAL per section."
                 verifyButtonLabel="Verify Sheet"
                 canVerify={canVerifyFormat}

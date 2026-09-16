@@ -318,6 +318,62 @@ describe('verifyPpmpSheet — passing', () => {
         console.log(summarize(result));
         expect(result.valid).toBe(true);
     });
+
+    it('no non-procurement section — sheet ends after additional total + grand total', () => {
+        const wb = buildWorkbook([
+            /*  1 */ ['', '', '', 'COA', 'Item#', 'Category', 'Unit', 'Price'],
+            /*  2 */ ['', '', '', '', '', 'OFFICE SUPPLIES', '', ''],
+            /*  3 */ ['', '', '', '', '', 'Office Supplies Expenses', '', ''],
+            /*  4 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '1',
+                'Bond paper',
+                'ream',
+                250,
+            ],
+            /*  5 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '2',
+                'Ballpen',
+                'pc',
+                15,
+            ],
+            /*  6 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
+            /*  7 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
+            /*  8 */ [
+                '',
+                '',
+                '',
+                'Accountable Forms Expenses',
+                '1',
+                'Stapler',
+                'pc',
+                100,
+            ],
+            /*  9 */ ['', '', '', '', '', 'ADDITIONAL ITEMS - TOTAL', '', ''],
+            /* 10 */ ['', '', '', '', '', 'PROCUREMENT - TOTAL', '', ''],
+        ]);
+
+        const result = verifyPpmpSheet(
+            wb,
+            'Sheet1',
+            cfg({
+                headerRow: 1,
+                additionalItemsHeaderRow: 7,
+                nonProcurementHeaderRow: '',
+            }),
+        );
+
+        console.log(summarize(result));
+        expect(result.valid).toBe(true);
+        expect(result.groups.nonProcurement).toBe(0);
+    });
 });
 
 describe('verifyPpmpSheet — failing', () => {

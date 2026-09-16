@@ -78,9 +78,7 @@ export default function CategoryImport({
         config.rowConfig.headerRow !== '' &&
         config.rowConfig.headerRow != null &&
         config.rowConfig.additionalItemsHeaderRow !== '' &&
-        config.rowConfig.additionalItemsHeaderRow != null &&
-        config.rowConfig.nonProcurementHeaderRow !== '' &&
-        config.rowConfig.nonProcurementHeaderRow != null;
+        config.rowConfig.additionalItemsHeaderRow != null;
     const canVerify = canCalibrate && !!workbook && rowsCalibrated;
     const allVerifyValid = verifyResult?.valid === true;
     const hasAnyVerify = verifyResult !== null;

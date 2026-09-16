@@ -164,15 +164,8 @@ export function verifyPpmpSheet(
         ]);
     }
 
-    if (nonProcurementHeaderRow === '' || nonProcurementHeaderRow == null) {
-        return makeFail('Non-Procurement Header Row is required', [
-            {
-                row: 0,
-                message:
-                    'Non-Procurement Header Row is required — check calibration',
-            },
-        ]);
-    }
+    // Non-Procurement is optional — a sheet may end after Additional.
+    // When blank, the section is skipped (groups.nonProcurement stays 0).
 
     // Quantities-specific: qtyStart required and qty columns derived
     let qtyCols: string[] | null = null;

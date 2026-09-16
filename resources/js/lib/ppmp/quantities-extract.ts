@@ -140,13 +140,8 @@ function resolveSheet(
         };
     }
 
-    if (nonProcurementHeaderRow === '' || nonProcurementHeaderRow == null) {
-        return {
-            ok: false,
-            message:
-                'Non-Procurement Header Row is required — check calibration',
-        };
-    }
+    // Non-Procurement is optional — a sheet may end after Additional.
+    // Ranges below fall back to lastRow / skip when blank.
 
     const qtyStartNum = columnToNumber(cfg.columnConfig.qtyStart);
 

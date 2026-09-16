@@ -39,7 +39,7 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
             {
                 name: 'Non-Procurement (Uncategorized)',
                 is_non_procurement: true,
-                is_additional: true,
+                is_additional: false,
             },
         ];
 

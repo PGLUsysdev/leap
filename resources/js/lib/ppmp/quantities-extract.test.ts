@@ -92,12 +92,9 @@ describe('extractQuantitiesSheet', () => {
         expect(result.rawItems).toHaveLength(0);
     });
 
-    it.each([
-        ['additionalItemsHeaderRow', 'Additional Items Header Row is required'],
-        ['nonProcurementHeaderRow', 'Non-Procurement Header Row is required'],
-    ])('should_Fail_When_%sMissing', async (key, message) => {
+    it('should_Fail_When_AdditionalItemsHeaderRowMissing', async () => {
         const cfg = calibratedConfig();
-        cfg.rowConfig[key as 'additionalItemsHeaderRow'] = '';
+        cfg.rowConfig.additionalItemsHeaderRow = '';
         const result = extractQuantitiesSheet(
             await buildWorkbook(),
             'PPMP',
@@ -105,8 +102,23 @@ describe('extractQuantitiesSheet', () => {
         );
 
         expect(result.valid).toBe(false);
-        expect(result.message).toContain(message);
+        expect(result.message).toContain(
+            'Additional Items Header Row is required',
+        );
         expect(result.rawItems).toHaveLength(0);
+    });
+
+    it('should_Pass_When_NonProcurementHeaderRowMissing', async () => {
+        const cfg = calibratedConfig();
+        cfg.rowConfig.nonProcurementHeaderRow = '';
+        const result = extractQuantitiesSheet(
+            await buildWorkbook(),
+            'PPMP',
+            cfg,
+        );
+
+        expect(result.valid).toBe(true);
+        expect(result.rawItems).toHaveLength(2);
     });
 
     it('should_ReadDescriptionFromSplitColumn_When_DescriptionDiffersFromCategory', async () => {
@@ -227,12 +239,9 @@ describe('verifyQuantitiesSheet', () => {
         expect(result.valid).toBe(false);
     });
 
-    it.each([
-        ['additionalItemsHeaderRow', 'Additional Items Header Row is required'],
-        ['nonProcurementHeaderRow', 'Non-Procurement Header Row is required'],
-    ])('should_Fail_When_%sMissing', async (key, message) => {
+    it('should_Fail_When_AdditionalItemsHeaderRowMissing', async () => {
         const cfg = calibratedConfig();
-        cfg.rowConfig[key as 'additionalItemsHeaderRow'] = '';
+        cfg.rowConfig.additionalItemsHeaderRow = '';
         const result = verifyQuantitiesSheet(
             await buildWorkbook(),
             'PPMP',
@@ -240,6 +249,21 @@ describe('verifyQuantitiesSheet', () => {
         );
 
         expect(result.valid).toBe(false);
-        expect(result.message).toContain(message);
+        expect(result.message).toContain(
+            'Additional Items Header Row is required',
+        );
+    });
+
+    it('should_Pass_When_NonProcurementHeaderRowMissing', async () => {
+        const cfg = calibratedConfig();
+        cfg.rowConfig.nonProcurementHeaderRow = '';
+        const result = verifyQuantitiesSheet(
+            await buildWorkbook(),
+            'PPMP',
+            cfg,
+        );
+
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
     });
 });
