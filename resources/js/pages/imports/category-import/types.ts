@@ -43,6 +43,9 @@ export type CategoryReviewTableMeta = TableMeta<CategoryReviewRow> & {
     selected: Set<string>;
     toggleOne: (normalized: string, checked: boolean) => void;
     setSelected: (next: Set<string>) => void;
+    decisions: Record<string, string>;
+    decide: (normalized: string, item: string) => void;
+    allNames: string[];
 };
 
 export type CategoryImportState = {
@@ -97,6 +100,8 @@ export type CategoryImportState = {
     handleImport: () => void;
     ensuringSentinels: boolean;
     handleEnsureSentinels: () => void;
+    decisions: Record<string, string>;
+    setDecisions: Dispatch<SetStateAction<Record<string, string>>>;
 
     // page props
     existingCategories: ExistingCategory[];

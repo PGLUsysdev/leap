@@ -5,6 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { TabsContent } from '@/components/ui/tabs';
 import { getCategoryMatch, normalize } from '@/lib/ppmp/normalize';
+import {
+    newDecisionItem,
+    stripDecisionPrefix,
+} from '@/lib/ppmp/category-extract';
 import type {
     CategoryImportState,
     CategoryReviewRow,
@@ -24,6 +28,8 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
         handleImport,
         ensuringSentinels,
         handleEnsureSentinels,
+        decisions,
+        setDecisions,
         setStep,
     } = s;
 
@@ -93,6 +99,11 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
         });
     }, [extractResult, existingCategories]);
 
+    const allNames = useMemo(
+        () => existingCategories.map((c) => c.name),
+        [existingCategories],
+    );
+
     const meta = useMemo<CategoryReviewTableMeta>(
         () => ({
             selected,
@@ -107,17 +118,43 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                 });
             },
             setSelected: (next) => setSelected(next),
+            decisions,
+            decide: (normalized, item) => {
+                setDecisions((prev) => ({ ...prev, [normalized]: item }));
+            },
+            allNames,
         }),
-        [selected, setSelected],
+        [selected, setSelected, decisions, setDecisions, allNames],
     );
+
+    // Rows whose Combobox decision resolves to an existing category are
+    // filtered out of the payload (backend would skip them as dupes).
+    const toCreateCount = useMemo(() => {
+        if (!extractResult) return 0;
+
+        return extractResult.unique.filter((u) => {
+            if (!selected.has(u.normalized)) return false;
+
+            const chosen = stripDecisionPrefix(
+                decisions[u.normalized] ?? newDecisionItem(u.raw),
+            );
+
+            return (
+                getCategoryMatch(normalize(chosen), existingCategories)
+                    .type !== 'strict'
+            );
+        }).length;
+    }, [extractResult, selected, decisions, existingCategories]);
 
     function handleOnlyNew() {
         if (!extractResult) return;
+        // Partials count as new — suggestions are warnings only, and the
+        // backend imports anything that isn't a strict (exact) duplicate.
         const onlyNew = extractResult.unique
             .filter(
                 (u) =>
-                    getCategoryMatch(u.normalized, existingCategories).type ===
-                    'none',
+                    getCategoryMatch(u.normalized, existingCategories).type !==
+                    'strict',
             )
             .map((u) => u.normalized);
         setSelected(new Set(onlyNew));
@@ -251,7 +288,9 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                         </h3>
                         <p className="text-muted-foreground text-xs">
                             Procurement-only dedupe by normalized name. Check
-                            to import.
+                            to import — use the DB Match picker to resolve
+                            similar names to an existing category or keep as
+                            new.
                         </p>
                     </div>
                     <Badge variant="secondary" className="shrink-0">
@@ -297,7 +336,7 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                         </Button>
                         <Button
                             onClick={handleImport}
-                            disabled={importing || selected.size === 0}
+                            disabled={importing || toCreateCount === 0}
                             size="sm"
                         >
                             {importing ? (
@@ -305,7 +344,7 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                                     <Spinner /> Importing...
                                 </>
                             ) : (
-                                `Import ${selected.size}`
+                                `Import ${toCreateCount}`
                             )}
                         </Button>
                     </div>
@@ -335,19 +374,22 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
             <div className="flex items-center gap-2 rounded-lg border p-3">
                 <Button
                     onClick={handleImport}
-                    disabled={importing || selected.size === 0}
+                    disabled={importing || toCreateCount === 0}
                 >
                     {importing ? (
                         <>
                             <Spinner /> Importing...
                         </>
                     ) : (
-                        `Import ${selected.size} Categories`
+                        `Import ${toCreateCount} Categories`
                     )}
                 </Button>
                 <span className="text-muted-foreground text-xs">
                     Will create ppmp_categories where not exists. Selected{' '}
-                    {selected.size}/{extractResult.unique.length}.
+                    {selected.size}/{extractResult.unique.length}
+                    {selected.size > toCreateCount &&
+                        ` — ${selected.size - toCreateCount} mapped to existing, won't be created`}
+                    .
                 </span>
             </div>
 

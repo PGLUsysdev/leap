@@ -1,6 +1,18 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from '@/components/ui/combobox';
+import {
+    newDecisionItem,
+    suggestedDecisionItem,
+} from '@/lib/ppmp/category-extract';
 import type { CategoryReviewRow, CategoryReviewTableMeta } from '../types';
 
 const columnHelper = createColumnHelper<CategoryReviewRow>();
@@ -81,9 +93,9 @@ export function getCategoryReviewColumns() {
         }),
         columnHelper.accessor((row) => row.matchName ?? row.normalized, {
             id: 'dbMatch',
-            size: 260,
+            size: 300,
             header: () => <div className="px-1">DB Match</div>,
-            cell: ({ row }) => {
+            cell: ({ row, table }) => {
                 const u = row.original;
 
                 if (u.matchType === 'strict') {
@@ -100,32 +112,83 @@ export function getCategoryReviewColumns() {
                     );
                 }
 
-                if (u.matchType === 'partial' && u.topMatches.length > 0) {
-                    return (
-                        <div className="flex max-w-[30ch] flex-col gap-1 px-1">
-                            {u.topMatches.slice(0, 2).map((p, idx) => (
-                                <Badge
-                                    key={idx}
-                                    variant="outline"
-                                    className="justify-start text-xs"
-                                    title={`${p.name} (score ${p.score})`}
-                                >
-                                    <span className="truncate">{p.name}</span>
-                                    <span className="text-muted-foreground ml-1 shrink-0">
-                                        {p.score === 99
-                                            ? '(substr)'
-                                            : `(lev ${p.score})`}
-                                    </span>
-                                </Badge>
-                            ))}
-                        </div>
-                    );
-                }
+                // Partial or new: Combobox picks the name to import.
+                // Default `＋ raw` creates a new category; picking an
+                // existing name resolves the row as that duplicate.
+                const meta = table.options.meta as
+                    | CategoryReviewTableMeta
+                    | undefined;
+                const newItem = newDecisionItem(u.raw);
+                const suggestedNames = new Set(
+                    u.topMatches.map((t) => t.name),
+                );
+                const items = [
+                    newItem,
+                    ...u.topMatches.map((t) =>
+                        suggestedDecisionItem(t.name),
+                    ),
+                    ...(meta?.allNames ?? []).filter(
+                        (n) => n !== u.raw && !suggestedNames.has(n),
+                    ),
+                ];
+                const value = meta?.decisions[u.normalized] ?? newItem;
 
                 return (
-                    <span className="text-muted-foreground px-1 text-xs">
-                        — new
-                    </span>
+                    <div className="flex min-w-[220px] flex-col gap-1 px-1">
+                        {u.matchType === 'partial' && (
+                            <span className="text-xs font-medium text-amber-700">
+                                Similar — pick what to import
+                            </span>
+                        )}
+                        <Combobox
+                            items={items}
+                            value={value}
+                            onValueChange={(v) => {
+                                if (typeof v === 'string' && v)
+                                    meta?.decide(u.normalized, v);
+                            }}
+                        >
+                            <ComboboxInput
+                                placeholder={
+                                    u.matchType === 'partial'
+                                        ? '★ Suggested at top — search...'
+                                        : 'Search categories...'
+                                }
+                                className="h-7 text-xs"
+                            />
+                            <ComboboxContent>
+                                <ComboboxEmpty>
+                                    No category found.
+                                </ComboboxEmpty>
+                                <ComboboxList>
+                                    {(item: string) => {
+                                        const isSuggested =
+                                            u.topMatches.some(
+                                                (t) =>
+                                                    item ===
+                                                    suggestedDecisionItem(
+                                                        t.name,
+                                                    ),
+                                            );
+
+                                        return (
+                                            <ComboboxItem
+                                                key={item}
+                                                value={item}
+                                                className={
+                                                    isSuggested
+                                                        ? 'font-medium'
+                                                        : ''
+                                                }
+                                            >
+                                                {item}
+                                            </ComboboxItem>
+                                        );
+                                    }}
+                                </ComboboxList>
+                            </ComboboxContent>
+                        </Combobox>
+                    </div>
                 );
             },
         }),

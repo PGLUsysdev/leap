@@ -256,3 +256,23 @@ export function getCategoryExtractionStats(
         duplicates: result.duplicates.length,
     };
 }
+
+// ─── Review decisions ─────────────────────────────────────────────
+// Per-row Combobox values in the category-import Review step. A decision is
+// the display string itself: `＋ <raw>` means "create new", anything else
+// names the existing category to resolve to (backend skips exact dupes).
+
+export const NEW_DECISION_PREFIX = '＋ ';
+export const SUGGESTED_DECISION_PREFIX = '★ ';
+
+export function newDecisionItem(raw: string): string {
+    return `${NEW_DECISION_PREFIX}${raw}`;
+}
+
+export function suggestedDecisionItem(name: string): string {
+    return `${SUGGESTED_DECISION_PREFIX}${name}`;
+}
+
+export function stripDecisionPrefix(item: string): string {
+    return item.replace(/^[＋★]\s*/, '');
+}

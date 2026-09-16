@@ -19,7 +19,10 @@ import { extractRawSheet, type RawSheet } from '@/lib/raw-extract';
 import {
     extractCategoryCandidates,
     getCategoryExtractionStats,
+    newDecisionItem,
+    stripDecisionPrefix,
 } from '@/lib/ppmp/category-extract';
+import { getCategoryMatch, normalize } from '@/lib/ppmp/normalize';
 import {
     index as categoryImportIndex,
     sentinels as categoryImportSentinels,
@@ -57,6 +60,7 @@ export default function CategoryImport({
     const [step, setStep] = useState<CimpStep>('upload');
     const [importing, setImporting] = useState(false);
     const [ensuringSentinels, setEnsuringSentinels] = useState(false);
+    const [decisions, setDecisions] = useState<Record<string, string>>({});
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
@@ -70,6 +74,7 @@ export default function CategoryImport({
             setRawSheet(null);
             setStep('upload');
             setSelected(new Set());
+            setDecisions({});
         });
 
     const canCalibrate = selectedSheet !== null;
@@ -118,6 +123,7 @@ export default function CategoryImport({
         setPpmpRawItems([]);
         setRawSheet(null);
         setSelected(new Set());
+        setDecisions({});
     }
 
     function handleVerify() {
@@ -172,14 +178,35 @@ export default function CategoryImport({
 
         setExtractResult(res);
         setSelected(new Set(res.unique.map((u) => u.normalized)));
+        setDecisions(
+            Object.fromEntries(
+                res.unique.map((u) => [u.normalized, newDecisionItem(u.raw)]),
+            ),
+        );
     }
 
     function handleImport() {
         if (!extractResult || extractResult.unique.length === 0) return;
 
-        const toImport = extractResult.unique.filter((u) =>
-            selected.has(u.normalized),
-        );
+        // Each row imports under its Combobox decision: `＋ raw` creates a
+        // new category, picking an existing name resolves as a duplicate.
+        // Decision-resolved duplicates are dropped client-side so the
+        // payload matches the Review count (backend would skip them anyway).
+        const toImport = extractResult
+            .unique.filter((u) => selected.has(u.normalized))
+            .map((u) => {
+                const chosen = stripDecisionPrefix(
+                    decisions[u.normalized] ?? newDecisionItem(u.raw),
+                );
+
+                return { name: chosen, normalized: normalize(chosen) };
+            })
+            .filter(
+                (c) =>
+                    c.name.trim() !== '' &&
+                    getCategoryMatch(c.normalized, existingCategories).type !==
+                        'strict',
+            );
 
         if (toImport.length === 0) return;
 
@@ -187,10 +214,7 @@ export default function CategoryImport({
         router.post(
             categoryImportStore().url as never,
             {
-                categories: toImport.map((u) => ({
-                    name: u.raw,
-                    normalized: u.normalized,
-                })),
+                categories: toImport,
             } as never,
             {
                 onFinish: () => setImporting(false),
@@ -253,6 +277,8 @@ export default function CategoryImport({
         handleImport,
         ensuringSentinels,
         handleEnsureSentinels,
+        decisions,
+        setDecisions,
 
         existingCategories,
     };
@@ -316,6 +342,7 @@ export default function CategoryImport({
                     setPpmpRawItems([]);
                     setRawSheet(null);
                     setSelected(new Set());
+                    setDecisions({});
                 }}
                 showGroupsSummary
                 onBack={() => setStep('upload')}
