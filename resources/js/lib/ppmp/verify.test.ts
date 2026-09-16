@@ -1305,3 +1305,337 @@ describe('verifyPpmpSheet — conflicting duplicate prices (aspirational)', () =
         ).toBe(true);
     });
 });
+
+describe('verifyPpmpSheet — required unit and price on item rows (aspirational)', () => {
+    // ─────────────────────────────────────────────────────────────────────
+    // DESIRED BEHAVIOR
+    //
+    // Every item row — in procurement, additional, and non-procurement —
+    // must have a non-empty unit of measurement (column G) and a positive
+    // price (column H). A row with COA + description but missing either
+    // field is incomplete; verify should reject with a row-scoped error
+    // naming the missing field.
+    //
+    // Why the verify layer, not the importer's review step:
+    //   - All four PPMP importers (category-import, price-list-import,
+    //     category-coa-mapping, price-list-quantities-import) call
+    //     `verifyPpmpSheet`. Fixing here rejects the same malformed rows
+    //     everywhere.
+    //   - The price-list importer's review step already flags empty unit
+    //     ("Unit required") and zero/empty price ("Price must be >0"), but
+    //     that check is local to that one importer. Category-COA-mapping
+    //     and quantities importers would accept the same shape silently.
+    //
+    // CURRENT BEHAVIOR
+    //
+    // `verifySection` for additional/non-procurement defines
+    // `isFalsyUnit` and `isFalsyPrice` and uses them only in the
+    // "all four falsy → skip row" heuristic. A row with COA + description
+    // present but unit/price empty passes the branch logic and reaches
+    // `if (coaNorm && dataRaw) { itemCount++; continue; }` — accepted, no
+    // error. Same for procurement: the item-row branch (`coaNorm &&
+    // dataRaw`) doesn't inspect unit or price at all.
+    //
+    // These four tests are red now. They go green once `verifySection`
+    // emits an error when an item row (COA + description both present)
+    // has empty unit or non-positive/empty price.
+    // ─────────────────────────────────────────────────────────────────────
+
+    it('procurement item with empty unit — flagged', () => {
+        const wb = buildWorkbook([
+            /*  1 */ ['', '', '', 'COA', 'Item#', 'Category', 'Unit', 'Price'],
+            /*  2 */ ['', '', '', '', '', 'OFFICE SUPPLIES', '', ''],
+            /*  3 */ ['', '', '', '', '', 'Office Supplies Expenses', '', ''],
+            /*  4 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '1',
+                'Bond paper',
+                '', // ← unit empty
+                250,
+            ],
+            /*  5 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
+            /*  6 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
+            /*  7 */ [
+                '',
+                '',
+                '',
+                'Accountable Forms Expenses',
+                '1',
+                'Stapler',
+                'pc',
+                100,
+            ],
+            /*  8 */ ['', '', '', '', '', 'ADDITIONAL ITEMS - TOTAL', '', ''],
+            /*  9 */ [
+                '',
+                '',
+                '',
+                '',
+                '',
+                'NON-PROCUREMENT REQUIREMENTS',
+                '',
+                '',
+            ],
+            /* 10 */ [
+                '',
+                '',
+                '',
+                'Food Supplies Expenses',
+                '1',
+                'Fee',
+                'lot',
+                500,
+            ],
+            /* 11 */ ['', '', '', '', '', 'NON-PROCUREMENT - TOTAL', '', ''],
+        ]);
+
+        const result = verifyPpmpSheet(
+            wb,
+            'Sheet1',
+            cfg({
+                headerRow: 1,
+                additionalItemsHeaderRow: 6,
+                nonProcurementHeaderRow: 9,
+            }),
+        );
+
+        console.log(summarize(result));
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some(
+                (e) =>
+                    e.row === 4 &&
+                    /unit.*(required|empty|missing)/i.test(e.message),
+            ),
+        ).toBe(true);
+    });
+
+    it('procurement item with empty price — flagged', () => {
+        const wb = buildWorkbook([
+            /*  1 */ ['', '', '', 'COA', 'Item#', 'Category', 'Unit', 'Price'],
+            /*  2 */ ['', '', '', '', '', 'OFFICE SUPPLIES', '', ''],
+            /*  3 */ ['', '', '', '', '', 'Office Supplies Expenses', '', ''],
+            /*  4 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '1',
+                'Bond paper',
+                'ream',
+                '', // ← price empty
+            ],
+            /*  5 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
+            /*  6 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
+            /*  7 */ [
+                '',
+                '',
+                '',
+                'Accountable Forms Expenses',
+                '1',
+                'Stapler',
+                'pc',
+                100,
+            ],
+            /*  8 */ ['', '', '', '', '', 'ADDITIONAL ITEMS - TOTAL', '', ''],
+            /*  9 */ [
+                '',
+                '',
+                '',
+                '',
+                '',
+                'NON-PROCUREMENT REQUIREMENTS',
+                '',
+                '',
+            ],
+            /* 10 */ [
+                '',
+                '',
+                '',
+                'Food Supplies Expenses',
+                '1',
+                'Fee',
+                'lot',
+                500,
+            ],
+            /* 11 */ ['', '', '', '', '', 'NON-PROCUREMENT - TOTAL', '', ''],
+        ]);
+
+        const result = verifyPpmpSheet(
+            wb,
+            'Sheet1',
+            cfg({
+                headerRow: 1,
+                additionalItemsHeaderRow: 6,
+                nonProcurementHeaderRow: 9,
+            }),
+        );
+
+        console.log(summarize(result));
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some(
+                (e) =>
+                    e.row === 4 &&
+                    /price.*(required|empty|missing|invalid|>0)/i.test(
+                        e.message,
+                    ),
+            ),
+        ).toBe(true);
+    });
+
+    it('additional item with empty unit — flagged', () => {
+        // Mirrors the crash case from production: an additional-items row
+        // with COA + description but no unit. Currently `normalize` was
+        // crashing on this because `unitRaw` was null; with the `?? ''`
+        // guard in place it no longer crashes, but verify still accepts
+        // the row. This test asserts verify should *reject* it.
+        const wb = buildWorkbook([
+            /*  1 */ ['', '', '', 'COA', 'Item#', 'Category', 'Unit', 'Price'],
+            /*  2 */ ['', '', '', '', '', 'OFFICE SUPPLIES', '', ''],
+            /*  3 */ ['', '', '', '', '', 'Office Supplies Expenses', '', ''],
+            /*  4 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '1',
+                'Bond paper',
+                'ream',
+                250,
+            ],
+            /*  5 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
+            /*  6 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
+            /*  7 */ [
+                '',
+                '',
+                '',
+                'Training Expenses',
+                '1',
+                'Year-End Accomplishment and Assessment',
+                '', // ← unit empty
+                5000,
+            ],
+            /*  8 */ ['', '', '', '', '', 'ADDITIONAL ITEMS - TOTAL', '', ''],
+            /*  9 */ [
+                '',
+                '',
+                '',
+                '',
+                '',
+                'NON-PROCUREMENT REQUIREMENTS',
+                '',
+                '',
+            ],
+            /* 10 */ [
+                '',
+                '',
+                '',
+                'Food Supplies Expenses',
+                '1',
+                'Fee',
+                'lot',
+                500,
+            ],
+            /* 11 */ ['', '', '', '', '', 'NON-PROCUREMENT - TOTAL', '', ''],
+        ]);
+
+        const result = verifyPpmpSheet(
+            wb,
+            'Sheet1',
+            cfg({
+                headerRow: 1,
+                additionalItemsHeaderRow: 6,
+                nonProcurementHeaderRow: 9,
+            }),
+        );
+
+        console.log(summarize(result));
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some(
+                (e) =>
+                    e.row === 7 &&
+                    /unit.*(required|empty|missing)/i.test(e.message),
+            ),
+        ).toBe(true);
+    });
+
+    it('additional item with empty price — flagged', () => {
+        const wb = buildWorkbook([
+            /*  1 */ ['', '', '', 'COA', 'Item#', 'Category', 'Unit', 'Price'],
+            /*  2 */ ['', '', '', '', '', 'OFFICE SUPPLIES', '', ''],
+            /*  3 */ ['', '', '', '', '', 'Office Supplies Expenses', '', ''],
+            /*  4 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '1',
+                'Bond paper',
+                'ream',
+                250,
+            ],
+            /*  5 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
+            /*  6 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
+            /*  7 */ [
+                '',
+                '',
+                '',
+                'Training Expenses',
+                '1',
+                'Year-End Accompanment and Assessment',
+                'lot',
+                '', // ← price empty
+            ],
+            /*  8 */ ['', '', '', '', '', 'ADDITIONAL ITEMS - TOTAL', '', ''],
+            /*  9 */ [
+                '',
+                '',
+                '',
+                '',
+                '',
+                'NON-PROCUREMENT REQUIREMENTS',
+                '',
+                '',
+            ],
+            /* 10 */ [
+                '',
+                '',
+                '',
+                'Food Supplies Expenses',
+                '1',
+                'Fee',
+                'lot',
+                500,
+            ],
+            /* 11 */ ['', '', '', '', '', 'NON-PROCUREMENT - TOTAL', '', ''],
+        ]);
+
+        const result = verifyPpmpSheet(
+            wb,
+            'Sheet1',
+            cfg({
+                headerRow: 1,
+                additionalItemsHeaderRow: 6,
+                nonProcurementHeaderRow: 9,
+            }),
+        );
+
+        console.log(summarize(result));
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some(
+                (e) =>
+                    e.row === 7 &&
+                    /price.*(required|empty|missing|invalid|>0)/i.test(
+                        e.message,
+                    ),
+            ),
+        ).toBe(true);
+    });
+});
+

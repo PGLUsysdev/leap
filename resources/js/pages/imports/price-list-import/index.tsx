@@ -188,11 +188,19 @@ export default function PriceListImport({
     function handleBatchApplyGroup(group: ExtractedCoaGroup) {
         const picked =
             batchSelections[group.coaNorm] ??
-            (group.topSuggestion ? formatCoaOption(group.topSuggestion) : '');
+            (group.topSuggestion
+                ? formatCoaOption(group.topSuggestion).replace(/^coa:\d+:/, '')
+                : '');
 
-        // No silent fallback: if the user's pick doesn't resolve to a real COA,
-        // do nothing. The batch panel will keep showing the pick unchanged.
-        const id = parseCoaOptionId(picked);
+        // Prefer the prefixed ID (backward-compat), then fall back to a
+        // label → id lookup, matching `handleCoaOverrideChange`.
+        const id =
+            parseCoaOptionId(picked) ??
+            existingCoas.find(
+                (c) => `${c.path} — ${c.account_title}` === picked,
+            )?.id ??
+            null;
+
         if (id === null) return;
 
         setCoaOverrides((prev) => {
@@ -395,6 +403,9 @@ export default function PriceListImport({
 
         if (reviewFilter === 'longDesc')
             return verifiedItems.filter((v) => !v.descriptionValid);
+
+        if (reviewFilter === 'overrides')
+            return verifiedItems.filter((v) => v.overrideId !== null);
 
         return verifiedItems;
     }, [verifiedItems, reviewFilter]);
@@ -744,9 +755,13 @@ export default function PriceListImport({
             }
         }
 
-        const unique = [...seen.values()].sort((a, b) =>
-            a.description.localeCompare(b.description),
-        );
+        // No sort — preserve extraction order. `seen` is a Map, so
+        // iterating `values()` yields entries in first-insertion order,
+        // which is procurement → additional → non-procurement, each in
+        // sheet row order. This order flows through `uniqueItems` →
+        // `verifiedItems` → `filteredItems` → the table and the import
+        // payload.
+        const unique = [...seen.values()];
         setUniqueItems(unique);
         setSelected(new Set(unique.map((u) => u.key)));
         setCoaOverrides({});

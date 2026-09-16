@@ -11,7 +11,12 @@ import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 export type PriceListSheetConfig = SharedSheetConfig;
 
 export type PliStep = 'upload' | 'calibrate' | 'verify' | 'extract' | 'review';
-export type ReviewFilter = 'all' | 'errors' | 'duplicates' | 'longDesc';
+export type ReviewFilter =
+    | 'all'
+    | 'errors'
+    | 'duplicates'
+    | 'longDesc'
+    | 'overrides';
 
 export type VerifyResult = {
     valid: boolean;

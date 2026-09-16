@@ -7,6 +7,8 @@
 // PPMP there is one verifier. Strict: all 3 sections (procurement, additional,
 // non-procurement) are validated; procurement is cat → coa → items → total via
 // group-state machine, additional/non-proc are item-per-row with COA required.
+// Every item row (COA + description present) must also have a unit and a
+// positive price — enforced in all three sections.
 // Quantities sheets (cfg.columnConfig.qtyStart) additionally validate 12 qty columns
 // (every other column from qtyStart) are numeric.
 // Returns warnings: [] for PPMP (reserved for future non-blocking issues) so the
@@ -75,6 +77,18 @@ function parseQty(raw: string | null): number | null {
 }
 
 /**
+ * Parse a price cell into a number. Returns NaN for empty, non-numeric, or
+ * non-positive values. Used by both the item-row validator and the duplicate
+ * price check.
+ */
+function parsePrice(raw: string | null): number {
+    if (!raw) return NaN;
+    const num = Number(raw.replace(/,/g, ''));
+    if (Number.isNaN(num)) return NaN;
+    return num;
+}
+
+/**
  * Returns the Excel error code (e.g. '#REF!') if the cell holds an error,
  * else null. ExcelJS represents errors as `{ error: '#REF!' }` (a plain
  * error value) or `{ formula/sharedFormula, result: { error: '#REF!' } }`
@@ -106,7 +120,7 @@ function excelErrorOnCell(cell: ExcelJS.Cell): string | null {
  * Runs across all sections. Rows without a COA (category headers, COA label
  * rows, section headers, totals) are naturally skipped by the `!coaRaw`
  * guard. Rows with no price or non-positive price are skipped — those are
- * separate concerns.
+ * reported by the per-row unit/price validator instead.
  */
 function checkConflictingDuplicatePrices(
     ws: ExcelJS.Worksheet,
@@ -133,10 +147,13 @@ function checkConflictingDuplicatePrices(
 
         for (let r = start; r <= end && r <= lastRow; r++) {
             const row = ws.getRow(r);
-            const coaRaw = cellText(row.getCell(cols.coa));
-            const descRaw = cellText(row.getCell(cols.description));
-            const unitRaw = cellText(row.getCell(cols.unit));
-            const priceRaw = cellText(row.getCell(cols.price));
+            // Default all four to '' so nothing downstream can be null.
+            // `cellText` returns null for empty cells; `normalize(null)`
+            // throws on `.trim()`.
+            const coaRaw = cellText(row.getCell(cols.coa)) ?? '';
+            const descRaw = cellText(row.getCell(cols.description)) ?? '';
+            const unitRaw = cellText(row.getCell(cols.unit)) ?? '';
+            const priceRaw = cellText(row.getCell(cols.price)) ?? '';
 
             // Only item rows have both COA and description populated.
             // Category headers, COA labels, section headers, and totals
@@ -146,9 +163,7 @@ function checkConflictingDuplicatePrices(
             const descNorm = normalize(descRaw);
             if (descNorm === 'description' || isTotalRow(descNorm)) continue;
 
-            const priceNum = priceRaw
-                ? Number(priceRaw.replace(/,/g, ''))
-                : NaN;
+            const priceNum = parsePrice(priceRaw);
             if (!Number.isFinite(priceNum) || priceNum <= 0) continue;
 
             const key = `${normalize(coaRaw)}|${descNorm}|${normalize(unitRaw)}`;
@@ -189,6 +204,41 @@ function checkConflictingDuplicatePrices(
     }
 
     return issues;
+}
+
+/**
+ * Validate a single item row's required fields. Called for every row where
+ * both COA and description are present — i.e. an item row — in all three
+ * sections. Pushes a `unit is required` issue if column G is blank and a
+ * `price is required and must be >0` issue if column H is missing,
+ * non-numeric, or non-positive.
+ *
+ * Exposed as a helper so the same rule applies uniformly and so it's easy
+ * to add more required-field checks later.
+ */
+function validateItemRow(
+    r: number,
+    dataRaw: string,
+    unitRaw: string | null,
+    priceRaw: string | null,
+    cols: { unit: string; price: string },
+    sectionName: string,
+    errors: PpmpVerifyIssue[],
+): void {
+    if (!unitRaw || !unitRaw.trim()) {
+        errors.push({
+            row: r,
+            message: `${sectionName} item at row ${r} ("${dataRaw}") unit is required (${cols.unit}${r})`,
+        });
+    }
+
+    const priceNum = parsePrice(priceRaw);
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+        errors.push({
+            row: r,
+            message: `${sectionName} item at row ${r} ("${dataRaw}") price is required and must be >0 (${cols.price}${r})`,
+        });
+    }
 }
 
 export function verifyPpmpSheet(
@@ -460,6 +510,17 @@ export function verifyPpmpSheet(
                 }
 
                 if (coaNorm && dataRaw) {
+                    // Item row (COA + description present). Validate the
+                    // remaining required fields before counting it as good.
+                    validateItemRow(
+                        r,
+                        dataRaw,
+                        unitRaw,
+                        priceRaw,
+                        { unit: unitColumn, price: priceColumn },
+                        sectionName,
+                        errors,
+                    );
                     itemCount++;
                     continue;
                 }
@@ -468,21 +529,6 @@ export function verifyPpmpSheet(
                     errors.push({
                         row: r,
                         message: `${sectionName} item at row ${r} ("${dataRaw}") missing COA (${coaColumn}) in ${sectionName}`,
-                    });
-                }
-
-                // Quantities qty-numeric check per row (only for quantities sheets)
-                if (qtyCols && dataRaw && coaNorm) {
-                    const qtyRaws = qtyCols.map((c) =>
-                        cellText(row.getCell(c)),
-                    );
-                    qtyRaws.forEach((q, i) => {
-                        if (q && parseQty(q) === null) {
-                            errors.push({
-                                row: r,
-                                message: `Qty ${QUANTITY_MONTHS[i]} "${q}" is not a number`,
-                            });
-                        }
                     });
                 }
             }
@@ -519,6 +565,8 @@ export function verifyPpmpSheet(
             const row = ws.getRow(r);
             const coaRaw = cellText(row.getCell(coaColumn));
             const dataRaw = cellText(row.getCell(dataColumn));
+            const unitRaw = cellText(row.getCell(unitColumn));
+            const priceRaw = cellText(row.getCell(priceColumn));
 
             if (!dataRaw && !coaRaw) continue;
 
@@ -528,6 +576,19 @@ export function verifyPpmpSheet(
             if (dataNorm === 'description') continue;
 
             if (coaNorm && dataRaw) {
+                // Item row. Validate unit + price regardless of whether the
+                // surrounding category/COA state is valid — so a malformed
+                // sheet reports all problems at once.
+                validateItemRow(
+                    r,
+                    dataRaw,
+                    unitRaw,
+                    priceRaw,
+                    { unit: unitColumn, price: priceColumn },
+                    sectionName,
+                    errors,
+                );
+
                 if (!currentCat) {
                     errors.push({
                         row: r,
@@ -699,7 +760,6 @@ export function verifyPpmpSheet(
                 const dataRaw = cellText(row.getCell(dataColumn));
                 if (!coaRaw || !dataRaw) continue;
                 const qtyRaws = qtyCols.map((c) => cellText(row.getCell(c)));
-                const hasAnyQty = qtyRaws.some((q) => !!q);
                 qtyRaws.forEach((q, i) => {
                     if (q && parseQty(q) === null) {
                         const dup = errors.some(
@@ -715,23 +775,6 @@ export function verifyPpmpSheet(
                         }
                     }
                 });
-                void hasAnyQty;
-            }
-
-            for (let r = startRow; r <= endRow && r <= lastRow; r++) {
-                const row = ws.getRow(r);
-                const coaRaw = cellText(row.getCell(coaColumn));
-                const dataRaw = cellText(row.getCell(dataColumn));
-                const unitRaw = cellText(row.getCell(unitColumn));
-                if (!coaRaw || !dataRaw) continue;
-                if (!unitRaw) {
-                    const dup = errors.some(
-                        (e) => e.row === r && e.message === 'Unit is empty',
-                    );
-                    if (!dup) {
-                        errors.push({ row: r, message: 'Unit is empty' });
-                    }
-                }
             }
         }
     };
