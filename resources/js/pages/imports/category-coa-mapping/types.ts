@@ -6,82 +6,28 @@ import type { CategoryCoaSheetConfig } from '@/lib/ppmp/sheet-config';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
 import type { RawSheet } from '@/lib/raw-extract';
+import type { PpmpVerifySheetResult } from '@/components/imports/import-verify-step';
+import type {
+    EffectiveVerificationState,
+    EffectiveVerifiedPair,
+    ExistingMappingRef,
+    ExtractedPair,
+    VerificationState,
+    VerifiedPair,
+} from '@/lib/ppmp/mapping-extract';
 
 export type CcmStep = 'upload' | 'calibrate' | 'verify' | 'extract' | 'review';
 
-export type VerifyFormatResult = {
-    valid: boolean;
-    message: string;
-    errors: Array<{ row: number; message: string }>;
-    groups: { procurement: number; additional: number; nonProcurement: number };
-    details: string[];
-};
+export type VerifyFormatResult = PpmpVerifySheetResult;
 
-export type ExistingMapping = {
-    chart_of_account_id: number;
-    ppmp_category_id: number;
-};
+export type ExistingMapping = ExistingMappingRef;
 
-export type VerifiedPair = {
-    category: string;
-    coa: string;
-    section: string;
-    sheet: string;
-    catRow: number;
-    coaRow: number;
-    items: number;
-    catNorm: string;
-    coaNorm: string;
-    catExists: boolean;
-    coaExists: boolean;
-    mappingExists: boolean;
-    catId: number | null;
-    coaId: number | null;
-    catMatchType: 'strict' | 'partial' | 'none';
-    coaMatchType: 'strict' | 'partial' | 'none';
-    catMatch: ExistingCategory | null;
-    coaMatch: ExistingCoa | null;
-    catTopMatches: Array<{ category: ExistingCategory; score: number }>;
-    coaTopMatches: Array<{ coa: ExistingCoa; score: number }>;
-};
-
-export type VerificationState = {
-    total: number;
-    catFound: number;
-    coaFound: number;
-    mappingFound: number;
-    missingCat: number;
-    missingCoa: number;
-    missingMapping: number;
-    verifiedPairs: VerifiedPair[];
-};
-
-export type EffectiveVerifiedPair = VerifiedPair & {
-    key: string;
-    overrideId: number | null;
-    effectiveCoa: ExistingCoa | null;
-    effectiveCoaExists: boolean;
-    effectiveCoaId: number | null;
-    effectiveCoaMatchType: 'strict' | 'partial' | 'none';
-    effectiveMappingExists: boolean;
-};
-
-export type EffectiveVerificationState = VerificationState & {
-    effectivePairs: EffectiveVerifiedPair[];
-    effCoaFound: number;
-    effMappingFound: number;
-    effMissingMapping: number;
-    effMissingCoa: number;
-};
-
-export type ExtractedPair = {
-    category: string;
-    coa: string;
-    catRow: number;
-    coaRow: number;
-    items: number;
-    section: 'procurement' | 'additional' | 'non-procurement';
-    sheet?: string;
+export type {
+    EffectiveVerificationState,
+    EffectiveVerifiedPair,
+    ExtractedPair,
+    VerificationState,
+    VerifiedPair,
 };
 
 export type CategoryCoaMappingState = {
@@ -102,7 +48,6 @@ export type CategoryCoaMappingState = {
     formatValid: boolean;
     canReview: boolean;
     canExtract: boolean;
-    hasAnyExtract: boolean;
 
     // calibration
     config: CategoryCoaSheetConfig | null;
@@ -112,16 +57,11 @@ export type CategoryCoaMappingState = {
 
     // upload
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
-    handleSheetToggle: (sheet: string) => void;
-    handleSheetClick: (sheet: string) => void;
+    handleSheetChange: (sheet: string | null) => void;
 
-    // verify format
-    formatResults: Record<string, VerifyFormatResult>;
-    setFormatResults: Dispatch<
-        SetStateAction<Record<string, VerifyFormatResult>>
-    >;
-    activeFormatSheet: string;
-    setActiveFormatSheet: (s: string) => void;
+    // verify format (single sheet)
+    formatResult: VerifyFormatResult | null;
+    setFormatResult: Dispatch<SetStateAction<VerifyFormatResult | null>>;
     handleVerifyFormat: () => void;
 
     // verify + review
@@ -134,13 +74,13 @@ export type CategoryCoaMappingState = {
     isSaving: boolean;
     handleBulkCreateMappings: () => void;
 
-    // shared ppmp raw extract
-    ppmpExtractResults: Record<string, PpmpExtractResult>;
-    setPpmpExtractResults: Dispatch<
-        SetStateAction<Record<string, PpmpExtractResult>>
-    >;
+    // shared ppmp raw extract (single sheet preview)
+    ppmpExtract: PpmpExtractResult | null;
+    setPpmpExtract: Dispatch<SetStateAction<PpmpExtractResult | null>>;
     ppmpRawItems: RawPpmpItem[];
     setPpmpRawItems: Dispatch<SetStateAction<RawPpmpItem[]>>;
+    rawSheet: RawSheet | null;
+    setRawSheet: Dispatch<SetStateAction<RawSheet | null>>;
     handlePpmpExtract: () => void;
 
     // page props
