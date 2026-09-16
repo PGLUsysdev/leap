@@ -74,6 +74,27 @@ function parseQty(raw: string | null): number | null {
     return num;
 }
 
+/**
+ * Returns the Excel error code (e.g. '#REF!') if the cell holds an error,
+ * else null. ExcelJS represents errors as `{ error: '#REF!' }` (a plain
+ * error value) or `{ formula/sharedFormula, result: { error: '#REF!' } }`
+ * (a broken formula). Neither is a valid COA value.
+ */
+function excelErrorOnCell(cell: ExcelJS.Cell): string | null {
+    const v = cell.value;
+    if (v && typeof v === 'object') {
+        const direct = (v as { error?: unknown }).error;
+        if (typeof direct === 'string') return direct;
+
+        const res = (v as { result?: unknown }).result;
+        if (res && typeof res === 'object') {
+            const nested = (res as { error?: unknown }).error;
+            if (typeof nested === 'string') return nested;
+        }
+    }
+    return null;
+}
+
 export function verifyPpmpSheet(
     workbook: ExcelJS.Workbook | null,
     sheetName: unknown,
@@ -95,14 +116,6 @@ export function verifyPpmpSheet(
         return makeFail('Workbook not loaded');
     }
 
-    console.log(
-        '[verifyPpmpSheet] sheetName:',
-        sheetName,
-        'type:',
-        typeof sheetName,
-        'isArray:',
-        Array.isArray(sheetName),
-    );
     const rawName = Array.isArray(sheetName)
         ? String((sheetName as unknown[])[0] ?? sheetName)
         : typeof sheetName === 'string'
@@ -290,7 +303,9 @@ export function verifyPpmpSheet(
 
             for (let r = startRow; r <= endRow && r <= lastRow; r++) {
                 const row = ws.getRow(r);
-                const coaRaw = cellText(row.getCell(coaColumn));
+                const coaCell = row.getCell(coaColumn);
+                const coaErr = excelErrorOnCell(coaCell);
+                const coaRaw = cellText(coaCell);
                 const dataRaw = cellText(row.getCell(dataColumn));
                 const unitRaw = cellText(row.getCell(unitColumn));
                 const priceRaw = cellText(row.getCell(priceColumn));
@@ -337,6 +352,17 @@ export function verifyPpmpSheet(
                 if (isFalsyItem && isFalsyCoa && isFalsyUnit && isFalsyPrice)
                     continue;
 
+                // Broken COA formula (Excel error) — distinct from a truly
+                // blank COA. Scope: additional only for now; non-procurement
+                // falls through to the existing "missing COA" path.
+                if (dataRaw && coaErr && sectionName === 'additional') {
+                    errors.push({
+                        row: r,
+                        message: `${sectionName} item at row ${r} ("${dataRaw}") has a broken COA formula in ${coaColumn}${r} (${coaErr}) — fix the formula or replace with a COA name`,
+                    });
+                    continue;
+                }
+
                 if (coaNorm && dataRaw) {
                     itemCount++;
                     continue;
@@ -345,7 +371,7 @@ export function verifyPpmpSheet(
                 if (dataRaw && !coaNorm) {
                     errors.push({
                         row: r,
-                        message: `${sectionName} item at row ${r} ("${dataRaw}") missing COA (D) in ${sectionName}`,
+                        message: `${sectionName} item at row ${r} ("${dataRaw}") missing COA (${coaColumn}) in ${sectionName}`,
                     });
                 }
 

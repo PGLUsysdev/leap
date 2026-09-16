@@ -980,3 +980,242 @@ describe('verifyPpmpSheet — failing', () => {
         ).toBe(true);
     });
 });
+
+describe('verifyPpmpSheet — additional item with broken COA formula (aspirational)', () => {
+    // ─────────────────────────────────────────────────────────────────────
+    // DESIRED BEHAVIOR
+    //
+    // An additional-items row whose COA cell (D) contains an Excel error
+    // (`=#REF!`, `#VALUE!`, `#N/A`, `#DIV/0!`, …) is not a "blank COA".
+    // It is a *broken formula* and the verifier should say so — with a
+    // row-scoped error that names the error code, so the user knows to fix
+    // the formula rather than fill in a missing value.
+    //
+    // The error must be the SINGLE error reported for that row. Reporting
+    // both "broken formula" and "missing COA" for the same cell is noise.
+    //
+    // CURRENT BEHAVIOR
+    //
+    // `cellText()` flattens the error object to `''`, so `coaNorm` is null
+    // and the existing branch fires:
+    //
+    //     additional item at row 7 ("Stapler") missing COA (D) in additional
+    //
+    // The sheet is rejected (valid === false), so the test *looks* like it
+    // passes if we only assert `/missing COA/i`. It's green for the wrong
+    // reason. These assertions are deliberately strict to fail until the
+    // verifier inspects the raw cell value for the `{ error }` shape.
+    // ─────────────────────────────────────────────────────────────────────
+
+    function setCellError(
+        wb: ExcelJS.Workbook,
+        sheet: string,
+        addr: string,
+        error = '#REF!',
+    ) {
+        const ws = wb.getWorksheet(sheet);
+        if (!ws) throw new Error(`no sheet ${sheet}`);
+        ws.getCell(addr).value = { error };
+    }
+
+    it('additional item with #REF! in COA — reports a broken-formula error, not "missing COA"', () => {
+        const wb = buildWorkbook([
+            /*  1 */ ['', '', '', 'COA', 'Item#', 'Category', 'Unit', 'Price'],
+            /*  2 */ ['', '', '', '', '', 'OFFICE SUPPLIES', '', ''],
+            /*  3 */ ['', '', '', '', '', 'Office Supplies Expenses', '', ''],
+            /*  4 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '1',
+                'Bond paper',
+                'ream',
+                250,
+            ],
+            /*  5 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
+            /*  6 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
+            /*  7 */ [
+                '',
+                '',
+                '',
+                'Accountable Forms Expenses',
+                '1',
+                'Stapler',
+                'pc',
+                100,
+            ],
+            /*  8 */ ['', '', '', '', '', 'ADDITIONAL ITEMS - TOTAL', '', ''],
+            /*  9 */ [
+                '',
+                '',
+                '',
+                '',
+                '',
+                'NON-PROCUREMENT REQUIREMENTS',
+                '',
+                '',
+            ],
+            /* 10 */ [
+                '',
+                '',
+                '',
+                'Food Supplies Expenses',
+                '1',
+                'Fee',
+                'lot',
+                500,
+            ],
+            /* 11 */ ['', '', '', '', '', 'NON-PROCUREMENT - TOTAL', '', ''],
+        ]);
+        setCellError(wb, 'Sheet1', 'D7');
+
+        const result = verifyPpmpSheet(
+            wb,
+            'Sheet1',
+            cfg({
+                headerRow: 1,
+                additionalItemsHeaderRow: 6,
+                nonProcurementHeaderRow: 9,
+            }),
+        );
+
+        console.log(summarize(result));
+
+        // Sheet is rejected.
+        expect(result.valid).toBe(false);
+
+        // The error names the broken formula / Excel error code.
+        // Current code emits "missing COA" instead — this assertion is red.
+        const row7 = result.errors.filter((e) => e.row === 7);
+        expect(row7).toHaveLength(1);
+        expect(row7[0].message).toMatch(/broken COA|excel error|#REF!/i);
+
+        // Explicitly NOT the generic missing-COA message. Guards against a
+        // future refactor that emits both.
+        expect(row7[0].message).not.toMatch(/missing COA/i);
+    });
+
+    it.each([
+        ['#REF!', { error: '#REF!' }],
+        ['#VALUE!', { error: '#VALUE!' }],
+        ['#N/A', { error: '#N/A' }],
+        ['#DIV/0!', { error: '#DIV/0!' }],
+    ])(
+        'additional item with %s in COA — reports a broken-formula error',
+        (_code, payload) => {
+            const wb = buildWorkbook([
+                /*  1 */ [
+                    '',
+                    '',
+                    '',
+                    'COA',
+                    'Item#',
+                    'Category',
+                    'Unit',
+                    'Price',
+                ],
+                /*  2 */ ['', '', '', '', '', 'OFFICE SUPPLIES', '', ''],
+                /*  3 */ [
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'Office Supplies Expenses',
+                    '',
+                    '',
+                ],
+                /*  4 */ [
+                    '',
+                    '',
+                    '',
+                    'Office Supplies Expenses',
+                    '1',
+                    'Bond paper',
+                    'ream',
+                    250,
+                ],
+                /*  5 */ [
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'OFFICE SUPPLIES - TOTAL',
+                    '',
+                    '',
+                ],
+                /*  6 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
+                /*  7 */ [
+                    '',
+                    '',
+                    '',
+                    'Accountable Forms Expenses',
+                    '1',
+                    'Stapler',
+                    'pc',
+                    100,
+                ],
+                /*  8 */ [
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'ADDITIONAL ITEMS - TOTAL',
+                    '',
+                    '',
+                ],
+                /*  9 */ [
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'NON-PROCUREMENT REQUIREMENTS',
+                    '',
+                    '',
+                ],
+                /* 10 */ [
+                    '',
+                    '',
+                    '',
+                    'Food Supplies Expenses',
+                    '1',
+                    'Fee',
+                    'lot',
+                    500,
+                ],
+                /* 11 */ [
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    'NON-PROCUREMENT - TOTAL',
+                    '',
+                    '',
+                ],
+            ]);
+            wb.getWorksheet('Sheet1')!.getCell('D7').value = payload as never;
+
+            const result = verifyPpmpSheet(
+                wb,
+                'Sheet1',
+                cfg({
+                    headerRow: 1,
+                    additionalItemsHeaderRow: 6,
+                    nonProcurementHeaderRow: 9,
+                }),
+            );
+
+            console.log(summarize(result));
+            expect(result.valid).toBe(false);
+            const row7 = result.errors.filter((e) => e.row === 7);
+            expect(row7).toHaveLength(1);
+            expect(row7[0].message).toMatch(/broken COA|excel error/i);
+            expect(row7[0].message).not.toMatch(/missing COA/i);
+        },
+    );
+});

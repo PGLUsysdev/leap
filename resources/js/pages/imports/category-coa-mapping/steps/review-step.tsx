@@ -126,8 +126,7 @@ export function ReviewStep({ s }: { s: CategoryCoaMappingState }) {
             (group.topSuggestion
                 ? stripCoaPrefix(formatCoaOption(group.topSuggestion))
                 : '');
-        const id =
-            coaLabelToId.get(picked) ?? group.topSuggestion?.id ?? null;
+        const id = coaLabelToId.get(picked) ?? group.topSuggestion?.id ?? null;
 
         if (id === null || id === undefined) return;
 
@@ -259,8 +258,8 @@ export function ReviewStep({ s }: { s: CategoryCoaMappingState }) {
                     <p className="mb-2 text-xs font-semibold">
                         Batch map by Excel COA — {batchGroups.length} group
                         {batchGroups.length === 1 ? '' : 's'} still need
-                        {batchGroups.length === 1 ? 's' : ''} a pick. One
-                        choice applies to every row in the group.
+                        {batchGroups.length === 1 ? 's' : ''} a pick. One choice
+                        applies to every row in the group.
                     </p>
                     <div className="flex max-h-64 flex-col gap-2 overflow-auto">
                         {batchGroups.map((group) => {
