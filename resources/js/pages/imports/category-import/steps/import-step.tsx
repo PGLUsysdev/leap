@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { TabsContent } from '@/components/ui/tabs';
-import { getCategoryMatch } from '@/lib/ppmp/normalize';
+import { getCategoryMatch, normalize } from '@/lib/ppmp/normalize';
 import type {
     CategoryImportState,
     CategoryReviewRow,
@@ -22,26 +22,60 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
         existingCategories,
         importing,
         handleImport,
+        ensuringSentinels,
+        handleEnsureSentinels,
         setStep,
     } = s;
 
-    const columns = useMemo(() => getCategoryReviewColumns(1), []);
+    const columns = useMemo(() => getCategoryReviewColumns(), []);
+
+    const sentinelStatuses = useMemo(() => {
+        const defs = [
+            {
+                name: 'Additional Items (Uncategorized)',
+                is_non_procurement: false,
+                is_additional: true,
+            },
+            {
+                name: 'Non-Procurement (Uncategorized)',
+                is_non_procurement: true,
+                is_additional: true,
+            },
+        ];
+
+        return defs.map((def) => {
+            const found = existingCategories.find(
+                (c) => normalize(c.name) === normalize(def.name),
+            );
+
+            if (!found)
+                return { ...def, status: 'missing' as const };
+
+            if (
+                found.is_non_procurement !== def.is_non_procurement ||
+                found.is_additional !== def.is_additional
+            )
+                return { ...def, status: 'misconfigured' as const };
+
+            return { ...def, status: 'exists' as const };
+        });
+    }, [existingCategories]);
+
+    const sentinelsOk = sentinelStatuses.every((st) => st.status === 'exists');
 
     const rows = useMemo<CategoryReviewRow[]>(() => {
         if (!extractResult) return [];
 
         return extractResult.unique.map((u) => {
             const match = getCategoryMatch(u.normalized, existingCategories);
-            const first = u.locations[0];
 
             return {
                 normalized: u.normalized,
                 raw: u.raw,
-                sheets: u.sheets,
-                sheetCount: u.sheetCount,
+                row: u.row,
+                address: u.address,
                 count: u.count,
-                locations: u.locations,
-                firstAddress: first?.address ?? '',
+                rows: u.rows,
                 matchType: match.type,
                 matchName:
                     match.type === 'strict'
@@ -154,6 +188,59 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                 </div>
             </div>
 
+            <div className="rounded-lg border p-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h3 className="text-sm font-semibold">
+                            System categories
+                        </h3>
+                        <p className="text-muted-foreground text-xs">
+                            Buckets for additional / non-procurement items.
+                            Checked on every visit — added or fixed if missing
+                            or modified.
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleEnsureSentinels}
+                        disabled={ensuringSentinels || sentinelsOk}
+                    >
+                        {ensuringSentinels ? (
+                            <>
+                                <Spinner /> Ensuring...
+                            </>
+                        ) : sentinelsOk ? (
+                            'All present'
+                        ) : (
+                            'Ensure sentinels'
+                        )}
+                    </Button>
+                </div>
+                <ul className="mt-2 flex flex-col gap-1">
+                    {sentinelStatuses.map((st) => (
+                        <li
+                            key={st.name}
+                            className="flex flex-wrap items-center gap-2 text-xs"
+                        >
+                            <span className="font-medium">{st.name}</span>
+                            {st.status === 'exists' ? (
+                                <Badge variant="secondary">Exists ✓</Badge>
+                            ) : st.status === 'missing' ? (
+                                <Badge variant="destructive">Missing</Badge>
+                            ) : (
+                                <Badge
+                                    variant="outline"
+                                    className="border-amber-500 text-amber-600"
+                                >
+                                    Wrong flags — will fix
+                                </Badge>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+
             <div className="rounded-lg border">
                 <div className="flex items-start justify-between gap-3 p-3 pb-0">
                     <div>
@@ -236,7 +323,7 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                                 <span className="font-mono">
                                     {d.normalized}
                                 </span>{' '}
-                                — kept {d.keptAddress} ({d.keptSheet}!
+                                — kept {d.keptAddress} (row
                                 {d.keptRow}), duplicate {d.duplicateAddress} (“
                                 {d.duplicateRaw}”)
                             </li>

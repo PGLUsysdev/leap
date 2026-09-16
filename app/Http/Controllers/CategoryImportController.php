@@ -9,6 +9,10 @@ use Inertia\Inertia;
 
 class CategoryImportController extends Controller
 {
+    private const SENTINELS = [
+        ['name' => 'Additional Items (Uncategorized)', 'is_non_procurement' => false, 'is_additional' => true],
+        ['name' => 'Non-Procurement (Uncategorized)', 'is_non_procurement' => true, 'is_additional' => true],
+    ];
     public function index()
     {
         Gate::authorize('viewAny', PpmpCategory::class);
@@ -74,6 +78,40 @@ class CategoryImportController extends Controller
             Inertia::flash('toast', ['type' => 'success', 'message' => "Imported {$inserted} categories."]);
         } else {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'No categories imported — all duplicates or invalid.']);
+        }
+
+        return redirect()->back();
+    }
+
+    public function ensureSentinels()
+    {
+        $details = [];
+
+        foreach (self::SENTINELS as $sentinel) {
+            $category = PpmpCategory::firstOrNew(['name' => $sentinel['name']]);
+            $wasNew = ! $category->exists;
+            $fixed = ! $wasNew && ((bool) $category->is_non_procurement !== $sentinel['is_non_procurement'] || (bool) $category->is_additional !== $sentinel['is_additional']);
+
+            $category->fill([
+                'is_non_procurement' => $sentinel['is_non_procurement'],
+                'is_additional' => $sentinel['is_additional'],
+            ]);
+            $category->save();
+
+            $details[] = [
+                'name' => $sentinel['name'],
+                'status' => $wasNew ? 'inserted' : ($fixed ? 'fixed' : 'exists'),
+            ];
+        }
+
+        $changed = collect($details)->filter(fn ($d) => $d['status'] !== 'exists')->count();
+
+        Inertia::flash('sentinelReport', ['details' => $details, 'changed' => $changed]);
+
+        if ($changed > 0) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => "Ensured {$changed} system categor".($changed === 1 ? 'y' : 'ies').'.']);
+        } else {
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'System categories already exist.']);
         }
 
         return redirect()->back();

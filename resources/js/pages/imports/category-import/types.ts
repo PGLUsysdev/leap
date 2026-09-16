@@ -10,7 +10,6 @@ import type { RawSheet } from '@/lib/raw-extract';
 import type {
     CategoryExtractResult,
     CategoryExtractionStats,
-    CatLocation as HelperLocation,
 } from '@/lib/ppmp/category-extract';
 
 export type CimpStep = 'upload' | 'calibrate' | 'verify' | 'extract' | 'import';
@@ -24,8 +23,6 @@ export type VerifyResult = {
     details: string[];
 };
 
-export type CatLocation = HelperLocation;
-
 export type ExtractResult = CategoryExtractResult;
 
 export type ExtractionStats = CategoryExtractionStats;
@@ -33,11 +30,10 @@ export type ExtractionStats = CategoryExtractionStats;
 export type CategoryReviewRow = {
     normalized: string;
     raw: string;
-    sheets: string[];
-    sheetCount: number;
+    row: number;
+    address: string;
     count: number;
-    locations: CatLocation[];
-    firstAddress: string;
+    rows: number[];
     matchType: 'strict' | 'partial' | 'none';
     matchName: string | null;
     topMatches: Array<{ name: string; score: number }>;
@@ -78,31 +74,29 @@ export type CategoryImportState = {
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
     handleSheetChange: (sheet: string | null) => void;
 
-    // verify
-    verifyResults: Record<string, VerifyResult>;
-    setVerifyResults: Dispatch<SetStateAction<Record<string, VerifyResult>>>;
-    activeVerifySheet: string;
-    setActiveVerifySheet: (s: string) => void;
+    // verify (single sheet)
+    verifyResult: VerifyResult | null;
+    setVerifyResult: Dispatch<SetStateAction<VerifyResult | null>>;
     handleVerify: () => void;
 
-    // extract (separate: raw preview + domain candidates)
+    // extract (separate: raw preview + domain candidates, single sheet)
     extractResult: ExtractResult | null;
     setExtractResult: Dispatch<SetStateAction<ExtractResult | null>>;
     extractionStats: ExtractionStats | null;
     handleExtract: () => void;
-    ppmpExtractResults: Record<string, PpmpExtractResult>;
-    setPpmpExtractResults: Dispatch<
-        SetStateAction<Record<string, PpmpExtractResult>>
-    >;
+    ppmpExtract: PpmpExtractResult | null;
+    setPpmpExtract: Dispatch<SetStateAction<PpmpExtractResult | null>>;
     ppmpRawItems: RawPpmpItem[];
     setPpmpRawItems: Dispatch<SetStateAction<RawPpmpItem[]>>;
-    rawSheets: Record<string, RawSheet>;
-    setRawSheets: Dispatch<SetStateAction<Record<string, RawSheet>>>;
+    rawSheet: RawSheet | null;
+    setRawSheet: Dispatch<SetStateAction<RawSheet | null>>;
     handlePpmpExtract: () => void;
     selected: Set<string>;
     setSelected: Dispatch<SetStateAction<Set<string>>>;
     importing: boolean;
     handleImport: () => void;
+    ensuringSentinels: boolean;
+    handleEnsureSentinels: () => void;
 
     // page props
     existingCategories: ExistingCategory[];

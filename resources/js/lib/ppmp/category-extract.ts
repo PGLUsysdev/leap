@@ -9,14 +9,12 @@ import { cellText } from '@/lib/excel/cell-helpers';
 import { isTotalRow, normalize } from '@/lib/ppmp/normalize';
 import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 
-export type CategoryCandidateLocation = {
-    sheet: string;
+export type CatLocation = {
     row: number;
-    col: string;
     address: string;
 };
 
-export type CatLocation = CategoryCandidateLocation;
+export type CategoryCandidateLocation = CatLocation;
 
 export type CategoryFilteredRow = {
     row: number;
@@ -31,18 +29,15 @@ export type CategoryUniqueRow = {
     normalized: string;
     rows: number[];
     count: number;
-    sheets: string[];
-    sheetCount: number;
-    locations: CategoryCandidateLocation[];
+    row: number;
+    address: string;
 };
 
 export type CategoryDuplicateRow = {
     normalized: string;
     keptRow: number;
-    keptSheet: string;
     keptAddress: string;
     duplicateRow: number;
-    duplicateSheet: string;
     duplicateAddress: string;
     duplicateRaw: string;
 };
@@ -200,41 +195,28 @@ export function extractCategoryCandidates(
         raw: string;
         normalized: string;
         rows: number[];
-        sheets: string[];
-        locations: CategoryCandidateLocation[];
     };
     const seen = new Map<string, SeenVal>();
     const duplicates: CategoryDuplicateRow[] = [];
 
     for (const c of filtered) {
         const existing = seen.get(c.normalized);
-        const loc: CategoryCandidateLocation = {
-            sheet: c.sheet,
-            row: c.row,
-            col: dataColumn,
-            address: c.address,
-        };
 
         if (!existing) {
             seen.set(c.normalized, {
                 raw: c.raw,
                 normalized: c.normalized,
                 rows: [c.row],
-                sheets: [c.sheet],
-                locations: [loc],
             });
         } else {
             existing.rows.push(c.row);
-            if (!existing.sheets.includes(c.sheet)) existing.sheets.push(c.sheet);
-            existing.locations.push(loc);
-            const kept = existing.locations[0];
+            const keptRow = existing.rows[0];
+            const keptAddress = `${sheet}!${dataColumn}${keptRow}`;
             duplicates.push({
                 normalized: c.normalized,
-                keptRow: kept.row,
-                keptSheet: kept.sheet,
-                keptAddress: kept.address,
+                keptRow,
+                keptAddress,
                 duplicateRow: c.row,
-                duplicateSheet: c.sheet,
                 duplicateAddress: c.address,
                 duplicateRaw: c.raw,
             });
@@ -245,10 +227,9 @@ export function extractCategoryCandidates(
         raw: v.raw,
         normalized: v.normalized,
         rows: v.rows,
-        count: v.locations.length,
-        sheets: v.sheets,
-        sheetCount: v.sheets.length,
-        locations: v.locations,
+        count: v.rows.length,
+        row: v.rows[0],
+        address: `${sheet}!${dataColumn}${v.rows[0]}`,
     }));
     unique.sort((a, b) => a.raw.localeCompare(b.raw));
 

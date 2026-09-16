@@ -454,6 +454,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'category-import.store',
     );
 
+    Route::post('imports/category-import/sentinels', [CategoryImportController::class, 'ensureSentinels'])->name(
+        'category-import.sentinels',
+    );
+
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
 });

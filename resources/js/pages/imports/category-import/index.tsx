@@ -15,13 +15,14 @@ import {
     type PpmpExtractResult,
     type RawPpmpItem,
 } from '@/lib/ppmp/extract';
-import { extractRawSheets, type RawSheet } from '@/lib/raw-extract';
+import { extractRawSheet, type RawSheet } from '@/lib/raw-extract';
 import {
     extractCategoryCandidates,
     getCategoryExtractionStats,
 } from '@/lib/ppmp/category-extract';
 import {
     index as categoryImportIndex,
+    sentinels as categoryImportSentinels,
     store as categoryImportStore,
 } from '@/routes/category-import';
 import { index as importsIndex } from '@/routes/imports';
@@ -45,32 +46,28 @@ export default function CategoryImport({
 }: CategoryImportProps) {
     const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
     const [config, setConfig] = useState<SharedSheetConfig | null>(null);
-    const [verifyResults, setVerifyResults] = useState<
-        Record<string, VerifyResult>
-    >({});
-    const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
+    const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
     const [extractResult, setExtractResult] = useState<ExtractResult | null>(
         null,
     );
-    const [ppmpExtractResults, setPpmpExtractResults] = useState<
-        Record<string, PpmpExtractResult>
-    >({});
+    const [ppmpExtract, setPpmpExtract] =
+        useState<PpmpExtractResult | null>(null);
     const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
-    const [rawSheets, setRawSheets] = useState<Record<string, RawSheet>>({});
+    const [rawSheet, setRawSheet] = useState<RawSheet | null>(null);
     const [step, setStep] = useState<CimpStep>('upload');
     const [importing, setImporting] = useState(false);
+    const [ensuringSentinels, setEnsuringSentinels] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
             setSelectedSheet(null);
             setConfig(null);
-            setVerifyResults({});
-            setActiveVerifySheet('');
+            setVerifyResult(null);
             setExtractResult(null);
-            setPpmpExtractResults({});
+            setPpmpExtract(null);
             setPpmpRawItems([]);
-            setRawSheets({});
+            setRawSheet(null);
             setStep('upload');
             setSelected(new Set());
         });
@@ -85,10 +82,8 @@ export default function CategoryImport({
         config.rowConfig.nonProcurementHeaderRow !== '' &&
         config.rowConfig.nonProcurementHeaderRow != null;
     const canVerify = canCalibrate && !!workbook && rowsCalibrated;
-    const allVerifyValid =
-        selectedSheet !== null && !!verifyResults[selectedSheet]?.valid;
-    const hasAnyVerify =
-        selectedSheet !== null && !!verifyResults[selectedSheet];
+    const allVerifyValid = verifyResult?.valid === true;
+    const hasAnyVerify = verifyResult !== null;
     const canExtract = canVerify && hasAnyVerify && allVerifyValid;
     const canImport =
         canExtract && !!extractResult && extractResult.unique.length > 0;
@@ -96,6 +91,15 @@ export default function CategoryImport({
     const extractionStats = useMemo(
         () => getCategoryExtractionStats(extractResult),
         [extractResult],
+    );
+
+    // Adapter: shared Extract tab still takes a single-entry Record.
+    const rawSheetsForStep = useMemo(
+        () =>
+            rawSheet && selectedSheet
+                ? { [selectedSheet]: rawSheet }
+                : {},
+        [rawSheet, selectedSheet],
     );
 
     function getEffectiveConfig(): SharedSheetConfig {
@@ -110,20 +114,19 @@ export default function CategoryImport({
 
     function handleSheetChange(sheet: string | null) {
         setSelectedSheet(sheet);
-        setActiveVerifySheet(sheet ?? '');
-        setVerifyResults({});
+        setVerifyResult(null);
         setExtractResult(null);
-        setPpmpExtractResults({});
+        setPpmpExtract(null);
         setPpmpRawItems([]);
-        setRawSheets({});
+        setRawSheet(null);
         setSelected(new Set());
     }
 
     function handleVerify() {
         setExtractResult(null);
-        setPpmpExtractResults({});
+        setPpmpExtract(null);
         setPpmpRawItems([]);
-        setRawSheets({});
+        setRawSheet(null);
 
         if (!workbook || !selectedSheet) return;
 
@@ -135,17 +138,14 @@ export default function CategoryImport({
             getEffectiveConfig(),
         );
 
-        setVerifyResults({
-            [selectedSheet]: {
-                valid: result.valid,
-                message: result.message,
-                errors: result.errors,
-                warnings: result.warnings,
-                groups: result.groups,
-                details: result.details,
-            },
+        setVerifyResult({
+            valid: result.valid,
+            message: result.message,
+            errors: result.errors,
+            warnings: result.warnings,
+            groups: result.groups,
+            details: result.details,
         });
-        setActiveVerifySheet(selectedSheet);
     }
 
     function handlePpmpExtract() {
@@ -154,13 +154,9 @@ export default function CategoryImport({
         const cfg = getEffectiveConfig();
         const res = extractPpmpSheet(workbook, selectedSheet, cfg);
 
-        setPpmpExtractResults({ [selectedSheet]: res });
+        setPpmpExtract(res);
         setPpmpRawItems(res.rawItems);
-        setRawSheets(
-            extractRawSheets(workbook, [selectedSheet], () =>
-                getEffectiveConfig(),
-            ),
-        );
+        setRawSheet(extractRawSheet(workbook, selectedSheet, cfg));
     }
 
     function handleExtract() {
@@ -191,7 +187,7 @@ export default function CategoryImport({
 
         setImporting(true);
         router.post(
-            categoryImportStore.url as never,
+            categoryImportStore().url as never,
             {
                 categories: toImport.map((u) => ({
                     name: u.raw,
@@ -202,6 +198,15 @@ export default function CategoryImport({
                 onFinish: () => setImporting(false),
             },
         );
+    }
+
+    function handleEnsureSentinels() {
+        if (ensuringSentinels) return;
+
+        setEnsuringSentinels(true);
+        router.post(categoryImportSentinels().url as never, {} as never, {
+            onFinish: () => setEnsuringSentinels(false),
+        });
     }
 
     const s: CategoryImportState = {
@@ -229,27 +234,27 @@ export default function CategoryImport({
         handleFileChange,
         handleSheetChange,
 
-        verifyResults,
-        setVerifyResults,
-        activeVerifySheet,
-        setActiveVerifySheet,
+        verifyResult,
+        setVerifyResult,
         handleVerify,
 
         extractResult,
         setExtractResult,
         extractionStats,
         handleExtract,
-        ppmpExtractResults,
-        setPpmpExtractResults,
+        ppmpExtract,
+        setPpmpExtract,
         ppmpRawItems,
         setPpmpRawItems,
-        rawSheets,
-        setRawSheets,
+        rawSheet,
+        setRawSheet,
         handlePpmpExtract,
         selected,
         setSelected,
         importing,
         handleImport,
+        ensuringSentinels,
+        handleEnsureSentinels,
 
         existingCategories,
     };
@@ -307,11 +312,11 @@ export default function CategoryImport({
                 setConfig={setConfig}
                 getDefaultConfig={getDefaultSharedConfig}
                 onInvalidate={() => {
-                    setVerifyResults({});
+                    setVerifyResult(null);
                     setExtractResult(null);
-                    setPpmpExtractResults({});
+                    setPpmpExtract(null);
                     setPpmpRawItems([]);
-                    setRawSheets({});
+                    setRawSheet(null);
                     setSelected(new Set());
                 }}
                 showGroupsSummary
@@ -328,11 +333,7 @@ export default function CategoryImport({
                 canVerify={canVerify}
                 onVerify={handleVerify}
                 selectedSheet={selectedSheet}
-                result={
-                    selectedSheet
-                        ? (verifyResults[selectedSheet] ?? null)
-                        : null
-                }
+                result={verifyResult}
                 allValid={allVerifyValid}
                 onBack={() => setStep('calibrate')}
                 onNext={() => setStep('extract')}
@@ -350,7 +351,7 @@ export default function CategoryImport({
                 canExtract={allVerifyValid}
                 hasAnyVerify={hasAnyVerify}
                 ppmpItems={ppmpRawItems}
-                rawSheets={rawSheets}
+                rawSheets={rawSheetsForStep}
                 onRunExtract={handlePpmpExtract}
                 onBack={() => setStep('verify')}
                 backLabel="Back: Verify"

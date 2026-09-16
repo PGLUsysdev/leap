@@ -5,7 +5,7 @@ import type { CategoryReviewRow, CategoryReviewTableMeta } from '../types';
 
 const columnHelper = createColumnHelper<CategoryReviewRow>();
 
-export function getCategoryReviewColumns(sheetTotal: number) {
+export function getCategoryReviewColumns() {
     return [
         columnHelper.display({
             id: 'select',
@@ -129,27 +129,6 @@ export function getCategoryReviewColumns(sheetTotal: number) {
                 );
             },
         }),
-        columnHelper.accessor('sheetCount', {
-            size: 90,
-            header: () => <div className="px-1 text-center">Sheets</div>,
-            cell: ({ row }) => (
-                <div className="flex justify-center px-1">
-                    <Badge
-                        variant={
-                            row.original.sheetCount === sheetTotal
-                                ? 'default'
-                                : row.original.sheetCount > 1
-                                  ? 'secondary'
-                                  : 'outline'
-                        }
-                        className="font-mono text-xs"
-                        title={row.original.sheets.join(', ')}
-                    >
-                        {row.original.sheetCount}/{sheetTotal}
-                    </Badge>
-                </div>
-            ),
-        }),
         columnHelper.accessor('count', {
             size: 70,
             header: () => <div className="px-1 text-center">Count</div>,
@@ -159,17 +138,15 @@ export function getCategoryReviewColumns(sheetTotal: number) {
                 </div>
             ),
         }),
-        columnHelper.accessor('firstAddress', {
+        columnHelper.accessor('address', {
             size: 180,
             header: () => <div className="px-1">Location</div>,
             cell: ({ row }) => (
                 <div
                     className="max-w-[22ch] truncate px-1 font-mono text-[11px]"
-                    title={row.original.locations
-                        .map((l) => l.address)
-                        .join(', ')}
+                    title={row.original.address}
                 >
-                    {row.original.firstAddress || '—'}
+                    {row.original.address || '—'}
                 </div>
             ),
         }),
