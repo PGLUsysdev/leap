@@ -649,20 +649,16 @@ export default function PriceListQuantitiesImport({
             />
             <ImportExtractStep
                 sheet={selectedSheet}
-                canExtract={canExtract}
+                canExtract={allVerifyValid}
                 hasAnyVerify={hasAnyVerify}
-                allVerifyValid={allVerifyValid}
                 ppmpItems={ppmpRawItems}
                 rawSheets={rawSheets}
                 onRunExtract={handlePpmpExtract}
                 onBack={() => setStep('verify')}
                 backLabel="Back: Verify"
-                onNext={() => setStep('review')}
-                canNext={
-                    (rawSheets && Object.keys(rawSheets).length > 0) ||
-                    hasAnyExtract
-                }
-                nextLabel="Next: Review"
+                onNext={runExtraction}
+                canNext={allVerifyValid}
+                nextLabel="Next: Review & Import"
             />
             {/*<ReviewAndImport s={s} />*/}
         </ImportPageShell>

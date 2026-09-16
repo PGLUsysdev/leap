@@ -525,9 +525,8 @@ export default function CategoryImport({
             />
             <ImportExtractStep
                 sheet={selectedSheet}
-                canExtract={canExtract}
+                canExtract={allVerifyValid}
                 hasAnyVerify={hasAnyVerify}
-                allVerifyValid={allVerifyValid}
                 ppmpItems={ppmpRawItems}
                 rawSheets={rawSheets}
                 onRunExtract={handlePpmpExtract}
@@ -537,8 +536,8 @@ export default function CategoryImport({
                     handleExtract();
                     setStep('import');
                 }}
-                canNext={ppmpRawItems.length > 0}
-                nextLabel="Next: Import"
+                canNext={allVerifyValid}
+                nextLabel="Next: Review & Import"
             />
             {/*<ImportStep s={s} />*/}
         </ImportPageShell>

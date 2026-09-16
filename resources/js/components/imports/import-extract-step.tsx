@@ -1,7 +1,9 @@
 // resources/js/components/imports/import-extract-step.tsx
 //
 // Shared Extract step — raw 1:1 row×col dump, no formatting.
-// Single-sheet: one `sheet`, one raw grid, no per-sheet iteration.
+// Single-sheet: one `sheet`, one raw grid. The `rawSheets` map holds at
+// most one entry (keyed by the sheet name) since the page extracts a
+// single sheet at a time.
 
 import { useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -21,7 +23,6 @@ interface ImportExtractStepProps {
     sheet: string | null;
     canExtract: boolean;
     hasAnyVerify?: boolean;
-    allVerifyValid?: boolean;
     /** PPMP raw items aggregated from the current sheet (legacy fallback). */
     ppmpItems?: RawPpmpItem[];
     /** Raw 1:1 sheet data — preferred for the pure raw view. */
@@ -38,7 +39,6 @@ export function ImportExtractStep({
     sheet,
     canExtract,
     hasAnyVerify,
-    allVerifyValid,
     ppmpItems = [],
     rawSheets,
     onRunExtract,
@@ -187,7 +187,7 @@ export function ImportExtractStep({
                 <>
                     <div className="flex items-center gap-2">
                         <Button onClick={onRunExtract} disabled={!sheet}>
-                            Extract Raw 1:1
+                            Preview Raw Data
                         </Button>
                         {hasRawSheets ? (
                             <span className="text-muted-foreground text-sm">

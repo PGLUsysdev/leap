@@ -876,20 +876,19 @@ export default function CategoryCoaMappingImport({
             />
             <ImportExtractStep
                 sheet={selectedSheet}
-                canExtract={canExtract}
-                hasAnyVerify={canExtract}
-                allVerifyValid={canExtract}
+                canExtract={formatValid}
+                hasAnyVerify={hasFormatResult}
                 ppmpItems={ppmpRawItems}
                 rawSheets={rawSheets}
-                onRunExtract={() => {
-                    handlePpmpExtract();
-                    handleLogRelationships();
-                }}
+                onRunExtract={handlePpmpExtract}
                 onBack={() => setStep('verify')}
                 backLabel="Back: Verify"
-                onNext={() => setStep('review')}
-                canNext={canReview}
-                nextLabel="Next: Review & Save"
+                onNext={() => {
+                    handleLogRelationships();
+                    setStep('review');
+                }}
+                canNext={formatValid}
+                nextLabel="Next: Review & Import"
             />
             {/*<ReviewStep s={s} />*/}
         </ImportPageShell>
