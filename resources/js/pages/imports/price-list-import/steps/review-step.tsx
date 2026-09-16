@@ -964,7 +964,10 @@ export function ReviewStep({ s }: { s: PriceListImportState }) {
                         Category Import
                     </Link>
                     ) and Mapping (via{' '}
-                    <Link href="/imports/category-coa-mapping" className="underline">
+                    <Link
+                        href="/imports/category-coa-mapping"
+                        className="underline"
+                    >
                         Category–COA Mappings
                     </Link>
                     ).
