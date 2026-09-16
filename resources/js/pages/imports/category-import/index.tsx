@@ -7,9 +7,6 @@ import { ImportPpmpCalibrateStep } from '@/components/imports/import-ppmp-calibr
 import { ImportPpmpVerifyStep } from '@/components/imports/import-verify-step';
 import { ImportUploadStep } from '@/components/imports/import-upload-step';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
-import { cellText } from '@/lib/excel/cell-helpers';
-import { isTotalRow, normalize } from '@/lib/ppmp/normalize';
-import type { ExistingCategory } from '@/lib/ppmp/normalize';
 import { getDefaultSharedConfig } from '@/lib/ppmp/sheet-config';
 import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 import { verifyPpmpSheet } from '@/lib/ppmp/verify';
@@ -19,7 +16,14 @@ import {
     type RawPpmpItem,
 } from '@/lib/ppmp/extract';
 import { extractRawSheets, type RawSheet } from '@/lib/raw-extract';
-import { index as categoryImportIndex } from '@/routes/category-import';
+import {
+    extractCategoryCandidates,
+    getCategoryExtractionStats,
+} from '@/lib/ppmp/category-extract';
+import {
+    index as categoryImportIndex,
+    store as categoryImportStore,
+} from '@/routes/category-import';
 import { index as importsIndex } from '@/routes/imports';
 
 import type {
@@ -30,6 +34,7 @@ import type {
 } from './types';
 import { ImportExtractStep } from '@/components/imports/import-extract-step';
 import { ImportStep } from './steps/import-step';
+import type { ExistingCategory } from '@/lib/ppmp/normalize';
 
 interface CategoryImportProps {
     existingCategories?: ExistingCategory[];
@@ -67,6 +72,7 @@ export default function CategoryImport({
             setPpmpRawItems([]);
             setRawSheets({});
             setStep('upload');
+            setSelected(new Set());
         });
 
     const canCalibrate = selectedSheet !== null;
@@ -87,15 +93,10 @@ export default function CategoryImport({
     const canImport =
         canExtract && !!extractResult && extractResult.unique.length > 0;
 
-    const extractionStats = useMemo(() => {
-        if (!extractResult) return null;
-
-        return {
-            raw: extractResult.filtered.length,
-            unique: extractResult.unique.length,
-            duplicates: extractResult.duplicates.length,
-        };
-    }, [extractResult]);
+    const extractionStats = useMemo(
+        () => getCategoryExtractionStats(extractResult),
+        [extractResult],
+    );
 
     function getEffectiveConfig(): SharedSheetConfig {
         return config ?? getDefaultSharedConfig();
@@ -118,27 +119,6 @@ export default function CategoryImport({
         setSelected(new Set());
     }
 
-    // Kept for downstream compatibility (ImportStep uses these by name).
-    function handleSheetToggle(sheet: string) {
-        handleSheetChange(sheet);
-    }
-
-    function handleSheetSelect(sheet: string) {
-        handleSheetChange(sheet);
-    }
-
-    function verifySheet(sheet: string, cfg: SharedSheetConfig): VerifyResult {
-        const result = verifyPpmpSheet(workbook, sheet, cfg);
-
-        return {
-            valid: result.valid,
-            message: result.message,
-            errors: result.errors,
-            groups: result.groups,
-            details: result.details,
-        };
-    }
-
     function handleVerify() {
         setExtractResult(null);
         setPpmpExtractResults({});
@@ -149,10 +129,22 @@ export default function CategoryImport({
 
         if (!config) ensureConfigInitialized();
 
-        const cfg = getEffectiveConfig();
-        const result = verifySheet(selectedSheet, cfg);
+        const result = verifyPpmpSheet(
+            workbook,
+            selectedSheet,
+            getEffectiveConfig(),
+        );
 
-        setVerifyResults({ [selectedSheet]: result });
+        setVerifyResults({
+            [selectedSheet]: {
+                valid: result.valid,
+                message: result.message,
+                errors: result.errors,
+                warnings: result.warnings,
+                groups: result.groups,
+                details: result.details,
+            },
+        });
         setActiveVerifySheet(selectedSheet);
     }
 
@@ -172,194 +164,20 @@ export default function CategoryImport({
     }
 
     function handleExtract() {
-        handlePpmpExtract();
         if (!workbook || !selectedSheet) return;
 
-        const sheet = selectedSheet;
-        const cfg = getEffectiveConfig();
-
-        const dataColumn = cfg.columnConfig.category;
-        const coaColumn = cfg.columnConfig.coa;
-        const itemColumn = cfg.columnConfig.itemNumber;
-        const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } =
-            cfg.rowConfig;
-        const { coaLabelMode } = cfg;
-
-        if (headerRow === '' || headerRow == null) return;
-        if (additionalItemsHeaderRow === '' || additionalItemsHeaderRow == null)
-            return;
-        if (nonProcurementHeaderRow === '' || nonProcurementHeaderRow == null)
-            return;
-
-        const ws = workbook.getWorksheet(sheet);
+        const ws = workbook.getWorksheet(selectedSheet);
 
         if (!ws) return;
 
-        const filtered: ExtractResult['filtered'] = [];
-        const excludedTotal: ExtractResult['excludedTotal'] = [];
-        const excludedCoa: ExtractResult['excludedCoa'] = [];
-        const skippedCoaNotEmpty: ExtractResult['skippedCoaNotEmpty'] = [];
-
-        const startRow = headerRow + 1;
-        const lastRow = ws.actualRowCount;
-
-        for (let r = startRow; r <= lastRow; r++) {
-            const row = ws.getRow(r);
-            const coaRaw = cellText(row.getCell(coaColumn));
-            const dataRaw = cellText(row.getCell(dataColumn));
-            const itemRaw = cellText(row.getCell(itemColumn));
-
-            if (!dataRaw) continue;
-
-            const coaNorm = coaRaw ? normalize(coaRaw) : null;
-            const dataNorm = normalize(dataRaw);
-
-            if (dataNorm === 'description') continue;
-
-            if (additionalItemsHeaderRow && r === additionalItemsHeaderRow)
-                continue;
-
-            if (nonProcurementHeaderRow && r === nonProcurementHeaderRow)
-                continue;
-
-            if (
-                dataNorm === 'non-procurement requirements' ||
-                dataNorm === 'additional items' ||
-                dataNorm === 'procurement requirements'
-            ) {
-                continue;
-            }
-
-            if (additionalItemsHeaderRow && r > additionalItemsHeaderRow)
-                continue;
-
-            if (nonProcurementHeaderRow && r > nonProcurementHeaderRow)
-                continue;
-
-            if (coaNorm) {
-                skippedCoaNotEmpty.push({
-                    row: r,
-                    coaRaw: coaRaw!,
-                    coaNormalized: coaNorm,
-                    raw: dataRaw,
-                    normalized: dataNorm,
-                    sheet,
-                });
-                continue;
-            }
-
-            if (itemRaw && !coaNorm) {
-                continue;
-            }
-
-            if (isTotalRow(dataNorm)) {
-                excludedTotal.push({
-                    row: r,
-                    raw: dataRaw,
-                    normalized: dataNorm,
-                    sheet,
-                });
-                continue;
-            }
-
-            if (coaLabelMode === 'with-label' && r + 1 <= lastRow) {
-                const nextRow = ws.getRow(r + 1);
-                const nextCoaRaw = cellText(nextRow.getCell(coaColumn));
-                const nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
-
-                if (nextCoaNorm && nextCoaNorm === dataNorm) {
-                    excludedCoa.push({
-                        row: r,
-                        raw: dataRaw,
-                        normalized: dataNorm,
-                        nextRowCoaRaw: nextCoaRaw!,
-                        nextRowCoaNormalized: nextCoaNorm,
-                        sheet,
-                    });
-                    continue;
-                }
-            }
-
-            const address = `${sheet}!${dataColumn}${r}`;
-            filtered.push({
-                row: r,
-                raw: dataRaw,
-                normalized: dataNorm,
-                sheet,
-                address,
-            });
-        }
-
-        type SeenVal = {
-            raw: string;
-            normalized: string;
-            rows: number[];
-            sheets: string[];
-            locations: ExtractResult['unique'][number]['locations'];
-        };
-        const seen = new Map<string, SeenVal>();
-        const duplicates: ExtractResult['duplicates'] = [];
-
-        for (const c of filtered) {
-            const existing = seen.get(c.normalized);
-            const loc = {
-                sheet: c.sheet,
-                row: c.row,
-                col: getEffectiveConfig().columnConfig.category,
-                address: c.address,
-            };
-
-            if (!existing) {
-                seen.set(c.normalized, {
-                    raw: c.raw,
-                    normalized: c.normalized,
-                    rows: [c.row],
-                    sheets: [c.sheet],
-                    locations: [loc],
-                });
-            } else {
-                existing.rows.push(c.row);
-
-                if (!existing.sheets.includes(c.sheet))
-                    existing.sheets.push(c.sheet);
-
-                existing.locations.push(loc);
-                const kept = existing.locations[0];
-                duplicates.push({
-                    normalized: c.normalized,
-                    keptRow: kept.row,
-                    keptSheet: kept.sheet,
-                    keptAddress: kept.address,
-                    duplicateRow: c.row,
-                    duplicateSheet: c.sheet,
-                    duplicateAddress: c.address,
-                    duplicateRaw: c.raw,
-                });
-            }
-        }
-
-        const unique = [...seen.values()].map((v) => ({
-            raw: v.raw,
-            normalized: v.normalized,
-            rows: v.rows,
-            count: v.locations.length,
-            sheets: v.sheets,
-            sheetCount: v.sheets.length,
-            locations: v.locations,
-        }));
-        unique.sort(
-            (a, b) => b.sheetCount - a.sheetCount || a.raw.localeCompare(b.raw),
+        const res = extractCategoryCandidates(
+            ws,
+            getEffectiveConfig(),
+            selectedSheet,
         );
 
-        setExtractResult({
-            filtered,
-            unique,
-            duplicates,
-            excludedTotal,
-            excludedCoa,
-            skippedCoaNotEmpty,
-        });
-        setSelected(new Set(unique.map((u) => u.normalized)));
+        setExtractResult(res);
+        setSelected(new Set(res.unique.map((u) => u.normalized)));
     }
 
     function handleImport() {
@@ -373,7 +191,7 @@ export default function CategoryImport({
 
         setImporting(true);
         router.post(
-            '/imports/category-import' as const,
+            categoryImportStore.url as never,
             {
                 categories: toImport.map((u) => ({
                     name: u.raw,
@@ -401,6 +219,7 @@ export default function CategoryImport({
         allVerifyValid,
         hasAnyVerify,
         canExtract,
+        canImport,
 
         config,
         setConfig,
@@ -408,8 +227,7 @@ export default function CategoryImport({
         ensureConfigInitialized,
 
         handleFileChange,
-        handleSheetToggle,
-        handleSheetSelect,
+        handleSheetChange,
 
         verifyResults,
         setVerifyResults,
@@ -439,7 +257,7 @@ export default function CategoryImport({
     return (
         <ImportPageShell
             title="Category Import"
-            description="Import PPMP categories from XLSX. Calibrate columns/headers, verify format, and bulk create categories."
+            description="Import PPMP procurement categories from XLSX. Calibrate columns/headers, verify format, and bulk create categories."
             fileName={fileName}
             loading={loading}
             step={step}
@@ -491,6 +309,10 @@ export default function CategoryImport({
                 onInvalidate={() => {
                     setVerifyResults({});
                     setExtractResult(null);
+                    setPpmpExtractResults({});
+                    setPpmpRawItems([]);
+                    setRawSheets({});
+                    setSelected(new Set());
                 }}
                 showGroupsSummary
                 onBack={() => setStep('upload')}
@@ -500,7 +322,7 @@ export default function CategoryImport({
             />
             <ImportPpmpVerifyStep
                 tabsValue="verify"
-                title="Verify procurement format per sheet (categories not in additional)"
+                title="Verify procurement format (categories in procurement section only)"
                 description="Checks the selected sheet with its calibration — cat → coa(s) → items → cat - total."
                 verifyButtonLabel="Verify Sheet"
                 canVerify={canVerify}
@@ -539,7 +361,7 @@ export default function CategoryImport({
                 canNext={allVerifyValid}
                 nextLabel="Next: Review & Import"
             />
-            {/*<ImportStep s={s} />*/}
+            <ImportStep s={s} />
         </ImportPageShell>
     );
 }

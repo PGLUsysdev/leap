@@ -446,6 +446,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Imports Hub - central page for all import features
     Route::get('imports', [ImportsController::class, 'index'])->name('imports.index');
 
+    Route::get('imports/category-import', [CategoryImportController::class, 'index'])->name(
+        'category-import.index',
+    );
+
+    Route::post('imports/category-import', [CategoryImportController::class, 'store'])->name(
+        'category-import.store',
+    );
+
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
 });
@@ -464,14 +472,6 @@ Route::get('imports/price-list-quantities-import', [PriceListQuantitiesImportCon
 
 Route::post('imports/price-list-quantities-import', [PriceListQuantitiesImportController::class, 'store'])->name(
     'price-list-quantities-import.store',
-);
-
-Route::get('imports/category-import', [CategoryImportController::class, 'index'])->name(
-    'category-import.index',
-);
-
-Route::post('imports/category-import', [CategoryImportController::class, 'store'])->name(
-    'category-import.store',
 );
 
 Route::get('imports/aip-summary-import', [AipSummaryImportController::class, 'index'])->name(

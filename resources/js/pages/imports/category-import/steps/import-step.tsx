@@ -14,11 +14,9 @@ import { getCategoryReviewColumns } from './import-columns';
 
 export function ImportStep({ s }: { s: CategoryImportState }) {
     const {
-        selectedSheets,
+        selectedSheet,
         extractResult,
         extractionStats,
-        ppmpRawItems,
-        handleExtract,
         selected,
         setSelected,
         existingCategories,
@@ -27,10 +25,7 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
         setStep,
     } = s;
 
-    const columns = useMemo(
-        () => getCategoryReviewColumns(selectedSheets.length),
-        [selectedSheets.length],
-    );
+    const columns = useMemo(() => getCategoryReviewColumns(1), []);
 
     const rows = useMemo<CategoryReviewRow[]>(() => {
         if (!extractResult) return [];
@@ -98,9 +93,7 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
         return (
             <TabsContent value="import" className="mt-4 flex flex-col gap-4">
                 <div className="text-muted-foreground rounded-lg border p-8 text-center text-sm">
-                    {ppmpRawItems.length > 0
-                        ? `Raw extracted (${ppmpRawItems.length} rows) — process them to review unique categories.`
-                        : 'Extract first to review import.'}
+                    Extract first to review import.
                 </div>
                 <div className="flex justify-between">
                     <Button
@@ -109,22 +102,12 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                     >
                         Back: Extract
                     </Button>
-                    <div className="flex gap-2">
-                        {ppmpRawItems.length > 0 && (
-                            <Button
-                                variant="secondary"
-                                onClick={() => handleExtract()}
-                            >
-                                Process {ppmpRawItems.length} raw rows
-                            </Button>
-                        )}
-                        <Button
-                            variant="ghost"
-                            onClick={() => setStep('calibrate')}
-                        >
-                            Recalibrate
-                        </Button>
-                    </div>
+                    <Button
+                        variant="ghost"
+                        onClick={() => setStep('calibrate')}
+                    >
+                        Recalibrate
+                    </Button>
                 </div>
             </TabsContent>
         );
@@ -158,15 +141,15 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                     <div className="text-muted-foreground">Totals excluded</div>
                 </div>
                 <div
-                    className={`rounded-md border p-2 text-center ${extractResult.skippedProblematic.length > 0 ? 'border-amber-200 bg-amber-50' : ''}`}
+                    className={`rounded-md border p-2 text-center ${extractResult.skippedCoaNotEmpty.length > 0 ? 'border-amber-200 bg-amber-50' : ''}`}
                 >
                     <div
-                        className={`text-lg font-semibold ${extractResult.skippedProblematic.length > 0 ? 'text-amber-700' : ''}`}
+                        className={`text-lg font-semibold ${extractResult.skippedCoaNotEmpty.length > 0 ? 'text-amber-700' : ''}`}
                     >
-                        {extractResult.skippedProblematic.length}
+                        {extractResult.skippedCoaNotEmpty.length}
                     </div>
                     <div className="text-muted-foreground">
-                        Skipped: problematic
+                        Skipped: COA not empty
                     </div>
                 </div>
             </div>
@@ -176,13 +159,12 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                     <div>
                         <h3 className="text-sm font-semibold">
                             Review — Unique Categories (
-                            {extractResult.unique.length}) across{' '}
-                            {selectedSheets.length} sheet
-                            {selectedSheets.length === 1 ? '' : 's'}
+                            {extractResult.unique.length})
+                            {selectedSheet ? ` — ${selectedSheet}` : ''}
                         </h3>
                         <p className="text-muted-foreground text-xs">
-                            Global dedupe by normalized across all{' '}
-                            {selectedSheets.length} sheets. Check to import.
+                            Procurement-only dedupe by normalized name. Check
+                            to import.
                         </p>
                     </div>
                     <Badge variant="secondary" className="shrink-0">

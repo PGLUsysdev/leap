@@ -7,6 +7,11 @@ import type { ExistingCategory } from '@/lib/ppmp/normalize';
 import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
 import type { RawSheet } from '@/lib/raw-extract';
+import type {
+    CategoryExtractResult,
+    CategoryExtractionStats,
+    CatLocation as HelperLocation,
+} from '@/lib/ppmp/category-extract';
 
 export type CimpStep = 'upload' | 'calibrate' | 'verify' | 'extract' | 'import';
 
@@ -14,73 +19,16 @@ export type VerifyResult = {
     valid: boolean;
     message: string;
     errors: Array<{ row: number; message: string }>;
+    warnings?: Array<{ row: number; message: string }>;
     groups: { procurement: number; additional: number; nonProcurement: number };
     details: string[];
 };
 
-export type CatLocation = {
-    sheet: string;
-    row: number;
-    col: string;
-    address: string;
-};
+export type CatLocation = HelperLocation;
 
-export type ExtractResult = {
-    filtered: Array<{
-        row: number;
-        raw: string;
-        normalized: string;
-        sheet: string;
-        address: string;
-    }>;
-    unique: Array<{
-        raw: string;
-        normalized: string;
-        rows: number[];
-        count: number;
-        sheets: string[];
-        sheetCount: number;
-        locations: CatLocation[];
-    }>;
-    duplicates: Array<{
-        normalized: string;
-        keptRow: number;
-        keptSheet: string;
-        keptAddress: string;
-        duplicateRow: number;
-        duplicateSheet: string;
-        duplicateAddress: string;
-        duplicateRaw: string;
-    }>;
-    excludedTotal: Array<{
-        row: number;
-        raw: string;
-        normalized: string;
-        sheet: string;
-    }>;
-    excludedCoa: Array<{
-        row: number;
-        raw: string;
-        normalized: string;
-        nextRowCoaRaw: string;
-        nextRowCoaNormalized: string;
-        sheet: string;
-    }>;
-    skippedCoaNotEmpty: Array<{
-        row: number;
-        coaRaw: string;
-        coaNormalized: string;
-        raw: string;
-        normalized: string;
-        sheet: string;
-    }>;
-};
+export type ExtractResult = CategoryExtractResult;
 
-export type ExtractionStats = {
-    raw: number;
-    unique: number;
-    duplicates: number;
-};
+export type ExtractionStats = CategoryExtractionStats;
 
 export type CategoryReviewRow = {
     normalized: string;
@@ -118,6 +66,7 @@ export type CategoryImportState = {
     allVerifyValid: boolean;
     hasAnyVerify: boolean;
     canExtract: boolean;
+    canImport: boolean;
 
     // calibration
     config: SharedSheetConfig | null;
@@ -127,8 +76,7 @@ export type CategoryImportState = {
 
     // upload
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
-    handleSheetToggle: (sheet: string) => void;
-    handleSheetSelect: (sheet: string) => void;
+    handleSheetChange: (sheet: string | null) => void;
 
     // verify
     verifyResults: Record<string, VerifyResult>;
@@ -137,7 +85,7 @@ export type CategoryImportState = {
     setActiveVerifySheet: (s: string) => void;
     handleVerify: () => void;
 
-    // extract
+    // extract (separate: raw preview + domain candidates)
     extractResult: ExtractResult | null;
     setExtractResult: Dispatch<SetStateAction<ExtractResult | null>>;
     extractionStats: ExtractionStats | null;
