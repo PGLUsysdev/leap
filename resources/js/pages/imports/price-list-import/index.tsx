@@ -189,15 +189,15 @@ export default function PriceListImport({
         const picked =
             batchSelections[group.coaNorm] ??
             (group.topSuggestion ? formatCoaOption(group.topSuggestion) : '');
-        const id = parseCoaOptionId(picked) ?? group.topSuggestion?.id ?? null;
 
+        // No silent fallback: if the user's pick doesn't resolve to a real COA,
+        // do nothing. The batch panel will keep showing the pick unchanged.
+        const id = parseCoaOptionId(picked);
         if (id === null) return;
 
         setCoaOverrides((prev) => {
             const next = { ...prev };
-
             for (const k of group.rowKeys) next[k] = id;
-
             return next;
         });
     }
@@ -994,7 +994,7 @@ export default function PriceListImport({
                 canNext={allVerifyValid}
                 nextLabel="Next: Review & Import"
             />
-            {/*<ReviewStep s={s} />*/}
+            <ReviewStep s={s} />
         </ImportPageShell>
     );
 }

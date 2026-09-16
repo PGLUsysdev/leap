@@ -1219,3 +1219,89 @@ describe('verifyPpmpSheet — additional item with broken COA formula (aspiratio
         },
     );
 });
+
+describe('verifyPpmpSheet — conflicting duplicate prices (aspirational)', () => {
+    // ─────────────────────────────────────────────────────────────────────
+    // DESIRED BEHAVIOR
+    //
+    // Two rows sharing the same (COA, description, unit) but disagreeing on
+    // price are almost always the same item underspecified in the
+    // description — e.g. "Outdoor Cat6 Cable" listed at 4,755 and 7,068
+    // (different lengths, brands, or gauges). Deduping silently discards
+    // one price. Verify should reject the sheet and tell the user to make
+    // each description unique (or consolidate the rows) before importing.
+    //
+    // CURRENT BEHAVIOR
+    //
+    // Verify has no price-conflict check. Two well-formed item rows with the
+    // same COA/description/unit pass. The problem surfaces later in the
+    // extractor, where dedup keeps the first price and silently drops the
+    // second.
+    //
+    // This test is red now. It goes green once verify groups rows by
+    // (coa|description|unit) and flags groups whose observed prices differ.
+    // ─────────────────────────────────────────────────────────────────────
+
+    it('two rows with same COA/description/unit but different prices — flagged', () => {
+        const wb = buildWorkbook([
+            /*  1 */ ['', '', '', 'COA', 'Item#', 'Category', 'Unit', 'Price'],
+            /*  2 */ ['', '', '', '', '', 'OFFICE SUPPLIES', '', ''],
+            /*  3 */ ['', '', '', '', '', 'Office Supplies Expenses', '', ''],
+            /*  4 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '197',
+                'Outdoor Cat6 Cable',
+                'box',
+                7068,
+            ],
+            /*  5 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '198',
+                'Outdoor Cat6 Cable',
+                'box',
+                4755,
+            ],
+            /*  6 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
+            /*  7 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
+            /*  8 */ [
+                '',
+                '',
+                '',
+                'Accountable Forms Expenses',
+                '1',
+                'Stapler',
+                'pc',
+                100,
+            ],
+            /*  9 */ ['', '', '', '', '', 'ADDITIONAL ITEMS - TOTAL', '', ''],
+        ]);
+
+        const result = verifyPpmpSheet(
+            wb,
+            'Sheet1',
+            cfg({
+                headerRow: 1,
+                additionalItemsHeaderRow: 7,
+                nonProcurementHeaderRow: '',
+            }),
+        );
+
+        console.log(summarize(result));
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some(
+                (e) =>
+                    /different prices/i.test(e.message) &&
+                    /Outdoor Cat6 Cable/i.test(e.message) &&
+                    e.message.includes('4,755') &&
+                    e.message.includes('7,068'),
+            ),
+        ).toBe(true);
+    });
+});

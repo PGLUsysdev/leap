@@ -95,6 +95,102 @@ function excelErrorOnCell(cell: ExcelJS.Cell): string | null {
     return null;
 }
 
+/**
+ * Detects rows that share the same (COA, description, unit) but disagree on
+ * price. These are almost always the same item underspecified in the
+ * description — e.g. "Outdoor Cat6 Cable" listed at 4,755 and 7,068
+ * (different lengths, brands, or gauges). Deduping silently would discard
+ * one price. Verify fails so the user makes each description unique (or
+ * consolidates the rows) before importing.
+ *
+ * Runs across all sections. Rows without a COA (category headers, COA label
+ * rows, section headers, totals) are naturally skipped by the `!coaRaw`
+ * guard. Rows with no price or non-positive price are skipped — those are
+ * separate concerns.
+ */
+function checkConflictingDuplicatePrices(
+    ws: ExcelJS.Worksheet,
+    ranges: Array<{ start: number; end: number }>,
+    cols: {
+        coa: string;
+        description: string;
+        unit: string;
+        price: string;
+    },
+    lastRow: number,
+): PpmpVerifyIssue[] {
+    type Entry = {
+        row: number;
+        price: number;
+        coa: string;
+        description: string;
+        unit: string;
+    };
+    const groups = new Map<string, Entry[]>();
+
+    for (const { start, end } of ranges) {
+        if (start < 0 || end < 0 || start > end) continue;
+
+        for (let r = start; r <= end && r <= lastRow; r++) {
+            const row = ws.getRow(r);
+            const coaRaw = cellText(row.getCell(cols.coa));
+            const descRaw = cellText(row.getCell(cols.description));
+            const unitRaw = cellText(row.getCell(cols.unit));
+            const priceRaw = cellText(row.getCell(cols.price));
+
+            // Only item rows have both COA and description populated.
+            // Category headers, COA labels, section headers, and totals
+            // miss one of the two and are skipped here.
+            if (!coaRaw || !descRaw) continue;
+
+            const descNorm = normalize(descRaw);
+            if (descNorm === 'description' || isTotalRow(descNorm)) continue;
+
+            const priceNum = priceRaw
+                ? Number(priceRaw.replace(/,/g, ''))
+                : NaN;
+            if (!Number.isFinite(priceNum) || priceNum <= 0) continue;
+
+            const key = `${normalize(coaRaw)}|${descNorm}|${normalize(unitRaw)}`;
+            const list = groups.get(key) ?? [];
+            list.push({
+                row: r,
+                price: priceNum,
+                coa: coaRaw,
+                description: descRaw,
+                unit: unitRaw,
+            });
+            groups.set(key, list);
+        }
+    }
+
+    const issues: PpmpVerifyIssue[] = [];
+
+    for (const entries of groups.values()) {
+        if (entries.length < 2) continue;
+
+        const distinctPrices = new Set(entries.map((e) => e.price));
+        if (distinctPrices.size < 2) continue;
+
+        const rows = entries.map((e) => e.row).sort((a, b) => a - b);
+        const prices = [...distinctPrices]
+            .sort((a, b) => a - b)
+            .map((p) => p.toLocaleString())
+            .join(', ');
+        const first = entries[0];
+
+        issues.push({
+            row: rows[0],
+            message:
+                `Rows ${rows.join(', ')} share description "${first.description}" ` +
+                `(${first.unit || 'no unit'}, COA "${first.coa}") but have different prices: ${prices}. ` +
+                `Make each description unique (e.g. add size, length, or brand) so they import as separate items.`,
+        });
+    }
+
+    return issues;
+}
+
 export function verifyPpmpSheet(
     workbook: ExcelJS.Workbook | null,
     sheetName: unknown,
@@ -648,6 +744,29 @@ export function verifyPpmpSheet(
     if (nonProcurementHeaderRow) {
         verifySection('non-procurement', nonProcStart, nonProcEnd);
     }
+
+    // ─── Conflicting duplicate prices ─────────────────────────────────
+    // Rows sharing (COA, description, unit) with different prices are the
+    // same item underspecified in the description. Dedup would silently
+    // drop one price, so fail verify and let the user disambiguate in the
+    // sheet. Runs across all sections.
+    errors.push(
+        ...checkConflictingDuplicatePrices(
+            ws,
+            [
+                { start: procurementStart, end: procurementEnd },
+                { start: additionalStart, end: additionalEnd },
+                { start: nonProcStart, end: nonProcEnd },
+            ],
+            {
+                coa: coaColumn,
+                description: dataColumn,
+                unit: unitColumn,
+                price: priceColumn,
+            },
+            lastRow,
+        ),
+    );
 
     // Final valid strictly requires no errors (both procurement and additional/non-proc)
     const valid = errors.length === 0;
