@@ -1,43 +1,344 @@
 // resources/js/pages/imports/aip-summary-import/steps/import-funding-step.tsx
+//
+// Page-local Import Funding Source step (not shared — AIP-only).
+// Single-sheet mode: records come from the extract result, funds resolve
+// per row (auto-match + manual override + dismiss), links match PPA outputs
+// within the selected office + fiscal year.
 
+import { useMemo } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
 import { X } from 'lucide-react';
+import DataTable from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
 import { TableSelect } from '@/components/table-select';
 import { TabsContent } from '@/components/ui/tabs';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import type { AipSummaryRecord } from '@/lib/aip-summary-import/extract';
+import type { RecordFundMatch } from '@/lib/aip-summary-import/match-funds';
 import { importFundColumns } from '../columns';
-import type { AipImportState, ImportFund } from '../types';
+import type {
+    FiscalYear,
+    FundLinkStatus,
+    ImportableFundLink,
+    ImportFund,
+    ImportOffice,
+    UnmatchedFrequencyEntry,
+} from '../types';
+import type { Dispatch, SetStateAction } from 'react';
 
-export function ImportFundingStep({ s }: { s: AipImportState }) {
-    const {
-        selectedSheet,
-        selectedOffice,
-        selectedFiscalYear,
-        extractResult,
-        fundingSources,
-        fundMatches,
-        fundOverrides,
-        setFundOverrides,
-        dismissedFunds,
-        setDismissedFunds,
-        importableFunds,
-        fundStatuses,
-        newFunds,
-        unmatchedFundEntries,
-        fundIdForRecord,
-        fundPickerKey,
-        setFundPickerKey,
-        handleConfirmFunds,
-        importingFunds,
-        setStep,
-    } = s;
+const columnHelper = createColumnHelper<AipSummaryRecord>();
+
+interface ImportFundingStepProps {
+    tabsValue?: string;
+
+    selectedSheet: string;
+    selectedOffice: string;
+    selectedFiscalYear: string;
+    existingOffices: ImportOffice[];
+    fiscalYears: FiscalYear[];
+    selectedOfficeLabel: string;
+    selectedFiscalYearLabel: string;
+    onOfficeChange: (v: string) => void;
+    onFiscalYearChange: (v: string) => void;
+    fundingSources: ImportFund[];
+    records: AipSummaryRecord[];
+    fundMatches: Map<string, RecordFundMatch>;
+    fundOverrides: Record<string, number>;
+    setFundOverrides: Dispatch<SetStateAction<Record<string, number>>>;
+    dismissedFunds: Record<string, boolean>;
+    setDismissedFunds: Dispatch<SetStateAction<Record<string, boolean>>>;
+    importableFunds: ImportableFundLink[];
+    fundStatuses: Map<string, FundLinkStatus>;
+    newFunds: ImportableFundLink[];
+    unmatchedFundEntries: UnmatchedFrequencyEntry[];
+    fundIdForRecord: (key: string) => number | null;
+    fundPickerKey: string | null;
+    setFundPickerKey: (k: string | null) => void;
+
+    importingFunds: boolean;
+    onConfirm: () => void;
+    onBack: () => void;
+    backLabel?: string;
+}
+
+export function ImportFundingStep({
+    tabsValue = 'import-funding',
+
+    selectedSheet,
+    selectedOffice,
+    selectedFiscalYear,
+    existingOffices,
+    fiscalYears,
+    selectedOfficeLabel,
+    selectedFiscalYearLabel,
+    onOfficeChange,
+    onFiscalYearChange,
+    fundingSources,
+    records,
+    fundMatches,
+    fundOverrides,
+    setFundOverrides,
+    dismissedFunds,
+    setDismissedFunds,
+    importableFunds,
+    fundStatuses,
+    newFunds,
+    unmatchedFundEntries,
+    fundIdForRecord,
+    fundPickerKey,
+    setFundPickerKey,
+
+    importingFunds,
+    onConfirm,
+    onBack,
+    backLabel = 'Back: Extract',
+}: ImportFundingStepProps) {
+    const columns = useMemo(
+        () => [
+            columnHelper.accessor('row', {
+                size: 70,
+                header: () => <div className="px-1">Row</div>,
+                cell: ({ row }) => (
+                    <span className="px-1 font-mono whitespace-nowrap">
+                        {row.original.row}
+                        {row.original.isContinuation && (
+                            <span
+                                className="text-muted-foreground ml-1"
+                                title={`Continuation of row ${row.original.blockRow}`}
+                            >
+                                ↳
+                            </span>
+                        )}
+                    </span>
+                ),
+            }),
+            columnHelper.display({
+                id: 'ppa-output',
+                size: 220,
+                header: () => <div className="px-1">PPA / Output</div>,
+                cell: ({ row }) => {
+                    const record = row.original;
+
+                    return (
+                        <div className="max-w-[28ch] px-1">
+                            <div
+                                className="truncate font-medium"
+                                title={record.name}
+                            >
+                                {record.name}
+                            </div>
+                            <div
+                                className="text-muted-foreground truncate"
+                                title={record.expectedOutput ?? '—'}
+                            >
+                                {record.expectedOutput ?? '—'}
+                            </div>
+                        </div>
+                    );
+                },
+            }),
+            columnHelper.display({
+                id: 'fund',
+                size: 200,
+                header: () => <div className="px-1">Fund</div>,
+                cell: ({ row }) => {
+                    const record = row.original;
+                    const match = fundMatches.get(record.key);
+                    const override = fundOverrides[record.key];
+                    const dismissed = !!dismissedFunds[record.key];
+                    const effectiveId = fundIdForRecord(record.key);
+                    const effective =
+                        effectiveId == null
+                            ? null
+                            : (fundingSources.find(
+                                  (f) => f.id === effectiveId,
+                              ) ?? null);
+
+                    if (record.fundingSource == null) {
+                        return (
+                            <span className="text-muted-foreground px-1">
+                                —
+                            </span>
+                        );
+                    }
+
+                    if (dismissed) {
+                        return (
+                            <span className="text-muted-foreground px-1 italic">
+                                dismissed
+                            </span>
+                        );
+                    }
+
+                    return (
+                        <div className="flex max-w-[30ch] flex-wrap items-center gap-1 px-1">
+                            {override !== undefined ? (
+                                <span
+                                    className="inline-flex items-center gap-1 rounded-md border border-blue-300 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400"
+                                    title={`"${record.fundingSource}" manually mapped to ${effective?.code ?? 'unknown fund'}`}
+                                >
+                                    {record.fundingSource} →{' '}
+                                    {effective?.code ?? '?'}
+                                    <button
+                                        type="button"
+                                        className="cursor-pointer opacity-60 hover:opacity-100"
+                                        onClick={() =>
+                                            setFundOverrides((prev) => {
+                                                const next = { ...prev };
+                                                delete next[record.key];
+
+                                                return next;
+                                            })
+                                        }
+                                        title={`Unmap "${record.fundingSource}"`}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </span>
+                            ) : match?.fund ? (
+                                <Badge
+                                    variant="secondary"
+                                    className="text-[10px]"
+                                >
+                                    {match.fund.code}
+                                </Badge>
+                            ) : (
+                                <span
+                                    className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+                                    title={`No funding source matches "${record.fundingSource}" — map it or remove it`}
+                                >
+                                    {record.fundingSource} ?
+                                    <button
+                                        type="button"
+                                        className="cursor-pointer rounded px-0.5 font-semibold underline decoration-dotted underline-offset-2 opacity-70 hover:opacity-100"
+                                        onClick={() =>
+                                            setFundPickerKey(record.key)
+                                        }
+                                        title={`Map "${record.fundingSource}" to a funding source`}
+                                    >
+                                        Map
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="cursor-pointer opacity-60 hover:opacity-100"
+                                        onClick={() =>
+                                            setDismissedFunds((prev) => ({
+                                                ...prev,
+                                                [record.key]: true,
+                                            }))
+                                        }
+                                        title="Remove this row from the fund import"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </span>
+                            )}
+                        </div>
+                    );
+                },
+            }),
+            columnHelper.display({
+                id: 'climate',
+                size: 140,
+                header: () => <div className="px-1">Climate</div>,
+                cell: ({ row }) => {
+                    const record = row.original;
+                    const match = fundMatches.get(record.key);
+
+                    return (
+                        <span className="block whitespace-nowrap px-1">
+                            {record.adaptation ?? '—'} /{' '}
+                            {record.mitigation ?? '—'} /{' '}
+                            {match?.typology ? (
+                                <Badge
+                                    variant="secondary"
+                                    className="text-[10px]"
+                                >
+                                    {match.typology.code}
+                                </Badge>
+                            ) : (
+                                <span className="text-muted-foreground">
+                                    {record.typology ?? '—'}
+                                </span>
+                            )}
+                        </span>
+                    );
+                },
+            }),
+            columnHelper.display({
+                id: 'status',
+                size: 100,
+                header: () => <div className="px-1">Status</div>,
+                cell: ({ row }) => {
+                    const record = row.original;
+                    const status = fundStatuses.get(record.key);
+
+                    if (status === 'exists') {
+                        return (
+                            <span className="px-1 font-medium text-green-600">
+                                Exists
+                            </span>
+                        );
+                    }
+
+                    if (status === 'no-output') {
+                        return record.fundingSource == null ||
+                            dismissedFunds[record.key] ? (
+                            <span className="text-muted-foreground px-1">
+                                —
+                            </span>
+                        ) : (
+                            <span
+                                className="px-1 font-medium text-amber-600"
+                                title="No matching PPA output yet — import expected outputs first"
+                            >
+                                No output
+                            </span>
+                        );
+                    }
+
+                    if (status === 'new') {
+                        return (
+                            <span className="px-1 font-medium text-blue-600">
+                                New
+                            </span>
+                        );
+                    }
+
+                    return (
+                        <span className="text-muted-foreground px-1">—</span>
+                    );
+                },
+            }),
+        ],
+        [
+            fundingSources,
+            fundMatches,
+            fundOverrides,
+            dismissedFunds,
+            fundIdForRecord,
+            fundStatuses,
+            setFundOverrides,
+            setDismissedFunds,
+            setFundPickerKey,
+        ],
+    );
+
+    const existsCount = importableFunds.filter(
+        (r) => fundStatuses.get(r.key) === 'exists',
+    ).length;
 
     return (
-        <TabsContent
-            value="funding"
-            className="mt-4 flex flex-col gap-4"
-        >
+        <TabsContent value={tabsValue} className="mt-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold tracking-tight">
                     Import Funding Source
@@ -49,6 +350,70 @@ export function ImportFundingStep({ s }: { s: AipImportState }) {
                 </p>
             </div>
 
+            <div className="flex flex-wrap gap-4">
+                <Field>
+                    <FieldLabel>Target Office</FieldLabel>
+                    <Select
+                        value={selectedOffice}
+                        onValueChange={(v) => onOfficeChange(v ?? '')}
+                    >
+                        <SelectTrigger className="w-[200px]">
+                            {selectedOfficeLabel ? (
+                                <span className="flex flex-1 text-left">
+                                    {selectedOfficeLabel}
+                                </span>
+                            ) : (
+                                <SelectValue placeholder="Select an office" />
+                            )}
+                        </SelectTrigger>
+                        <SelectContent>
+                            {existingOffices.map((office) => (
+                                <SelectItem
+                                    key={office.id}
+                                    value={office.id.toString()}
+                                >
+                                    {office.acronym || office.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FieldDescription>
+                        Fund links will be imported under this office.
+                    </FieldDescription>
+                </Field>
+
+                <Field>
+                    <FieldLabel>Fiscal Year</FieldLabel>
+                    <Select
+                        value={selectedFiscalYear}
+                        onValueChange={(v) => onFiscalYearChange(v ?? '')}
+                    >
+                        <SelectTrigger className="w-[160px]">
+                            {selectedFiscalYearLabel ? (
+                                <span className="flex flex-1 text-left">
+                                    {selectedFiscalYearLabel}
+                                </span>
+                            ) : (
+                                <SelectValue placeholder="Select a year" />
+                            )}
+                        </SelectTrigger>
+                        <SelectContent>
+                            {fiscalYears.map((fy) => (
+                                <SelectItem
+                                    key={fy.id}
+                                    value={fy.id.toString()}
+                                >
+                                    {fy.year}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FieldDescription>
+                        Fund links will be imported for this fiscal year.
+                    </FieldDescription>
+                </Field>
+            </div>
+
             {selectedOffice && selectedFiscalYear ? (
                 <>
                     <div className="flex flex-wrap items-center gap-3 rounded-md border p-3 text-sm">
@@ -57,9 +422,11 @@ export function ImportFundingStep({ s }: { s: AipImportState }) {
                                 Rows with fund:
                             </span>{' '}
                             <span className="font-medium">
-                                {extractResult?.records.filter(
-                                    (r) => r.fundingSource != null,
-                                ).length ?? 0}
+                                {
+                                    records.filter(
+                                        (r) => r.fundingSource != null,
+                                    ).length
+                                }
                             </span>
                         </div>
                         <div>
@@ -81,13 +448,7 @@ export function ImportFundingStep({ s }: { s: AipImportState }) {
                                 Exists:
                             </span>{' '}
                             <span className="font-medium text-green-600">
-                                {
-                                    importableFunds.filter(
-                                        (r) =>
-                                            fundStatuses.get(r.key) ===
-                                            'exists',
-                                    ).length
-                                }
+                                {existsCount}
                             </span>
                         </div>
                         <div>
@@ -119,257 +480,13 @@ export function ImportFundingStep({ s }: { s: AipImportState }) {
                         </div>
                     )}
 
-                    {(extractResult?.records.length ?? 0) > 0 && (
-                        <div className="overflow-x-auto rounded-md border">
-                            <table className="w-full text-left text-xs">
-                                <thead>
-                                    <tr className="bg-muted/50 text-muted-foreground border-b">
-                                        <th className="px-3 py-2 font-medium">
-                                            Row
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            PPA / Output
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Fund
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Climate
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Status
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {extractResult?.records.map((record) => {
-                                        const match = fundMatches.get(
-                                            record.key,
-                                        );
-                                        const override =
-                                            fundOverrides[record.key];
-                                        const dismissed =
-                                            !!dismissedFunds[record.key];
-                                        const effectiveId = fundIdForRecord(
-                                            record.key,
-                                        );
-                                        const effective =
-                                            effectiveId == null
-                                                ? null
-                                                : (fundingSources.find(
-                                                      (f) =>
-                                                          f.id === effectiveId,
-                                                  ) ?? null);
-
-                                        return (
-                                            <tr
-                                                key={record.key}
-                                                className="border-b last:border-0"
-                                            >
-                                                <td className="px-3 py-2 font-mono whitespace-nowrap">
-                                                    {record.row}
-                                                    {record.isContinuation && (
-                                                        <span
-                                                            className="text-muted-foreground ml-1"
-                                                            title={`Continuation of row ${record.blockRow}`}
-                                                        >
-                                                            ↳
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="max-w-[28ch] px-3 py-2">
-                                                    <div className="truncate font-medium">
-                                                        {record.name}
-                                                    </div>
-                                                    <div className="text-muted-foreground truncate">
-                                                        {record.expectedOutput ??
-                                                            '—'}
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    {record.fundingSource ==
-                                                    null ? (
-                                                        <span className="text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    ) : dismissed ? (
-                                                        <span className="text-muted-foreground italic">
-                                                            dismissed
-                                                        </span>
-                                                    ) : (
-                                                        <div className="flex max-w-[30ch] flex-wrap items-center gap-1">
-                                                            {override !==
-                                                            undefined ? (
-                                                                <span
-                                                                    className="inline-flex items-center gap-1 rounded-md border border-blue-300 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400"
-                                                                    title={`"${record.fundingSource}" manually mapped to ${effective?.code ?? 'unknown fund'}`}
-                                                                >
-                                                                    {
-                                                                        record.fundingSource
-                                                                    }{' '}
-                                                                    →{' '}
-                                                                    {effective?.code ??
-                                                                        '?'}
-                                                                    <button
-                                                                        type="button"
-                                                                        className="cursor-pointer opacity-60 hover:opacity-100"
-                                                                        onClick={() =>
-                                                                            setFundOverrides(
-                                                                                (
-                                                                                    prev,
-                                                                                ) => {
-                                                                                    const next =
-                                                                                        {
-                                                                                            ...prev,
-                                                                                        };
-                                                                                    delete next[
-                                                                                        record
-                                                                                            .key
-                                                                                    ];
-
-                                                                                    return next;
-                                                                                },
-                                                                            )
-                                                                        }
-                                                                        title={`Unmap "${record.fundingSource}"`}
-                                                                    >
-                                                                        <X className="h-3 w-3" />
-                                                                    </button>
-                                                                </span>
-                                                            ) : match?.fund ? (
-                                                                <Badge
-                                                                    variant="secondary"
-                                                                    className="text-[10px]"
-                                                                >
-                                                                    {
-                                                                        match
-                                                                            .fund
-                                                                            .code
-                                                                    }
-                                                                </Badge>
-                                                            ) : (
-                                                                <span
-                                                                    className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
-                                                                    title={`No funding source matches "${record.fundingSource}" — map it or remove it`}
-                                                                >
-                                                                    {
-                                                                        record.fundingSource
-                                                                    }{' '}
-                                                                    ?
-                                                                    <button
-                                                                        type="button"
-                                                                        className="cursor-pointer rounded px-0.5 font-semibold underline decoration-dotted underline-offset-2 opacity-70 hover:opacity-100"
-                                                                        onClick={() =>
-                                                                            setFundPickerKey(
-                                                                                record.key,
-                                                                            )
-                                                                        }
-                                                                        title={`Map "${record.fundingSource}" to a funding source`}
-                                                                    >
-                                                                        Map
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        className="cursor-pointer opacity-60 hover:opacity-100"
-                                                                        onClick={() =>
-                                                                            setDismissedFunds(
-                                                                                (
-                                                                                    prev,
-                                                                                ) => ({
-                                                                                    ...prev,
-                                                                                    [record.key]: true,
-                                                                                }),
-                                                                            )
-                                                                        }
-                                                                        title="Remove this row from the fund import"
-                                                                    >
-                                                                        <X className="h-3 w-3" />
-                                                                    </button>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-3 py-2 whitespace-nowrap">
-                                                    {record.adaptation ?? '—'} /{' '}
-                                                    {record.mitigation ?? '—'} /{' '}
-                                                    {match?.typology ? (
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="text-[10px]"
-                                                        >
-                                                            {
-                                                                match.typology
-                                                                    .code
-                                                            }
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            {record.typology ??
-                                                                '—'}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-3 py-2 whitespace-nowrap">
-                                                    {(() => {
-                                                        const status =
-                                                            fundStatuses.get(
-                                                                record.key,
-                                                            );
-
-                                                        if (
-                                                            status === 'exists'
-                                                        ) {
-                                                            return (
-                                                                <span className="font-medium text-green-600">
-                                                                    Exists
-                                                                </span>
-                                                            );
-                                                        }
-
-                                                        if (
-                                                            status ===
-                                                            'no-output'
-                                                        ) {
-                                                            return record.fundingSource ==
-                                                                null ||
-                                                                dismissedFunds[
-                                                                    record.key
-                                                                ] ? (
-                                                                <span className="text-muted-foreground">
-                                                                    —
-                                                                </span>
-                                                            ) : (
-                                                                <span
-                                                                    className="font-medium text-amber-600"
-                                                                    title="No matching PPA output yet — import expected outputs first"
-                                                                >
-                                                                    No output
-                                                                </span>
-                                                            );
-                                                        }
-
-                                                        if (status === 'new') {
-                                                            return (
-                                                                <span className="font-medium text-blue-600">
-                                                                    New
-                                                                </span>
-                                                            );
-                                                        }
-
-                                                        return (
-                                                            <span className="text-muted-foreground">
-                                                                —
-                                                            </span>
-                                                        );
-                                                    })()}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                    {records.length > 0 && (
+                        <DataTable
+                            data={records}
+                            columns={columns}
+                            withColgroup
+                            className="h-[420px]"
+                        />
                     )}
                 </>
             ) : (
@@ -380,12 +497,12 @@ export function ImportFundingStep({ s }: { s: AipImportState }) {
             )}
 
             <div className="flex items-center justify-between">
-                <Button variant="outline" onClick={() => setStep('extract')}>
-                    Back: Extract
+                <Button variant="outline" onClick={onBack}>
+                    {backLabel}
                 </Button>
                 <div className="flex flex-col items-end gap-1">
                     <Button
-                        onClick={handleConfirmFunds}
+                        onClick={onConfirm}
                         disabled={
                             !selectedOffice ||
                             !selectedFiscalYear ||

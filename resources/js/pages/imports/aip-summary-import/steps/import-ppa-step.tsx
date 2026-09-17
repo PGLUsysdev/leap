@@ -1,5 +1,12 @@
 // resources/js/pages/imports/aip-summary-import/steps/import-ppa-step.tsx
+//
+// Page-local Import PPA step (not shared — AIP-only). Single-sheet mode:
+// blocks are grouped from the extract result and matched against existing
+// PPAs scoped to the selected office + fiscal year.
 
+import { useMemo } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
+import DataTable from '@/components/data-table';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
@@ -11,28 +18,117 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { AipImportState } from '../types';
+import type {
+    FiscalYear,
+    ImportOffice,
+    PpaBlock,
+} from '../types';
 
-export function ImportPpaStep({ s }: { s: AipImportState }) {
-    const {
-        selectedSheet,
-        selectedOffice,
-        setSelectedOffice,
-        selectedOfficeLabel,
-        selectedFiscalYear,
-        setSelectedFiscalYear,
-        selectedFiscalYearLabel,
-        existingOffices,
-        fiscalYears,
-        blocksForImport,
-        newBlocks,
-        handleConfirmImport,
-        importing,
-        setStep,
-    } = s;
+const columnHelper = createColumnHelper<PpaBlock>();
+
+function getPpaBlockColumns() {
+    return [
+        columnHelper.accessor('fullCode', {
+            size: 160,
+            header: () => <div className="px-1">Full Code</div>,
+            cell: ({ getValue }) => (
+                <span className="block px-1 font-mono font-medium whitespace-nowrap">
+                    {getValue()}
+                </span>
+            ),
+        }),
+        columnHelper.accessor('name', {
+            size: 240,
+            header: () => <div className="px-1">Name &amp; Type</div>,
+            cell: ({ row }) => (
+                <div className="px-1">
+                    <div
+                        className="max-w-[28ch] truncate font-medium"
+                        title={row.original.name}
+                    >
+                        {row.original.name}
+                    </div>
+                    <div className="text-muted-foreground text-[10px] uppercase">
+                        {row.original.type}
+                    </div>
+                </div>
+            ),
+        }),
+        columnHelper.accessor('status', {
+            size: 100,
+            header: () => <div className="px-1">Status</div>,
+            cell: ({ getValue }) =>
+                getValue() === 'exists' ? (
+                    <span className="px-1 font-medium text-green-600">
+                        Exists
+                    </span>
+                ) : (
+                    <span className="px-1 font-medium text-blue-600">New</span>
+                ),
+        }),
+        columnHelper.accessor((row) => row.rows.join(', '), {
+            id: 'rows',
+            size: 120,
+            header: () => <div className="px-1">Rows</div>,
+            cell: ({ getValue }) => {
+                const value = getValue();
+
+                return (
+                    <span
+                        className="text-muted-foreground block max-w-[20ch] truncate px-1 font-mono"
+                        title={value}
+                    >
+                        {value}
+                    </span>
+                );
+            },
+        }),
+    ];
+}
+
+interface ImportPpaStepProps {
+    tabsValue?: string;
+
+    selectedSheet: string;
+    existingOffices: ImportOffice[];
+    fiscalYears: FiscalYear[];
+    selectedOffice: string;
+    onOfficeChange: (v: string) => void;
+    selectedOfficeLabel: string;
+    selectedFiscalYear: string;
+    onFiscalYearChange: (v: string) => void;
+    selectedFiscalYearLabel: string;
+    blocksForImport: PpaBlock[];
+    newBlocks: PpaBlock[];
+    importing: boolean;
+    onConfirm: () => void;
+    onBack: () => void;
+    backLabel?: string;
+}
+
+export function ImportPpaStep({
+    tabsValue = 'import-ppa',
+
+    selectedSheet,
+    existingOffices,
+    fiscalYears,
+    selectedOffice,
+    onOfficeChange,
+    selectedOfficeLabel,
+    selectedFiscalYear,
+    onFiscalYearChange,
+    selectedFiscalYearLabel,
+    blocksForImport,
+    newBlocks,
+    importing,
+    onConfirm,
+    onBack,
+    backLabel = 'Back: Extract',
+}: ImportPpaStepProps) {
+    const columns = useMemo(() => getPpaBlockColumns(), []);
 
     return (
-        <TabsContent value="ppa" className="mt-4 flex flex-col gap-4">
+        <TabsContent value={tabsValue} className="mt-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold tracking-tight">
                     Import PPA
@@ -48,7 +144,7 @@ export function ImportPpaStep({ s }: { s: AipImportState }) {
                     <FieldLabel>Target Office</FieldLabel>
                     <Select
                         value={selectedOffice}
-                        onValueChange={(v) => setSelectedOffice(v ?? '')}
+                        onValueChange={(v) => onOfficeChange(v ?? '')}
                     >
                         <SelectTrigger className="w-[200px]">
                             {selectedOfficeLabel ? (
@@ -79,7 +175,7 @@ export function ImportPpaStep({ s }: { s: AipImportState }) {
                     <FieldLabel>Fiscal Year</FieldLabel>
                     <Select
                         value={selectedFiscalYear}
-                        onValueChange={(v) => setSelectedFiscalYear(v ?? '')}
+                        onValueChange={(v) => onFiscalYearChange(v ?? '')}
                     >
                         <SelectTrigger className="w-[160px]">
                             {selectedFiscalYearLabel ? (
@@ -143,61 +239,12 @@ export function ImportPpaStep({ s }: { s: AipImportState }) {
                     </div>
 
                     {blocksForImport.length > 0 && (
-                        <div className="overflow-x-auto rounded-md border">
-                            <table className="w-full text-left text-xs">
-                                <thead>
-                                    <tr className="bg-muted/50 text-muted-foreground border-b">
-                                        <th className="px-3 py-2 font-medium">
-                                            Full Code
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Name &amp; Type
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Status
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Rows
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {blocksForImport.map((block) => (
-                                        <tr
-                                            key={block.fullCode}
-                                            className="border-b last:border-0"
-                                        >
-                                            <td className="px-3 py-2 font-mono font-medium whitespace-nowrap">
-                                                {block.fullCode}
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                <div className="font-medium">
-                                                    {block.name}
-                                                </div>
-                                                <div className="text-muted-foreground text-[10px] uppercase">
-                                                    {block.type}
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                {block.status === 'exists' && (
-                                                    <span className="font-medium text-green-600">
-                                                        Exists
-                                                    </span>
-                                                )}
-                                                {block.status === 'new' && (
-                                                    <span className="font-medium text-blue-600">
-                                                        New
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="text-muted-foreground px-3 py-2 font-mono whitespace-nowrap">
-                                                {block.rows.join(', ')}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <DataTable
+                            data={blocksForImport}
+                            columns={columns}
+                            withColgroup
+                            className="h-[420px]"
+                        />
                     )}
                 </>
             ) : (
@@ -208,11 +255,11 @@ export function ImportPpaStep({ s }: { s: AipImportState }) {
             )}
 
             <div className="flex items-center justify-between">
-                <Button variant="outline" onClick={() => setStep('extract')}>
-                    Back: Extract
+                <Button variant="outline" onClick={onBack}>
+                    {backLabel}
                 </Button>
                 <Button
-                    onClick={handleConfirmImport}
+                    onClick={onConfirm}
                     disabled={
                         !selectedOffice ||
                         !selectedFiscalYear ||

@@ -1,6 +1,14 @@
 // resources/js/pages/imports/aip-summary-import/steps/import-outputs-step.tsx
+//
+// Page-local Import Expected Outputs step (not shared — AIP-only).
+// Single-sheet mode: records come from the extract result, offices resolve
+// per row (auto-match + manual token mapping + bulk override), outputs
+// match PPAs by name within the selected office + fiscal year.
 
+import { useMemo } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, RotateCcw, X } from 'lucide-react';
+import DataTable from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
@@ -16,50 +24,398 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { formatAipScheduleShort } from '@/lib/aip-summary-import/extract';
+import type { AipSummaryRecord } from '@/lib/aip-summary-import/extract';
 import { visibleUnmatched } from '@/lib/aip-summary-import/match-offices';
+import type {
+    RecordOfficeMatch,
+    TokenMapping,
+} from '@/lib/aip-summary-import/match-offices';
 import { importOfficeColumns } from '../columns';
-import type { AipImportState, ImportOffice } from '../types';
+import type {
+    FiscalYear,
+    ImportOffice,
+    ImportableOutput,
+    OutputImportStatus,
+    UnmatchedFrequencyEntry,
+} from '../types';
+import type { Dispatch, SetStateAction } from 'react';
 
-export function ImportOutputsStep({ s }: { s: AipImportState }) {
-    const {
-        selectedSheet,
-        selectedOffice,
-        setSelectedOffice,
-        selectedOfficeLabel,
-        selectedFiscalYear,
-        setSelectedFiscalYear,
-        selectedFiscalYearLabel,
-        existingOffices,
-        fiscalYears,
-        extractResult,
-        importableOutputs,
-        outputStatuses,
-        newOutputs,
-        officeMatches,
-        officeOverrides,
-        setOfficeOverrides,
-        tokenMappings,
-        setTokenMappings,
-        dismissedTokens,
-        setDismissedTokens,
-        unmatchedFrequency,
-        officeIdsForRecord,
-        setTokenMapping,
-        resetRowOffices,
-        officePickerKey,
-        setOfficePickerKey,
-        mappingTarget,
-        setMappingTarget,
-        handleConfirmOutputs,
-        importingOutputs,
-        setStep,
-    } = s;
+const columnHelper = createColumnHelper<AipSummaryRecord>();
+
+interface ImportOutputsStepProps {
+    tabsValue?: string;
+
+    selectedSheet: string;
+    existingOffices: ImportOffice[];
+    fiscalYears: FiscalYear[];
+    selectedOffice: string;
+    onOfficeChange: (v: string) => void;
+    selectedOfficeLabel: string;
+    selectedFiscalYear: string;
+    onFiscalYearChange: (v: string) => void;
+    selectedFiscalYearLabel: string;
+
+    records: AipSummaryRecord[];
+    outputStatuses: Map<string, OutputImportStatus>;
+    newOutputs: ImportableOutput[];
+    officeMatches: Map<string, RecordOfficeMatch>;
+    officeOverrides: Record<string, number[]>;
+    setOfficeOverrides: Dispatch<SetStateAction<Record<string, number[]>>>;
+    tokenMappings: Record<string, TokenMapping>;
+    dismissedTokens: Record<string, string[]>;
+    setDismissedTokens: Dispatch<SetStateAction<Record<string, string[]>>>;
+    unmatchedFrequency: UnmatchedFrequencyEntry[];
+    officeIdsForRecord: (key: string) => number[];
+    setTokenMapping: (
+        key: string,
+        token: string,
+        officeId: number | null,
+    ) => void;
+    resetRowOffices: (key: string) => void;
+    officePickerKey: string | null;
+    setOfficePickerKey: (k: string | null) => void;
+    mappingTarget: { key: string; token: string } | null;
+    setMappingTarget: (t: { key: string; token: string } | null) => void;
+
+    importingOutputs: boolean;
+    onConfirm: () => void;
+    onBack: () => void;
+    backLabel?: string;
+}
+
+export function ImportOutputsStep({
+    tabsValue = 'import-outputs',
+
+    selectedSheet,
+    existingOffices,
+    fiscalYears,
+    selectedOffice,
+    onOfficeChange,
+    selectedOfficeLabel,
+    selectedFiscalYear,
+    onFiscalYearChange,
+    selectedFiscalYearLabel,
+
+    records,
+    outputStatuses,
+    newOutputs,
+    officeMatches,
+    officeOverrides,
+    setOfficeOverrides,
+    tokenMappings,
+    dismissedTokens,
+    setDismissedTokens,
+    unmatchedFrequency,
+    officeIdsForRecord,
+    setTokenMapping,
+    resetRowOffices,
+    officePickerKey,
+    setOfficePickerKey,
+    mappingTarget,
+    setMappingTarget,
+
+    importingOutputs,
+    onConfirm,
+    onBack,
+    backLabel = 'Back: Extract',
+}: ImportOutputsStepProps) {
+    const columns = useMemo(
+        () => [
+            columnHelper.accessor('row', {
+                size: 70,
+                header: () => <div className="px-1">Row</div>,
+                cell: ({ row }) => (
+                    <span className="px-1 font-mono whitespace-nowrap">
+                        {row.original.row}
+                        {row.original.isContinuation && (
+                            <span
+                                className="text-muted-foreground ml-1"
+                                title={`Continuation of row ${row.original.blockRow}`}
+                            >
+                                ↳
+                            </span>
+                        )}
+                    </span>
+                ),
+            }),
+            columnHelper.accessor('fullCode', {
+                size: 140,
+                header: () => <div className="px-1">PPA Code</div>,
+                cell: ({ row }) => (
+                    <span className="block px-1 font-mono whitespace-nowrap">
+                        {row.original.isContinuation
+                            ? '—'
+                            : row.original.fullCode}
+                    </span>
+                ),
+            }),
+            columnHelper.accessor('name', {
+                size: 180,
+                header: () => <div className="px-1">PPA Name</div>,
+                cell: ({ getValue }) => {
+                    const value = getValue();
+
+                    return (
+                        <span
+                            className="block max-w-[20ch] truncate px-1"
+                            title={value}
+                        >
+                            {value}
+                        </span>
+                    );
+                },
+            }),
+            columnHelper.display({
+                id: 'office',
+                size: 220,
+                header: () => <div className="px-1">Office</div>,
+                cell: ({ row }) => {
+                    const record = row.original;
+                    const match = officeMatches.get(record.key);
+                    const mappings = tokenMappings[record.key] ?? {};
+                    const dismissed = dismissedTokens[record.key] ?? [];
+                    const hasManual =
+                        officeOverrides[record.key] !== undefined ||
+                        Object.keys(mappings).length > 0 ||
+                        dismissed.length > 0;
+                    const effectiveIds = officeIdsForRecord(record.key);
+                    const effective = existingOffices.filter((o) =>
+                        effectiveIds.includes(o.id),
+                    );
+                    const visible = visibleUnmatched(
+                        match,
+                        mappings,
+                        dismissed,
+                    );
+
+                    function setMapping(token: string, value: string | null) {
+                        setTokenMapping(
+                            record.key,
+                            token,
+                            value === null || value === '' ? null : Number(value),
+                        );
+                    }
+
+                    function dismissToken(token: string) {
+                        setDismissedTokens((prev) => ({
+                            ...prev,
+                            [record.key]: [
+                                ...(prev[record.key] ?? []),
+                                token,
+                            ],
+                        }));
+                    }
+
+                    return (
+                        <div className="flex max-w-[40ch] flex-wrap items-center gap-1 px-1">
+                            {effective.length === 0 ? (
+                                <span className="text-muted-foreground">—</span>
+                            ) : (
+                                effective.map((o) => (
+                                    <Badge
+                                        key={o.id}
+                                        variant="secondary"
+                                        className="text-[10px]"
+                                    >
+                                        {o.acronym || o.name}
+                                    </Badge>
+                                ))
+                            )}
+                            {Object.entries(mappings).map(
+                                ([token, officeId]) => {
+                                    const office = existingOffices.find(
+                                        (o) => o.id === officeId,
+                                    );
+
+                                    return (
+                                        <span
+                                            key={`mapped-${token}`}
+                                            className="inline-flex items-center gap-1 rounded-md border border-blue-300 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400"
+                                            title={`"${token}" manually mapped to ${office?.acronym || office?.name || 'unknown office'}`}
+                                        >
+                                            {token} →{' '}
+                                            {office?.acronym ||
+                                                office?.name ||
+                                                '?'}
+                                            <button
+                                                type="button"
+                                                className="cursor-pointer opacity-60 hover:opacity-100"
+                                                onClick={() =>
+                                                    setMapping(token, null)
+                                                }
+                                                title={`Unmap "${token}"`}
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    );
+                                },
+                            )}
+                            {visible.map((token) => (
+                                <span
+                                    key={token}
+                                    className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+                                    title={`No office matches "${token}" — map it or remove it`}
+                                >
+                                    {token} ?
+                                    <button
+                                        type="button"
+                                        className="cursor-pointer rounded px-0.5 font-semibold underline decoration-dotted underline-offset-2 opacity-70 hover:opacity-100"
+                                        onClick={() =>
+                                            setMappingTarget({
+                                                key: record.key,
+                                                token,
+                                            })
+                                        }
+                                        title={`Map "${token}" to an office`}
+                                    >
+                                        Map
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="cursor-pointer opacity-60 hover:opacity-100"
+                                        onClick={() => dismissToken(token)}
+                                        title={`Remove "${token}" from the unresolved list`}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </span>
+                            ))}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                onClick={() => setOfficePickerKey(record.key)}
+                                title="Add or remove offices for this output (bulk, resolves nothing)"
+                            >
+                                <Pencil />
+                            </Button>
+                            {hasManual && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    onClick={() => resetRowOffices(record.key)}
+                                    title="Reset row to auto-matched offices"
+                                >
+                                    <RotateCcw />
+                                </Button>
+                            )}
+                        </div>
+                    );
+                },
+            }),
+            columnHelper.accessor('startDate', {
+                size: 90,
+                header: () => <div className="px-1">Start Date</div>,
+                cell: ({ getValue }) => (
+                    <span className="block whitespace-nowrap px-1">
+                        {formatAipScheduleShort(getValue()) ?? '—'}
+                    </span>
+                ),
+            }),
+            columnHelper.accessor('endDate', {
+                size: 90,
+                header: () => <div className="px-1">Completion Date</div>,
+                cell: ({ getValue }) => (
+                    <span className="block whitespace-nowrap px-1">
+                        {formatAipScheduleShort(getValue()) ?? '—'}
+                    </span>
+                ),
+            }),
+            columnHelper.accessor('expectedOutput', {
+                size: 220,
+                header: () => <div className="px-1">Expected Output</div>,
+                cell: ({ getValue }) => {
+                    const value = getValue() ?? '—';
+
+                    return (
+                        <span
+                            className="block max-w-[32ch] truncate px-1"
+                            title={value}
+                        >
+                            {value}
+                        </span>
+                    );
+                },
+            }),
+            columnHelper.display({
+                id: 'status',
+                size: 100,
+                header: () => <div className="px-1">Status</div>,
+                cell: ({ row }) => {
+                    const status = outputStatuses.get(row.original.key);
+
+                    if (status === 'exists') {
+                        return (
+                            <span className="px-1 font-medium text-green-600">
+                                Exists
+                            </span>
+                        );
+                    }
+
+                    if (status === 'no-ppa') {
+                        return (
+                            <span
+                                className="px-1 font-medium text-amber-600"
+                                title="No PPA with this ref code in the selected office + fiscal year"
+                            >
+                                No PPA
+                            </span>
+                        );
+                    }
+
+                    if (status === 'new') {
+                        return (
+                            <span className="px-1 font-medium text-blue-600">
+                                New
+                            </span>
+                        );
+                    }
+
+                    if (status === 'no-offices') {
+                        return (
+                            <span
+                                className="px-1 font-medium text-amber-600"
+                                title="No offices resolved — imports without offices; attach them later via edit"
+                            >
+                                No offices
+                            </span>
+                        );
+                    }
+
+                    return (
+                        <span className="text-muted-foreground px-1">—</span>
+                    );
+                },
+            }),
+        ],
+        [
+            existingOffices,
+            officeMatches,
+            tokenMappings,
+            dismissedTokens,
+            officeOverrides,
+            officeIdsForRecord,
+            setTokenMapping,
+            setDismissedTokens,
+            setOfficePickerKey,
+            setMappingTarget,
+            resetRowOffices,
+            outputStatuses,
+        ],
+    );
+
+    const withOutput = records.filter((r) => r.expectedOutput).length;
+    const existsCount = [...outputStatuses.values()].filter(
+        (st) => st === 'exists',
+    ).length;
+    const unresolvedCount = records.filter(
+        (r) => officeIdsForRecord(r.key).length === 0,
+    ).length;
 
     return (
-        <TabsContent
-            value="outputs"
-            className="mt-4 flex flex-col gap-4"
-        >
+        <TabsContent value={tabsValue} className="mt-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold tracking-tight">
                     Import Expected Outputs
@@ -76,7 +432,7 @@ export function ImportOutputsStep({ s }: { s: AipImportState }) {
                     <FieldLabel>Target Office</FieldLabel>
                     <Select
                         value={selectedOffice}
-                        onValueChange={(v) => setSelectedOffice(v ?? '')}
+                        onValueChange={(v) => onOfficeChange(v ?? '')}
                     >
                         <SelectTrigger className="w-[200px]">
                             {selectedOfficeLabel ? (
@@ -107,7 +463,7 @@ export function ImportOutputsStep({ s }: { s: AipImportState }) {
                     <FieldLabel>Fiscal Year</FieldLabel>
                     <Select
                         value={selectedFiscalYear}
-                        onValueChange={(v) => setSelectedFiscalYear(v ?? '')}
+                        onValueChange={(v) => onFiscalYearChange(v ?? '')}
                     >
                         <SelectTrigger className="w-[160px]">
                             {selectedFiscalYearLabel ? (
@@ -142,18 +498,14 @@ export function ImportOutputsStep({ s }: { s: AipImportState }) {
                             <span className="text-muted-foreground">
                                 Total rows:
                             </span>{' '}
-                            <span className="font-medium">
-                                {extractResult?.records.length ?? 0}
-                            </span>
+                            <span className="font-medium">{records.length}</span>
                         </div>
                         <div>
                             <span className="text-muted-foreground">
                                 With expected output:
                             </span>{' '}
                             <span className="font-medium text-blue-600">
-                                {extractResult?.records.filter(
-                                    (r) => r.expectedOutput,
-                                ).length ?? 0}
+                                {withOutput}
                             </span>
                         </div>
                         <div>
@@ -161,9 +513,7 @@ export function ImportOutputsStep({ s }: { s: AipImportState }) {
                                 Missing output:
                             </span>{' '}
                             <span className="font-medium text-amber-600">
-                                {extractResult?.records.filter(
-                                    (r) => !r.expectedOutput,
-                                ).length ?? 0}
+                                {records.length - withOutput}
                             </span>
                         </div>
                         <div>
@@ -177,13 +527,7 @@ export function ImportOutputsStep({ s }: { s: AipImportState }) {
                                 Exists:
                             </span>{' '}
                             <span className="font-medium text-green-600">
-                                {
-                                    importableOutputs.filter(
-                                        (r) =>
-                                            outputStatuses.get(r.key) ===
-                                            'exists',
-                                    ).length
-                                }
+                                {existsCount}
                             </span>
                         </div>
                         <div>
@@ -191,13 +535,7 @@ export function ImportOutputsStep({ s }: { s: AipImportState }) {
                                 Unresolved offices:
                             </span>{' '}
                             <span className="font-medium text-amber-600">
-                                {
-                                    extractResult?.records.filter(
-                                        (r) =>
-                                            officeIdsForRecord(r.key).length ===
-                                            0,
-                                    ).length
-                                }
+                                {unresolvedCount}
                             </span>
                         </div>
                     </div>
@@ -221,346 +559,13 @@ export function ImportOutputsStep({ s }: { s: AipImportState }) {
                         </div>
                     )}
 
-                    {(extractResult?.records.length ?? 0) > 0 && (
-                        <div className="overflow-x-auto rounded-md border">
-                            <table className="w-full text-left text-xs">
-                                <thead>
-                                    <tr className="bg-muted/50 text-muted-foreground border-b">
-                                        <th className="px-3 py-2 font-medium">
-                                            Row
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            PPA Code
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            PPA Name
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Office
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Start Date
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Completion Date
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Expected Output
-                                        </th>
-                                        <th className="px-3 py-2 font-medium">
-                                            Status
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {extractResult?.records.map((record) => (
-                                        <tr
-                                            key={record.key}
-                                            className="border-b last:border-0"
-                                        >
-                                            <td className="px-3 py-2 font-mono whitespace-nowrap">
-                                                {record.row}
-                                                {record.isContinuation && (
-                                                    <span
-                                                        className="text-muted-foreground ml-1"
-                                                        title={`Continuation of row ${record.blockRow}`}
-                                                    >
-                                                        ↳
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-3 py-2 font-mono whitespace-nowrap">
-                                                {record.isContinuation
-                                                    ? '—'
-                                                    : record.fullCode}
-                                            </td>
-                                            <td className="px-3 py-2 whitespace-nowrap">
-                                                {record.name}
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                {(() => {
-                                                    const match =
-                                                        officeMatches.get(
-                                                            record.key,
-                                                        );
-                                                    const mappings =
-                                                        tokenMappings[
-                                                            record.key
-                                                        ] ?? {};
-                                                    const dismissed =
-                                                        dismissedTokens[
-                                                            record.key
-                                                        ] ?? [];
-                                                    const hasManual =
-                                                        officeOverrides[
-                                                            record.key
-                                                        ] !== undefined ||
-                                                        Object.keys(mappings)
-                                                            .length > 0 ||
-                                                        dismissed.length > 0;
-                                                    const effectiveIds =
-                                                        officeIdsForRecord(
-                                                            record.key,
-                                                        );
-                                                    const effective =
-                                                        existingOffices.filter(
-                                                            (o) =>
-                                                                effectiveIds.includes(
-                                                                    o.id,
-                                                                ),
-                                                        );
-                                                    const visible =
-                                                        visibleUnmatched(
-                                                            match,
-                                                            mappings,
-                                                            dismissed,
-                                                        );
-
-                                                    function setMapping(
-                                                        token: string,
-                                                        value: string | null,
-                                                    ) {
-                                                        setTokenMapping(
-                                                            record.key,
-                                                            token,
-                                                            value === null ||
-                                                                value === ''
-                                                                ? null
-                                                                : Number(value),
-                                                        );
-                                                    }
-
-                                                    function dismissToken(
-                                                        token: string,
-                                                    ) {
-                                                        setDismissedTokens(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                [record.key]: [
-                                                                    ...(prev[
-                                                                        record
-                                                                            .key
-                                                                    ] ?? []),
-                                                                    token,
-                                                                ],
-                                                            }),
-                                                        );
-                                                    }
-
-                                                    return (
-                                                        <div className="flex max-w-[40ch] flex-wrap items-center gap-1">
-                                                            {effective.length ===
-                                                            0 ? (
-                                                                <span className="text-muted-foreground">
-                                                                    —
-                                                                </span>
-                                                            ) : (
-                                                                effective.map(
-                                                                    (o) => (
-                                                                        <Badge
-                                                                            key={
-                                                                                o.id
-                                                                            }
-                                                                            variant="secondary"
-                                                                            className="text-[10px]"
-                                                                        >
-                                                                            {o.acronym ||
-                                                                                o.name}
-                                                                        </Badge>
-                                                                    ),
-                                                                )
-                                                            )}
-                                                            {Object.entries(
-                                                                mappings,
-                                                            ).map(
-                                                                ([
-                                                                    token,
-                                                                    officeId,
-                                                                ]) => {
-                                                                    const office =
-                                                                        existingOffices.find(
-                                                                            (
-                                                                                o,
-                                                                            ) =>
-                                                                                o.id ===
-                                                                                officeId,
-                                                                        );
-
-                                                                    return (
-                                                                        <span
-                                                                            key={`mapped-${token}`}
-                                                                            className="inline-flex items-center gap-1 rounded-md border border-blue-300 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400"
-                                                                            title={`"${token}" manually mapped to ${office?.acronym || office?.name || 'unknown office'}`}
-                                                                        >
-                                                                            {
-                                                                                token
-                                                                            }{' '}
-                                                                            →{' '}
-                                                                            {office?.acronym ||
-                                                                                office?.name ||
-                                                                                '?'}
-                                                                            <button
-                                                                                type="button"
-                                                                                className="cursor-pointer opacity-60 hover:opacity-100"
-                                                                                onClick={() =>
-                                                                                    setMapping(
-                                                                                        token,
-                                                                                        null,
-                                                                                    )
-                                                                                }
-                                                                                title={`Unmap "${token}"`}
-                                                                            >
-                                                                                <X className="h-3 w-3" />
-                                                                            </button>
-                                                                        </span>
-                                                                    );
-                                                                },
-                                                            )}
-                                                            {visible.map(
-                                                                (token) => (
-                                                                    <span
-                                                                        key={
-                                                                            token
-                                                                        }
-                                                                        className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
-                                                                        title={`No office matches "${token}" — map it or remove it`}
-                                                                    >
-                                                                        {token}{' '}
-                                                                        ?
-                                                                        <button
-                                                                            type="button"
-                                                                            className="cursor-pointer rounded px-0.5 font-semibold underline decoration-dotted underline-offset-2 opacity-70 hover:opacity-100"
-                                                                            onClick={() =>
-                                                                                setMappingTarget(
-                                                                                    {
-                                                                                        key: record.key,
-                                                                                        token,
-                                                                                    },
-                                                                                )
-                                                                            }
-                                                                            title={`Map "${token}" to an office`}
-                                                                        >
-                                                                            Map
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            className="cursor-pointer opacity-60 hover:opacity-100"
-                                                                            onClick={() =>
-                                                                                dismissToken(
-                                                                                    token,
-                                                                                )
-                                                                            }
-                                                                            title={`Remove "${token}" from the unresolved list`}
-                                                                        >
-                                                                            <X className="h-3 w-3" />
-                                                                        </button>
-                                                                    </span>
-                                                                ),
-                                                            )}
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon-xs"
-                                                                onClick={() =>
-                                                                    setOfficePickerKey(
-                                                                        record.key,
-                                                                    )
-                                                                }
-                                                                title="Add or remove offices for this output (bulk, resolves nothing)"
-                                                            >
-                                                                <Pencil />
-                                                            </Button>
-                                                            {hasManual && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon-xs"
-                                                                    onClick={() =>
-                                                                        resetRowOffices(
-                                                                            record.key,
-                                                                        )
-                                                                    }
-                                                                    title="Reset row to auto-matched offices"
-                                                                >
-                                                                    <RotateCcw />
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td className="px-3 py-2 whitespace-nowrap">
-                                                {formatAipScheduleShort(
-                                                    record.startDate,
-                                                ) ?? '—'}
-                                            </td>
-                                            <td className="px-3 py-2 whitespace-nowrap">
-                                                {formatAipScheduleShort(
-                                                    record.endDate,
-                                                ) ?? '—'}
-                                            </td>
-                                            <td className="max-w-[32ch] truncate px-3 py-2">
-                                                {record.expectedOutput ?? '—'}
-                                            </td>
-                                            <td className="px-3 py-2 whitespace-nowrap">
-                                                {(() => {
-                                                    const status =
-                                                        outputStatuses.get(
-                                                            record.key,
-                                                        );
-
-                                                    if (status === 'exists') {
-                                                        return (
-                                                            <span className="font-medium text-green-600">
-                                                                Exists
-                                                            </span>
-                                                        );
-                                                    }
-
-                                                    if (status === 'no-ppa') {
-                                                        return (
-                                                            <span
-                                                                className="font-medium text-amber-600"
-                                                                title="No PPA with this ref code in the selected office + fiscal year"
-                                                            >
-                                                                No PPA
-                                                            </span>
-                                                        );
-                                                    }
-
-                                                    if (status === 'new') {
-                                                        return (
-                                                            <span className="font-medium text-blue-600">
-                                                                New
-                                                            </span>
-                                                        );
-                                                    }
-
-                                                    if (
-                                                        status === 'no-offices'
-                                                    ) {
-                                                        return (
-                                                            <span
-                                                                className="font-medium text-amber-600"
-                                                                title="No offices resolved — imports without offices; attach them later via edit"
-                                                            >
-                                                                No offices
-                                                            </span>
-                                                        );
-                                                    }
-
-                                                    return (
-                                                        <span className="text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    );
-                                                })()}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                    {records.length > 0 && (
+                        <DataTable
+                            data={records}
+                            columns={columns}
+                            withColgroup
+                            className="h-[480px]"
+                        />
                     )}
                 </>
             ) : (
@@ -571,12 +576,12 @@ export function ImportOutputsStep({ s }: { s: AipImportState }) {
             )}
 
             <div className="flex items-center justify-between">
-                <Button variant="outline" onClick={() => setStep('extract')}>
-                    Back: Extract
+                <Button variant="outline" onClick={onBack}>
+                    {backLabel}
                 </Button>
                 <div className="flex flex-col items-end gap-1">
                     <Button
-                        onClick={handleConfirmOutputs}
+                        onClick={onConfirm}
                         disabled={
                             !selectedOffice ||
                             !selectedFiscalYear ||
