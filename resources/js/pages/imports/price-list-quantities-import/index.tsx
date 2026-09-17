@@ -31,13 +31,12 @@ import type {
     ExistingPpa,
     FiscalYearOption,
     MappedItem,
-    PriceListQuantitiesImportState,
     PliQtyStep,
 } from './types';
 import { ImportPpmpCalibrateStep } from '@/components/imports/import-ppmp-calibrate-step';
 import { ImportPpmpVerifyStep } from '@/components/imports/import-verify-step';
 import { ImportExtractStep } from '@/components/imports/import-extract-step';
-import { ReviewAndImport } from './steps/review-import-step';
+import { ReviewImportStep } from './steps/review-import-step';
 
 interface PriceListQuantitiesImportProps {
     existingCategories: ExistingCategory[];
@@ -73,7 +72,6 @@ export default function PriceListQuantitiesImport({
     >({});
     const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
     const [rawSheets, setRawSheets] = useState<Record<string, RawSheet>>({});
-    const [activeExtractSheet, setActiveExtractSheet] = useState<string>('');
     const [verifyResults, setVerifyResults] = useState<
         Record<string, PpmpVerifyResult>
     >({});
@@ -93,7 +91,6 @@ export default function PriceListQuantitiesImport({
     >(null);
     const [selectedPpaFundingSourceId, setSelectedPpaFundingSourceId] =
         useState<number | null>(null);
-    const [activeImportSheet, setActiveImportSheet] = useState<string>('');
     const [excludeUnmapped, setExcludeUnmapped] = useState(true);
     const [excludeAmbiguous, setExcludeAmbiguous] = useState(true);
     const [excludeUnclassified, setExcludeUnclassified] = useState(true);
@@ -109,7 +106,6 @@ export default function PriceListQuantitiesImport({
             setRawSheets({});
             setExtractResults({});
             setVerifyResults({});
-            setActiveExtractSheet('');
             setActiveVerifySheet('');
         });
 
@@ -235,25 +231,21 @@ export default function PriceListQuantitiesImport({
     const hasAnyExtract = ppmpRawItems.length > 0;
     const canImport = Object.keys(extractResults).length > 0;
 
-    const mappedBySheet = useMemo(() => {
-        const next: Record<string, ReturnType<typeof matchQuantityItems>> = {};
-
-        for (const [sheet, result] of Object.entries(extractResults)) {
-            next[sheet] = matchQuantityItems(
-                result.uniqueItems,
-                existingPriceLists,
-            );
+    const mappedItems = useMemo(() => {
+        if (!selectedSheet) {
+            return [];
         }
 
-        return next;
-    }, [extractResults, existingPriceLists]);
+        const result = extractResults[selectedSheet];
 
-    const importSheets = Object.keys(mappedBySheet);
-    const effectiveImportSheet =
-        (activeImportSheet && mappedBySheet[activeImportSheet]
-            ? activeImportSheet
-            : importSheets[0]) ?? '';
-    const mappedItems = mappedBySheet[effectiveImportSheet] ?? [];
+        if (!result) {
+            return [];
+        }
+
+        return matchQuantityItems(result.uniqueItems, existingPriceLists);
+    }, [extractResults, selectedSheet, existingPriceLists]);
+
+    const effectiveImportSheet = selectedSheet ?? '';
 
     const matchedCount = mappedItems.filter(
         (m) => m.status === 'matched',
@@ -372,7 +364,6 @@ export default function PriceListQuantitiesImport({
         );
 
         setExtractResults({ [selectedSheet]: result });
-        setActiveExtractSheet(selectedSheet);
         setStep('review');
     }
 
@@ -405,7 +396,6 @@ export default function PriceListQuantitiesImport({
         });
         setActiveVerifySheet(selectedSheet);
         setExtractResults({});
-        setActiveExtractSheet('');
     }
 
     function handlePpmpExtract() {
@@ -429,7 +419,6 @@ export default function PriceListQuantitiesImport({
     function handleSheetChange(sheet: string | null) {
         setSelectedSheet(sheet);
         setActiveVerifySheet(sheet ?? '');
-        setActiveExtractSheet('');
         setPpmpExtractResults({});
         setPpmpRawItems([]);
         setRawSheets({});
@@ -437,116 +426,31 @@ export default function PriceListQuantitiesImport({
         setVerifyResults({});
     }
 
-    // Kept for downstream compatibility (ReviewAndImport uses this by name).
-    function handleSheetToggle(name: string) {
-        handleSheetChange(name);
+    // Scope cascades: narrowing an upstream scope clears downstream picks.
+    function handleOfficeChange(id: number | null) {
+        setSelectedOfficeId(id);
+        setSelectedPpaId(null);
+        setSelectedAipOutputId(null);
+        setSelectedPpaFundingSourceId(null);
     }
 
-    const s: PriceListQuantitiesImportState = {
-        workbook,
-        sheets,
-        selectedSheet,
-        fileName,
-        error,
+    function handleFiscalYearChange(id: number | null) {
+        setSelectedFiscalYearId(id);
+        setSelectedPpaId(null);
+        setSelectedAipOutputId(null);
+        setSelectedPpaFundingSourceId(null);
+    }
 
-        step,
-        setStep,
-        canCalibrate,
-        canVerify,
-        hasAnyVerify,
-        allVerifyValid,
-        canReview,
-        canExtract,
-        hasAnyExtract,
-        canImport,
+    function handlePpaChange(id: number | null) {
+        setSelectedPpaId(id);
+        setSelectedAipOutputId(null);
+        setSelectedPpaFundingSourceId(null);
+    }
 
-        config,
-        setConfig,
-        getEffectiveConfig,
-        ensureConfigInitialized,
-
-        handleFileChange,
-        handleSheetToggle,
-        handleVerify,
-        ppmpExtractResults,
-        setPpmpExtractResults,
-        ppmpRawItems,
-        setPpmpRawItems,
-        rawSheets,
-        setRawSheets,
-        handlePpmpExtract,
-        runExtraction,
-
-        verifyResults,
-        setVerifyResults,
-        activeVerifySheet,
-        setActiveVerifySheet,
-
-        extractResults,
-        setExtractResults,
-        activeExtractSheet,
-        setActiveExtractSheet,
-        hideEmptyQty,
-        setHideEmptyQty,
-
-        mappedBySheet,
-        importSheets,
-        effectiveImportSheet,
-        mappedItems,
-        matchedCount,
-        activeImportSheet,
-        setActiveImportSheet,
-
-        selectedOfficeId,
-        setSelectedOfficeId,
-        selectedFiscalYearId,
-        setSelectedFiscalYearId,
-        selectedPpaId,
-        setSelectedPpaId,
-        selectedAipOutputId,
-        setSelectedAipOutputId,
-        selectedPpaFundingSourceId,
-        setSelectedPpaFundingSourceId,
-
-        officeItems,
-        officeValue,
-        ppasForSelection,
-        ppaItems,
-        ppaValue,
-        fundingSourcesForSelection,
-        fundingSourceItems,
-        fundingSourceValue,
-        outputsForSelection,
-        outputItems,
-        outputValue,
-
-        showOnlyUnmapped,
-        setShowOnlyUnmapped,
-        showOnlyWithQty,
-        setShowOnlyWithQty,
-        excludeUnmapped,
-        setExcludeUnmapped,
-        excludeAmbiguous,
-        setExcludeAmbiguous,
-        excludeUnclassified,
-        setExcludeUnclassified,
-
-        importing,
-        importableItems,
-        unclassifiedCount,
-        isUnclassified: (m: MappedItem) => isUnclassified(m),
-        handleImport,
-
-        existingCategories,
-        existingCoas,
-        existingMappings,
-        existingPriceLists,
-        existingOffices,
-        fiscalYears,
-        existingPpas,
-        existingFundingSources,
-        existingOutputs,
-    };
+    function handleOutputChange(id: number | null) {
+        setSelectedAipOutputId(id);
+        setSelectedPpaFundingSourceId(null);
+    }
 
     return (
         <ImportPageShell
@@ -603,7 +507,6 @@ export default function PriceListQuantitiesImport({
                 onInvalidate={() => {
                     setExtractResults({});
                     setVerifyResults({});
-                    setActiveExtractSheet('');
                     setActiveVerifySheet('');
                 }}
                 showQtyStart
@@ -658,7 +561,60 @@ export default function PriceListQuantitiesImport({
                 canNext={allVerifyValid}
                 nextLabel="Next: Review & Import"
             />
-            {/*<ReviewAndImport s={s} />*/}
+            <ReviewImportStep
+                selectedSheet={selectedSheet}
+                extractResult={
+                    selectedSheet
+                        ? (extractResults[selectedSheet] ?? null)
+                        : null
+                }
+                allVerifyValid={allVerifyValid}
+                canRunExtraction={canReview}
+                onRunExtraction={runExtraction}
+                hideEmptyQty={hideEmptyQty}
+                onHideEmptyQtyChange={setHideEmptyQty}
+                mappedItems={mappedItems}
+                matchedCount={matchedCount}
+                effectiveImportSheet={effectiveImportSheet}
+                importableCount={importableItems.length}
+                unclassifiedCount={unclassifiedCount}
+                isUnclassified={(m) => isUnclassified(m)}
+                officeItems={officeItems}
+                officeValue={officeValue}
+                selectedOfficeId={selectedOfficeId}
+                onOfficeChange={handleOfficeChange}
+                fiscalYears={fiscalYears}
+                selectedFiscalYearId={selectedFiscalYearId}
+                onFiscalYearChange={handleFiscalYearChange}
+                ppaScopeCount={ppasForSelection.length}
+                ppaItems={ppaItems}
+                ppaValue={ppaValue}
+                selectedPpaId={selectedPpaId}
+                onPpaChange={handlePpaChange}
+                ppaTotalCount={existingPpas.length}
+                outputItems={outputItems}
+                outputValue={outputValue}
+                selectedAipOutputId={selectedAipOutputId}
+                onOutputChange={handleOutputChange}
+                outputScopeCount={outputsForSelection.length}
+                fundingSourceItems={fundingSourceItems}
+                fundingSourceValue={fundingSourceValue}
+                selectedPpaFundingSourceId={selectedPpaFundingSourceId}
+                onFundingSourceChange={setSelectedPpaFundingSourceId}
+                fundingSourceScopeCount={fundingSourcesForSelection.length}
+                showOnlyUnmapped={showOnlyUnmapped}
+                onShowOnlyUnmappedChange={setShowOnlyUnmapped}
+                showOnlyWithQty={showOnlyWithQty}
+                onShowOnlyWithQtyChange={setShowOnlyWithQty}
+                excludeUnmapped={excludeUnmapped}
+                onExcludeUnmappedChange={setExcludeUnmapped}
+                excludeAmbiguous={excludeAmbiguous}
+                onExcludeAmbiguousChange={setExcludeAmbiguous}
+                excludeUnclassified={excludeUnclassified}
+                onExcludeUnclassifiedChange={setExcludeUnclassified}
+                importing={importing}
+                onImport={handleImport}
+            />
         </ImportPageShell>
     );
 }
