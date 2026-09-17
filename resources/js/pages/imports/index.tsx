@@ -23,6 +23,7 @@ import { index as categoryCoaMappingIndex } from '@/routes/category-coa-mapping'
 import { index as categoryImportIndex } from '@/routes/category-import';
 import { index as priceListImportIndex } from '@/routes/price-list-import';
 import { index as priceListQuantitiesImportIndex } from '@/routes/price-list-quantities-import';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 type ImportItem = {
     title: string;
@@ -171,23 +172,26 @@ export default function ImportsHub() {
     return (
         <>
             <Head title="Imports" />
-            <div className="flex flex-col gap-6 p-4 md:p-6">
-                <div className="flex flex-col gap-1">
-                    <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-                        <Upload className="h-6 w-6" />
-                        Imports
-                    </h1>
-                    <p className="text-muted-foreground text-sm">
-                        Central hub for all import workflows, grouped by the
-                        file they read from. New importers will be added here as
-                        they become available.
-                    </p>
-                </div>
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
+                <div className="flex flex-col gap-6 p-4 md:p-6">
+                    <div className="flex flex-col gap-1">
+                        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+                            <Upload className="h-6 w-6" />
+                            Imports
+                        </h1>
+                        <p className="text-muted-foreground text-sm">
+                            Central hub for all import workflows, grouped by the
+                            file they read from. New importers will be added
+                            here as they become available.
+                        </p>
+                    </div>
 
-                {IMPORT_SOURCES.map((source) => (
-                    <ImportSourceSection key={source.key} source={source} />
-                ))}
-            </div>
+                    {IMPORT_SOURCES.map((source) => (
+                        <ImportSourceSection key={source.key} source={source} />
+                    ))}
+                </div>
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
         </>
     );
 }

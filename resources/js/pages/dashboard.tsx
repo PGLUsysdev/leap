@@ -25,6 +25,7 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { dashboard } from '@/routes';
 
 const PALETTE = [
@@ -190,113 +191,60 @@ export default function Dashboard({
     return (
         <>
             <Head title="Dashboard" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                {!draftYear ? (
-                    <Card>
-                        <CardContent className="text-muted-foreground flex h-64 items-center justify-center">
-                            No draft fiscal year found. Set a fiscal year status
-                            to “draft” to see budget data.
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-lg font-semibold">
-                                FY {draftYear.year} Budget Overview
-                            </h1>
-                            <Badge variant="outline" className="capitalize">
-                                {draftYear.status}
-                            </Badge>
-                        </div>
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full rounded-xl">
+                <div className="flex flex-1 flex-col gap-4 p-4">
+                    {!draftYear ? (
+                        <Card>
+                            <CardContent className="text-muted-foreground flex h-64 items-center justify-center">
+                                No draft fiscal year found. Set a fiscal year
+                                status to “draft” to see budget data.
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-lg font-semibold">
+                                    FY {draftYear.year} Budget Overview
+                                </h1>
+                                <Badge variant="outline" className="capitalize">
+                                    {draftYear.status}
+                                </Badge>
+                            </div>
 
-                        {/* Stats */}
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                            <StatCard
-                                title="Total Budget"
-                                value={pesoFull(stats.totalBudget)}
-                            />
-                            <StatCard
-                                title="Total PPAs"
-                                value={String(stats.totalPpas)}
-                            />
-                            <StatCard
-                                title="Total Procurement"
-                                value={pesoFull(stats.totalProcurement)}
-                            />
-                            <StatCard
-                                title="Price List Items"
-                                value={String(stats.totalPriceListItems)}
-                            />
-                            <StatCard
-                                title="Offices"
-                                value={String(stats.totalOffices)}
-                            />
-                            <StatCard
-                                title="Users"
-                                value={String(stats.totalUsers)}
-                            />
-                        </div>
+                            {/* Stats */}
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                                <StatCard
+                                    title="Total Budget"
+                                    value={pesoFull(stats.totalBudget)}
+                                />
+                                <StatCard
+                                    title="Total PPAs"
+                                    value={String(stats.totalPpas)}
+                                />
+                                <StatCard
+                                    title="Total Procurement"
+                                    value={pesoFull(stats.totalProcurement)}
+                                />
+                                <StatCard
+                                    title="Price List Items"
+                                    value={String(stats.totalPriceListItems)}
+                                />
+                                <StatCard
+                                    title="Offices"
+                                    value={String(stats.totalOffices)}
+                                />
+                                <StatCard
+                                    title="Users"
+                                    value={String(stats.totalUsers)}
+                                />
+                            </div>
 
-                        {/* Expense classes + funding sources */}
-                        <div className="grid gap-4 lg:grid-cols-2">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>
-                                        Budget by Expense Class
-                                    </CardTitle>
-                                    <CardDescription>
-                                        FY {draftYear.year}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <ChartContainer
-                                        config={expenseConfig}
-                                        className="min-h-[240px] w-full"
-                                    >
-                                        <PieChart>
-                                            <ChartTooltip
-                                                content={
-                                                    <ChartTooltipContent
-                                                        hideLabel
-                                                        formatter={(value) =>
-                                                            pesoFull(
-                                                                Number(value),
-                                                            )
-                                                        }
-                                                    />
-                                                }
-                                            />
-                                            <ChartLegend
-                                                content={
-                                                    <ChartLegendContent nameKey="key" />
-                                                }
-                                            />
-                                            <Pie
-                                                data={expenseData}
-                                                dataKey="value"
-                                                nameKey="key"
-                                                innerRadius={55}
-                                                minAngle={3}
-                                                stroke="var(--background)"
-                                                strokeWidth={1}
-                                            >
-                                                {expenseData.map((entry) => (
-                                                    <Cell
-                                                        key={entry.key}
-                                                        fill={entry.fill}
-                                                    />
-                                                ))}
-                                            </Pie>
-                                        </PieChart>
-                                    </ChartContainer>
-                                </CardContent>
-                            </Card>
-
-                            {fundingData.length > 0 && (
+                            {/* Expense classes + funding sources */}
+                            <div className="grid gap-4 lg:grid-cols-2">
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>
-                                            Budget by Funding Source
+                                            Budget by Expense Class
                                         </CardTitle>
                                         <CardDescription>
                                             FY {draftYear.year}
@@ -304,7 +252,7 @@ export default function Dashboard({
                                     </CardHeader>
                                     <CardContent>
                                         <ChartContainer
-                                            config={fundingConfig}
+                                            config={expenseConfig}
                                             className="min-h-[240px] w-full"
                                         >
                                             <PieChart>
@@ -312,7 +260,6 @@ export default function Dashboard({
                                                     content={
                                                         <ChartTooltipContent
                                                             hideLabel
-                                                            nameKey="label"
                                                             formatter={(
                                                                 value,
                                                             ) =>
@@ -327,24 +274,22 @@ export default function Dashboard({
                                                 />
                                                 <ChartLegend
                                                     content={
-                                                        <FundingSourceLegend />
+                                                        <ChartLegendContent nameKey="key" />
                                                     }
                                                 />
                                                 <Pie
-                                                    data={fundingData}
+                                                    data={expenseData}
                                                     dataKey="value"
-                                                    nameKey="label"
+                                                    nameKey="key"
                                                     innerRadius={55}
                                                     minAngle={3}
                                                     stroke="var(--background)"
                                                     strokeWidth={1}
                                                 >
-                                                    {fundingData.map(
+                                                    {expenseData.map(
                                                         (entry) => (
                                                             <Cell
-                                                                key={
-                                                                    entry.label
-                                                                }
+                                                                key={entry.key}
                                                                 fill={
                                                                     entry.fill
                                                                 }
@@ -356,141 +301,226 @@ export default function Dashboard({
                                         </ChartContainer>
                                     </CardContent>
                                 </Card>
-                            )}
-                        </div>
 
-                        {/* PPA types */}
-                        {ppaTypeDistribution.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>PPA Type Distribution</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <ChartContainer
-                                        config={{ count: { label: 'PPAs' } }}
-                                        className="min-h-[240px] w-full"
-                                    >
-                                        <BarChart
-                                            accessibilityLayer
-                                            data={ppaTypeDistribution}
-                                        >
-                                            <CartesianGrid vertical={false} />
-                                            <XAxis
-                                                dataKey="type"
-                                                tickLine={false}
-                                                axisLine={false}
-                                                tickMargin={8}
-                                            />
-                                            <ChartTooltip
-                                                content={
-                                                    <ChartTooltipContent
-                                                        hideLabel
-                                                    />
-                                                }
-                                            />
-                                            <Bar
-                                                dataKey="count"
-                                                fill="var(--chart-2)"
-                                                radius={4}
-                                            />
-                                        </BarChart>
-                                    </ChartContainer>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Climate change expenditure */}
-                        {ccExpenditure && (
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <StatCard
-                                    title="CC Expenditure — Adaptation"
-                                    value={pesoFull(ccExpenditure.adaptation)}
-                                />
-                                <StatCard
-                                    title="CC Expenditure — Mitigation"
-                                    value={pesoFull(ccExpenditure.mitigation)}
-                                />
-                            </div>
-                        )}
-
-                        {/* COA budget */}
-                        {coaTop.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>
-                                        Budget by Account (Top 10)
-                                    </CardTitle>
-                                    <CardDescription>
-                                        PS from funding sources; MOOE/FE/CO from
-                                        procurement
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <ChartContainer
-                                        config={{ value: { label: 'Amount' } }}
-                                        className="min-h-[300px] w-full"
-                                    >
-                                        <BarChart
-                                            accessibilityLayer
-                                            layout="vertical"
-                                            data={coaTop.map((c) => ({
-                                                ...c,
-                                                name: `${c.account_number} ${c.account_title}`,
-                                            }))}
-                                            margin={{ left: 12, right: 16 }}
-                                        >
-                                            <CartesianGrid horizontal={false} />
-                                            <XAxis
-                                                type="number"
-                                                tickLine={false}
-                                                axisLine={false}
-                                                tickFormatter={(v) =>
-                                                    peso(Number(v))
-                                                }
-                                            />
-                                            <YAxis
-                                                type="category"
-                                                dataKey="name"
-                                                tickLine={false}
-                                                axisLine={false}
-                                                width={260}
-                                            />
-                                            <ChartTooltip
-                                                content={
-                                                    <ChartTooltipContent
-                                                        hideLabel
-                                                        formatter={(value) =>
-                                                            pesoFull(
-                                                                Number(value),
-                                                            )
-                                                        }
-                                                    />
-                                                }
-                                            />
-                                            <Bar
-                                                dataKey="value"
-                                                radius={[0, 4, 4, 0]}
+                                {fundingData.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>
+                                                Budget by Funding Source
+                                            </CardTitle>
+                                            <CardDescription>
+                                                FY {draftYear.year}
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <ChartContainer
+                                                config={fundingConfig}
+                                                className="min-h-[240px] w-full"
                                             >
-                                                {coaTop.map((entry) => (
-                                                    <Cell
-                                                        key={entry.id}
-                                                        fill={
-                                                            classColor[
-                                                                entry
-                                                                    .expense_class
-                                                            ] ?? PALETTE[4]
+                                                <PieChart>
+                                                    <ChartTooltip
+                                                        content={
+                                                            <ChartTooltipContent
+                                                                hideLabel
+                                                                nameKey="label"
+                                                                formatter={(
+                                                                    value,
+                                                                ) =>
+                                                                    pesoFull(
+                                                                        Number(
+                                                                            value,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                            />
                                                         }
                                                     />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ChartContainer>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </>
-                )}
-            </div>
+                                                    <ChartLegend
+                                                        content={
+                                                            <FundingSourceLegend />
+                                                        }
+                                                    />
+                                                    <Pie
+                                                        data={fundingData}
+                                                        dataKey="value"
+                                                        nameKey="label"
+                                                        innerRadius={55}
+                                                        minAngle={3}
+                                                        stroke="var(--background)"
+                                                        strokeWidth={1}
+                                                    >
+                                                        {fundingData.map(
+                                                            (entry) => (
+                                                                <Cell
+                                                                    key={
+                                                                        entry.label
+                                                                    }
+                                                                    fill={
+                                                                        entry.fill
+                                                                    }
+                                                                />
+                                                            ),
+                                                        )}
+                                                    </Pie>
+                                                </PieChart>
+                                            </ChartContainer>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </div>
+
+                            {/* PPA types */}
+                            {ppaTypeDistribution.length > 0 && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>
+                                            PPA Type Distribution
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ChartContainer
+                                            config={{
+                                                count: { label: 'PPAs' },
+                                            }}
+                                            className="min-h-[240px] w-full"
+                                        >
+                                            <BarChart
+                                                accessibilityLayer
+                                                data={ppaTypeDistribution}
+                                            >
+                                                <CartesianGrid
+                                                    vertical={false}
+                                                />
+                                                <XAxis
+                                                    dataKey="type"
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    tickMargin={8}
+                                                />
+                                                <ChartTooltip
+                                                    content={
+                                                        <ChartTooltipContent
+                                                            hideLabel
+                                                        />
+                                                    }
+                                                />
+                                                <Bar
+                                                    dataKey="count"
+                                                    fill="var(--chart-2)"
+                                                    radius={4}
+                                                />
+                                            </BarChart>
+                                        </ChartContainer>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Climate change expenditure */}
+                            {ccExpenditure && (
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <StatCard
+                                        title="CC Expenditure — Adaptation"
+                                        value={pesoFull(
+                                            ccExpenditure.adaptation,
+                                        )}
+                                    />
+                                    <StatCard
+                                        title="CC Expenditure — Mitigation"
+                                        value={pesoFull(
+                                            ccExpenditure.mitigation,
+                                        )}
+                                    />
+                                </div>
+                            )}
+
+                            {/* COA budget */}
+                            {coaTop.length > 0 && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>
+                                            Budget by Account (Top 10)
+                                        </CardTitle>
+                                        <CardDescription>
+                                            PS from funding sources; MOOE/FE/CO
+                                            from procurement
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ChartContainer
+                                            config={{
+                                                value: { label: 'Amount' },
+                                            }}
+                                            className="min-h-[300px] w-full"
+                                        >
+                                            <BarChart
+                                                accessibilityLayer
+                                                layout="vertical"
+                                                data={coaTop.map((c) => ({
+                                                    ...c,
+                                                    name: `${c.account_number} ${c.account_title}`,
+                                                }))}
+                                                margin={{ left: 12, right: 16 }}
+                                            >
+                                                <CartesianGrid
+                                                    horizontal={false}
+                                                />
+                                                <XAxis
+                                                    type="number"
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    tickFormatter={(v) =>
+                                                        peso(Number(v))
+                                                    }
+                                                />
+                                                <YAxis
+                                                    type="category"
+                                                    dataKey="name"
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    width={260}
+                                                />
+                                                <ChartTooltip
+                                                    content={
+                                                        <ChartTooltipContent
+                                                            hideLabel
+                                                            formatter={(
+                                                                value,
+                                                            ) =>
+                                                                pesoFull(
+                                                                    Number(
+                                                                        value,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        />
+                                                    }
+                                                />
+                                                <Bar
+                                                    dataKey="value"
+                                                    radius={[0, 4, 4, 0]}
+                                                >
+                                                    {coaTop.map((entry) => (
+                                                        <Cell
+                                                            key={entry.id}
+                                                            fill={
+                                                                classColor[
+                                                                    entry
+                                                                        .expense_class
+                                                                ] ?? PALETTE[4]
+                                                            }
+                                                        />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ChartContainer>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </>
+                    )}
+                </div>
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
         </>
     );
 }

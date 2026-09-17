@@ -308,7 +308,7 @@ export default function ExpenseClassCodes({
                         </CardContent>
                     </Card>
                 </div>
-                <ScrollBar orientation="horizontal" />
+                <ScrollBar orientation="vertical" />
             </ScrollArea>
         </>
     );
