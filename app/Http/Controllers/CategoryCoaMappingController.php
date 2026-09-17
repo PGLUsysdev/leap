@@ -14,6 +14,8 @@ class CategoryCoaMappingController extends Controller
 {
     public function index()
     {
+        Gate::authorize('categoryCoaMapping', 'imports');
+
         return Inertia::render('imports/category-coa-mapping/index', [
             'existingCategories' => PpmpCategory::select(['id', 'name', 'is_non_procurement', 'is_additional'])
                 ->orderBy('name')
@@ -28,7 +30,7 @@ class CategoryCoaMappingController extends Controller
 
     public function bulkStore(Request $request)
     {
-        Gate::authorize('create', PpmpCategory::class);
+        Gate::authorize('categoryCoaMapping', 'imports');
 
         $validated = $request->validate([
             'mappings' => ['required', 'array', 'min:1'],

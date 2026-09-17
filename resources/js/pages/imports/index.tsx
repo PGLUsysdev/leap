@@ -25,13 +25,21 @@ import { index as priceListImportIndex } from '@/routes/price-list-import';
 import { index as priceListQuantitiesImportIndex } from '@/routes/price-list-quantities-import';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
+type Can = {
+    category: boolean;
+    categoryCoaMapping: boolean;
+    priceList: boolean;
+    priceListQuantities: boolean;
+    aipSummary: boolean;
+};
+
 type ImportItem = {
     title: string;
     description: string;
     href: string;
     icon: typeof FileSpreadsheet;
     badge: string;
-    disabled?: boolean;
+    canKey: keyof Can;
 };
 
 type ImportSource = {
@@ -58,6 +66,7 @@ const IMPORT_SOURCES: ImportSource[] = [
                 href: categoryImportIndex().url,
                 icon: FileSpreadsheet,
                 badge: 'Categories',
+                canKey: 'category',
             },
             {
                 title: 'Category–COA Mappings',
@@ -66,6 +75,7 @@ const IMPORT_SOURCES: ImportSource[] = [
                 href: categoryCoaMappingIndex().url,
                 icon: Tags,
                 badge: 'Mappings',
+                canKey: 'categoryCoaMapping',
             },
             {
                 title: 'Price List Import',
@@ -74,6 +84,7 @@ const IMPORT_SOURCES: ImportSource[] = [
                 href: priceListImportIndex().url,
                 icon: Receipt,
                 badge: 'Price Lists',
+                canKey: 'priceList',
             },
             {
                 title: 'Price List Quantities Import',
@@ -82,6 +93,7 @@ const IMPORT_SOURCES: ImportSource[] = [
                 href: priceListQuantitiesImportIndex().url,
                 icon: FileSpreadsheet,
                 badge: 'Quantities',
+                canKey: 'priceListQuantities',
             },
         ],
     },
@@ -98,6 +110,7 @@ const IMPORT_SOURCES: ImportSource[] = [
                 href: aipSummaryImportIndex().url,
                 icon: FileSpreadsheet,
                 badge: 'AIP Summary',
+                canKey: 'aipSummary',
             },
         ],
     },
@@ -121,11 +134,7 @@ function ImportCard({ item }: { item: ImportItem }) {
                 <Link
                     href={item.href}
                     prefetch
-                    aria-disabled={item.disabled}
-                    className={
-                        'bg-primary text-primary-foreground hover:bg-primary/90 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium shadow' +
-                        (item.disabled ? ' pointer-events-none opacity-50' : '')
-                    }
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium shadow"
                 >
                     Open <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -134,7 +143,13 @@ function ImportCard({ item }: { item: ImportItem }) {
     );
 }
 
-function ImportSourceSection({ source }: { source: ImportSource }) {
+function ImportSourceSection({
+    source,
+    visibleItems,
+}: {
+    source: ImportSource;
+    visibleItems: ImportItem[];
+}) {
     return (
         <section className="flex flex-col gap-4">
             <div className="flex items-start gap-3">
@@ -147,8 +162,8 @@ function ImportSourceSection({ source }: { source: ImportSource }) {
                             {source.title}
                         </h2>
                         <Badge variant="outline">
-                            {source.items.length}{' '}
-                            {source.items.length === 1
+                            {visibleItems.length}{' '}
+                            {visibleItems.length === 1
                                 ? 'importer'
                                 : 'importers'}
                         </Badge>
@@ -160,7 +175,7 @@ function ImportSourceSection({ source }: { source: ImportSource }) {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {source.items.map((item) => (
+                {visibleItems.map((item) => (
                     <ImportCard key={item.title} item={item} />
                 ))}
             </div>
@@ -168,7 +183,13 @@ function ImportSourceSection({ source }: { source: ImportSource }) {
     );
 }
 
-export default function ImportsHub() {
+export default function ImportsHub({ can }: { can: Can }) {
+    // Filter items by permission; drop sections that end up empty.
+    const visibleSources = IMPORT_SOURCES.map((source) => ({
+        source,
+        visibleItems: source.items.filter((item) => can[item.canKey]),
+    })).filter(({ visibleItems }) => visibleItems.length > 0);
+
     return (
         <>
             <Head title="Imports" />
@@ -186,9 +207,21 @@ export default function ImportsHub() {
                         </p>
                     </div>
 
-                    {IMPORT_SOURCES.map((source) => (
-                        <ImportSourceSection key={source.key} source={source} />
-                    ))}
+                    {visibleSources.length === 0 ? (
+                        <div className="text-muted-foreground border-muted rounded-lg border border-dashed p-8 text-center text-sm">
+                            You don&apos;t have access to any import workflows
+                            yet. Ask an administrator to grant you the relevant
+                            permissions.
+                        </div>
+                    ) : (
+                        visibleSources.map(({ source, visibleItems }) => (
+                            <ImportSourceSection
+                                key={source.key}
+                                source={source}
+                                visibleItems={visibleItems}
+                            />
+                        ))
+                    )}
                 </div>
                 <ScrollBar orientation="vertical" />
             </ScrollArea>

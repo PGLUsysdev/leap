@@ -46,11 +46,6 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// debug
-Route::get('/debug-php', function () {
-    return phpinfo();
-});
-
 Route::redirect('/', '/login');
 // Route::inertia('/', 'welcome')->name('home');
 
@@ -443,55 +438,57 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //     'recalculate',
     // ])->name('ps-breakdown-items.recalculate');
 
-    // Imports Hub - central page for all import features
+    // --- Imports Hub + all importers ---
     Route::get('imports', [ImportsController::class, 'index'])->name('imports.index');
 
+    // Category Import
     Route::get('imports/category-import', [CategoryImportController::class, 'index'])->name(
         'category-import.index',
     );
-
     Route::post('imports/category-import', [CategoryImportController::class, 'store'])->name(
         'category-import.store',
     );
+    Route::post('imports/category-import/sentinels', [
+        CategoryImportController::class,
+        'ensureSentinels',
+    ])->name('category-import.sentinels');
 
-    Route::post('imports/category-import/sentinels', [CategoryImportController::class, 'ensureSentinels'])->name(
-        'category-import.sentinels',
+    // Price List Import
+    Route::get('imports/price-list-import', [PriceListImportController::class, 'index'])->name(
+        'price-list-import.index',
     );
+    Route::post('imports/price-list-import', [PriceListImportController::class, 'store'])->name(
+        'price-list-import.store',
+    );
+
+    // Price List Quantities Import
+    Route::get('imports/price-list-quantities-import', [
+        PriceListQuantitiesImportController::class,
+        'index',
+    ])->name('price-list-quantities-import.index');
+    Route::post('imports/price-list-quantities-import', [
+        PriceListQuantitiesImportController::class,
+        'store',
+    ])->name('price-list-quantities-import.store');
+
+    // AIP Summary Import
+    Route::get('imports/aip-summary-import', [AipSummaryImportController::class, 'index'])->name(
+        'aip-summary-import.index',
+    );
+    Route::post('imports/aip-summary-import', [AipSummaryImportController::class, 'store'])->name(
+        'aip-summary-import.store',
+    );
+    Route::post('imports/aip-summary-import/outputs', [
+        AipSummaryImportController::class,
+        'storeOutputs',
+    ])->name('aip-summary-import.store-outputs');
+    Route::post('imports/aip-summary-import/funding-sources', [
+        AipSummaryImportController::class,
+        'storeFundingSources',
+    ])->name('aip-summary-import.store-funding-sources');
 
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
 });
-
-Route::get('imports/price-list-import', [PriceListImportController::class, 'index'])->name(
-    'price-list-import.index',
-);
-
-Route::post('imports/price-list-import', [PriceListImportController::class, 'store'])->name(
-    'price-list-import.store',
-);
-
-Route::get('imports/price-list-quantities-import', [PriceListQuantitiesImportController::class, 'index'])->name(
-    'price-list-quantities-import.index',
-);
-
-Route::post('imports/price-list-quantities-import', [PriceListQuantitiesImportController::class, 'store'])->name(
-    'price-list-quantities-import.store',
-);
-
-Route::get('imports/aip-summary-import', [AipSummaryImportController::class, 'index'])->name(
-    'aip-summary-import.index',
-);
-
-Route::post('imports/aip-summary-import', [AipSummaryImportController::class, 'store'])->name(
-    'aip-summary-import.store',
-);
-
-Route::post('imports/aip-summary-import/outputs', [AipSummaryImportController::class, 'storeOutputs'])->name(
-    'aip-summary-import.store-outputs',
-);
-
-Route::post('imports/aip-summary-import/funding-sources', [AipSummaryImportController::class, 'storeFundingSources'])->name(
-    'aip-summary-import.store-funding-sources',
-);
 
 require __DIR__.'/settings.php';

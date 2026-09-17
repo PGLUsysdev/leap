@@ -246,7 +246,14 @@ export default function PriceListQuantitiesImport({
             coas: existingCoas,
             mappings: existingMappings,
         });
-    }, [extractResults, selectedSheet, existingPriceLists, existingCategories, existingCoas, existingMappings]);
+    }, [
+        extractResults,
+        selectedSheet,
+        existingPriceLists,
+        existingCategories,
+        existingCoas,
+        existingMappings,
+    ]);
 
     const effectiveImportSheet = selectedSheet ?? '';
 

@@ -1,3 +1,5 @@
+// resources/js/pages/users/index.tsx
+
 import { useState } from 'react';
 import DataTable from '@/components/data-table';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';

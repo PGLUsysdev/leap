@@ -1,3 +1,5 @@
+// resources/js/pages/users/columns/columns.tsx
+
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';

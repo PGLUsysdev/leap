@@ -22,6 +22,8 @@ class PriceListQuantitiesImportController extends Controller
 {
     public function index()
     {
+        Gate::authorize('priceListQuantities', 'imports');
+
         return Inertia::render('imports/price-list-quantities-import/index', [
             'existingCategories' => PpmpCategory::select(['id', 'name', 'is_non_procurement', 'is_additional'])
                 ->orderBy('name')
@@ -102,6 +104,7 @@ class PriceListQuantitiesImportController extends Controller
 
     public function store(Request $request, PpaFundingSourceTotalsService $totalsService)
     {
+        Gate::authorize('priceListQuantities', 'imports');
         Gate::authorize('addPriceList', Ppmp::class);
 
         $validated = $request->validate([

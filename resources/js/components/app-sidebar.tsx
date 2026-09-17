@@ -153,6 +153,7 @@ const mainNavItems: NavItem[] = [
         title: 'Imports',
         href: importsIndex(),
         icon: Upload,
+        permission: 'imports.view',
     },
     {
         title: '',

@@ -1,3 +1,5 @@
+// resources/js/lib/permissions.ts
+
 export interface ScopedPermission {
     key: string;
     label: string;
@@ -389,13 +391,51 @@ export const permissionTree: PermissionNode[] = [
             {
                 key: 'edit.office',
                 label: 'Edit Office',
-                scopes: ['own', 'all'],
+                scopes: ['all'],
                 disableOption: true,
             },
             {
                 key: 'edit.role',
                 label: 'Edit Role',
                 scopes: ['own', 'all'],
+                disableOption: true,
+            },
+        ],
+    },
+    {
+        key: 'imports',
+        label: 'Imports',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View Hub', scopes: [], disableOption: true },
+            {
+                key: 'category',
+                label: 'Category Import',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'category-coa-mapping',
+                label: 'Category–COA Mapping',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'price-list',
+                label: 'Price List Import',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'price-list-quantities',
+                label: 'Price List Quantities',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'aip-summary',
+                label: 'AIP Summary Import',
+                scopes: [],
                 disableOption: true,
             },
         ],

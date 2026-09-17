@@ -1,3 +1,5 @@
+// resources/js/components/table-select.tsx
+
 import type { ColumnDef } from '@tanstack/react-table';
 import { ChevronsUpDown, Delete } from 'lucide-react';
 import { useState } from 'react';

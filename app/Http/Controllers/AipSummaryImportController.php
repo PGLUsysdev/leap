@@ -20,6 +20,8 @@ class AipSummaryImportController extends Controller
 {
     public function index()
     {
+        Gate::authorize('aipSummary', 'imports');
+
         $fiscalYearId = session('active_fiscal_year_id');
 
         // All fiscal years (for the dropdown)
@@ -144,6 +146,7 @@ class AipSummaryImportController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize('aipSummary', 'imports');
         Gate::authorize('create', Ppa::class);
 
         $allowedTypes = array_keys(config('ppa.type_padding', []));
@@ -282,6 +285,8 @@ class AipSummaryImportController extends Controller
 
     public function storeOutputs(Request $request)
     {
+        Gate::authorize('aipSummary', 'imports');
+
         $validated = $request->validate([
             'office_id' => ['required', 'exists:offices,id'],
             'fiscal_year_id' => ['required', 'exists:fiscal_years,id'],
@@ -442,6 +447,8 @@ class AipSummaryImportController extends Controller
 
     public function storeFundingSources(Request $request)
     {
+        Gate::authorize('aipSummary', 'imports');
+
         $validated = $request->validate([
             'office_id' => ['required', 'exists:offices,id'],
             'fiscal_year_id' => ['required', 'exists:fiscal_years,id'],

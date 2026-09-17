@@ -1,3 +1,5 @@
+// resources/js/pages/role/permission-dialog.tsx
+
 import { router } from '@inertiajs/react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
@@ -247,6 +249,15 @@ function PermissionRow({
                                 ) || '';
                         }
 
+                        // Base UI works with arrays; translate our single
+                        // "currentSelected" string into the array form.
+                        const groupValue = currentSelected
+                            ? [currentSelected]
+                            : sp.disableOption &&
+                                (sp.key === 'view' || isViewEnabled)
+                              ? ['disabled']
+                              : [];
+
                         return (
                             <div
                                 key={sp.key}
@@ -256,17 +267,15 @@ function PermissionRow({
                                     {sp.label}
                                 </span>
                                 <ToggleGroup
-                                    type="single"
                                     size="sm"
                                     variant="outline"
-                                    value={
-                                        currentSelected ||
-                                        (sp.disableOption &&
-                                        (sp.key === 'view' || isViewEnabled)
-                                            ? 'disabled'
-                                            : '')
-                                    }
-                                    onValueChange={(value) => {
+                                    value={groupValue}
+                                    onValueChange={(values) => {
+                                        // Base UI passes string[] — unwrap.
+                                        const value = Array.isArray(values)
+                                            ? (values[0] ?? '')
+                                            : values;
+
                                         if (sp.key === 'show' && !value) {
                                             return;
                                         }

@@ -1,3 +1,5 @@
+// resources/js/pages/users/form-dialog.tsx
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -26,8 +28,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { CommandSelect } from '@/components/command-select';
+import {
+    TableSelect,
+    TableSelectButton,
+    useTableSelect,
+} from '@/components/table-select';
 import type { Office, Role, User } from '@/types';
+import officeColumns from './columns/office-columns';
 
 const formSchema = z.object({
     status: z.enum(['pending', 'active', 'inactive']),
@@ -73,6 +80,19 @@ export default function FormDialog({
         },
     });
 
+    // ── Office table-select plumbing ─────────────────────────────────
+    // Only top-level offices are assignable (same filter as before).
+    const selectableOffices = offices.filter((o) => o.parent_id === null);
+
+    // Subscribe to the form value so re-renders fire on change.
+    const officeId = form.watch('office_id');
+
+    const officeSelect = useTableSelect<Office>({
+        data: selectableOffices,
+        value: officeId,
+    });
+    // ─────────────────────────────────────────────────────────────────
+
     // Sync form with selected user data
     useEffect(() => {
         if (data) {
@@ -92,10 +112,6 @@ export default function FormDialog({
 
     function canEditOffice() {
         if (editOfficeAll) {
-            return true;
-        }
-
-        if (editOfficeOwn && data && data.office_id === userOfficeId) {
             return true;
         }
 
@@ -142,199 +158,245 @@ export default function FormDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-sm">
-                <DialogHeader>
-                    <DialogTitle>Edit User</DialogTitle>
-                    <DialogDescription>
-                        Update account details for <strong>{data?.name}</strong>
-                        .
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Edit User</DialogTitle>
+                        <DialogDescription>
+                            Update account details for{' '}
+                            <strong>{data?.name}</strong>.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <div className="flex min-h-0 flex-1">
-                    <ScrollArea className="w-full pr-4">
-                        <form
-                            id="user-form"
-                            onSubmit={form.handleSubmit(handleSubmit)}
-                            className="flex flex-col gap-4 py-1"
-                        >
-                            <Controller
-                                name="status"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Account Status
-                                            </FieldLabel>
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={field.onChange}
-                                            >
-                                                <SelectTrigger
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
+                    <div className="flex min-h-0 flex-1">
+                        <ScrollArea className="w-full">
+                            <form
+                                id="user-form"
+                                onSubmit={form.handleSubmit(handleSubmit)}
+                                className="flex w-full flex-col gap-4 py-1 pr-4"
+                            >
+                                {/* Status */}
+                                <Controller
+                                    name="status"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                            className="w-full"
+                                        >
+                                            <FieldContent className="w-full">
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Account Status
+                                                </FieldLabel>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={
+                                                        field.onChange
                                                     }
                                                 >
-                                                    <SelectValue placeholder="Select status" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="pending">
-                                                        Pending
-                                                    </SelectItem>
-                                                    <SelectItem value="active">
-                                                        Active
-                                                    </SelectItem>
-                                                    <SelectItem value="inactive">
-                                                        Inactive
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
-
-                            <Controller
-                                name="role_id"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Role
-                                            </FieldLabel>
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={field.onChange}
-                                                disabled={!canEditRole()}
-                                            >
-                                                <SelectTrigger
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
-                                                    <SelectValue placeholder="Select role" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {roles.map((role) => (
-                                                        <SelectItem
-                                                            key={role.id}
-                                                            value={String(
-                                                                role.id,
-                                                            )}
-                                                        >
-                                                            {role.name}
+                                                    <SelectTrigger
+                                                        id={field.name}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                        className="w-full"
+                                                    >
+                                                        <SelectValue placeholder="Select status" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="pending">
+                                                            Pending
                                                         </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
+                                                        <SelectItem value="active">
+                                                            Active
+                                                        </SelectItem>
+                                                        <SelectItem value="inactive">
+                                                            Inactive
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
+
+                                {/* Role */}
+                                <Controller
+                                    name="role_id"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => {
+                                        const selectedRole = roles.find(
+                                            (r) => String(r.id) === field.value,
+                                        );
+
+                                        return (
+                                            <Field
+                                                data-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                className="w-full"
+                                            >
+                                                <FieldContent className="w-full">
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                    >
+                                                        Role
+                                                    </FieldLabel>
+                                                    <Select
+                                                        value={field.value}
+                                                        onValueChange={
+                                                            field.onChange
+                                                        }
+                                                        disabled={
+                                                            !canEditRole()
+                                                        }
+                                                    >
+                                                        <SelectTrigger
+                                                            id={field.name}
+                                                            aria-invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                            className="w-full"
+                                                        >
+                                                            <SelectValue placeholder="Select role">
+                                                                {
+                                                                    selectedRole?.name
+                                                                }
+                                                            </SelectValue>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {roles.map(
+                                                                (role) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            role.id
+                                                                        }
+                                                                        value={String(
+                                                                            role.id,
+                                                                        )}
+                                                                    >
+                                                                        {
+                                                                            role.name
+                                                                        }
+                                                                    </SelectItem>
+                                                                ),
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
+                                                </FieldContent>
+                                            </Field>
+                                        );
+                                    }}
+                                />
+
+                                {/* Office */}
+                                <Controller
+                                    name="office_id"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                            className="w-full"
+                                        >
+                                            <FieldContent className="w-full">
+                                                <FieldLabel>
+                                                    Department / Office
+                                                </FieldLabel>
+
+                                                <TableSelectButton<Office>
+                                                    hook={officeSelect}
+                                                    valueKey="id"
+                                                    placeholder="Select office"
+                                                    disabled={!canEditOffice()}
+                                                    invalid={fieldState.invalid}
+                                                    displayValue={(office) =>
+                                                        office
+                                                            ? `${office.name}${
+                                                                  office.acronym
+                                                                      ? ` (${office.acronym})`
+                                                                      : ''
+                                                              }`
+                                                            : undefined
+                                                    }
+                                                    onClear={() =>
+                                                        field.onChange('')
+                                                    }
                                                 />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
 
-                            <Controller
-                                name="office_id"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel>
-                                                Department / Office
-                                            </FieldLabel>
-                                            <CommandSelect<Office>
-                                                value={field.value || null}
-                                                onChange={(value) =>
-                                                    field.onChange(
-                                                        value
-                                                            ? String(value)
-                                                            : '',
-                                                    )
-                                                }
-                                                options={offices.filter(
-                                                    (o) => o.parent_id === null,
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
-                                                getOptionValue={(office) =>
-                                                    String(office.id)
-                                                }
-                                                getOptionSearchText={(office) =>
-                                                    `${office.name} ${office.acronym ?? ''}`
-                                                }
-                                                renderTrigger={(office) => (
-                                                    <span className="truncate">
-                                                        {office.name}
-                                                        {office.acronym
-                                                            ? ` (${office.acronym})`
-                                                            : ''}
-                                                    </span>
-                                                )}
-                                                renderOption={(office) => (
-                                                    <div className="grid w-full grid-cols-[auto_1fr] gap-3">
-                                                        <span className="font-medium">
-                                                            {office.acronym ||
-                                                                '—'}
-                                                        </span>
-                                                        <span className="text-muted-foreground">
-                                                            {office.name}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                placeholder="Select office"
-                                                searchPlaceholder="Search offices..."
-                                                heading="Offices"
-                                                showClear={false}
-                                                disabled
-                                            />
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
-                        </form>
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
+                            </form>
 
-                        <ScrollBar orientation="vertical" />
-                    </ScrollArea>
-                </div>
+                            <ScrollBar orientation="vertical" />
+                        </ScrollArea>
+                    </div>
 
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            onOpenChange(false);
-                            form.reset();
-                        }}
-                        disabled={submitting}
-                    >
-                        Cancel
-                    </Button>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                onOpenChange(false);
+                                form.reset();
+                            }}
+                            disabled={submitting}
+                        >
+                            Cancel
+                        </Button>
 
-                    <Button
-                        type="submit"
-                        form="user-form"
-                        disabled={submitting}
-                    >
-                        {submitting ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                        <Button
+                            type="submit"
+                            form="user-form"
+                            disabled={submitting}
+                        >
+                            {submitting ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Office picker — sibling of <Dialog>, not nested */}
+            <TableSelect<Office>
+                data={selectableOffices}
+                columns={officeColumns}
+                open={officeSelect.open}
+                onOpenChange={officeSelect.setOpen}
+                onRowSelect={(office) => {
+                    form.setValue('office_id', String(office.id), {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                    });
+                }}
+                value={officeId}
+                valueKey="id"
+                title="Select Office"
+                description="Choose a department or office for this user."
+            />
+        </>
     );
 }

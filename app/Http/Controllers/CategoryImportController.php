@@ -13,8 +13,10 @@ class CategoryImportController extends Controller
         ['name' => 'Additional Items (Uncategorized)', 'is_non_procurement' => false, 'is_additional' => true],
         ['name' => 'Non-Procurement (Uncategorized)', 'is_non_procurement' => true, 'is_additional' => false],
     ];
+
     public function index()
     {
+        Gate::authorize('category', 'imports');
         Gate::authorize('viewAny', PpmpCategory::class);
 
         return Inertia::render('imports/category-import/index', [
@@ -26,6 +28,7 @@ class CategoryImportController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize('category', 'imports');
         Gate::authorize('create', PpmpCategory::class);
 
         $validated = $request->validate([
@@ -85,6 +88,8 @@ class CategoryImportController extends Controller
 
     public function ensureSentinels()
     {
+        Gate::authorize('category', 'imports');
+
         $details = [];
 
         foreach (self::SENTINELS as $sentinel) {

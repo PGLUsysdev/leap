@@ -1,3 +1,5 @@
+// resources/js/pages/role/index.tsx
+
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import DataTable from '@/components/data-table';
