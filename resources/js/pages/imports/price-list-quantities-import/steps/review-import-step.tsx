@@ -31,7 +31,6 @@ import {
 import { TabsContent } from '@/components/ui/tabs';
 import type { QuantitiesExtractResult } from '@/lib/ppmp/quantities-extract';
 import type { FiscalYearOption, MappedItem } from '../types';
-import { ReviewItemsTable } from '../components/review-items-table';
 
 const columnHelper = createColumnHelper<MappedItem>();
 
@@ -138,8 +137,6 @@ interface ReviewImportStepProps {
     allVerifyValid: boolean;
     canRunExtraction: boolean;
     onRunExtraction: () => void;
-    hideEmptyQty: boolean;
-    onHideEmptyQtyChange: (v: boolean) => void;
 
     mappedItems: MappedItem[];
     matchedCount: number;
@@ -199,8 +196,6 @@ export function ReviewImportStep({
     allVerifyValid,
     canRunExtraction,
     onRunExtraction,
-    hideEmptyQty,
-    onHideEmptyQtyChange,
 
     mappedItems,
     matchedCount,
@@ -273,14 +268,6 @@ export function ReviewImportStep({
         [mappedItems],
     );
 
-    const extractedItems = extractResult?.uniqueItems ?? [];
-    const extractedEmptyCount = extractedItems.filter(
-        (item) => item.monthTotal === 0,
-    ).length;
-    const visibleExtractedItems = hideEmptyQty
-        ? extractedItems.filter((item) => item.monthTotal > 0)
-        : extractedItems;
-
     return (
         <TabsContent value={tabsValue} className="mt-4 flex flex-col gap-4">
             {selectedSheet === null && (
@@ -305,51 +292,14 @@ export function ReviewImportStep({
                 </div>
             )}
 
-            {extractResult && (
-                <div className="flex flex-col gap-3">
-                    <p className="text-sm font-medium">
-                        {extractResult.message}
-                    </p>
-                    {extractResult.errors.length > 0 && (
-                        <ul className="text-destructive flex flex-col gap-1 text-sm">
-                            {extractResult.errors.map((e, i) => (
-                                <li key={i}>
-                                    Row {e.row}: {e.message}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-
-                    <ul className="text-muted-foreground flex flex-col gap-1 text-xs">
-                        {extractResult.details.map((d, i) => (
-                            <li key={i}>{d}</li>
-                        ))}
-                    </ul>
-
-                    <div className="flex flex-wrap items-center gap-3">
-                        <label
-                            htmlFor="hide-empty-qty"
-                            className="flex cursor-pointer items-center gap-2 text-sm"
-                        >
-                            <Checkbox
-                                id="hide-empty-qty"
-                                checked={hideEmptyQty}
-                                onCheckedChange={(v) =>
-                                    onHideEmptyQtyChange(v === true)
-                                }
-                            />
-                            Hide rows with no quantities
-                            {extractedEmptyCount > 0 &&
-                                ` (${extractedEmptyCount})`}
-                        </label>
-                        <span className="text-muted-foreground text-xs">
-                            Showing {visibleExtractedItems.length} of{' '}
-                            {extractedItems.length} items
-                        </span>
-                    </div>
-
-                    <ReviewItemsTable items={visibleExtractedItems} />
-                </div>
+            {extractResult && extractResult.errors.length > 0 && (
+                <ul className="text-destructive flex flex-col gap-1 text-sm">
+                    {extractResult.errors.map((e, i) => (
+                        <li key={i}>
+                            Row {e.row}: {e.message}
+                        </li>
+                    ))}
+                </ul>
             )}
 
             {extractResult && mappedItems.length === 0 && (

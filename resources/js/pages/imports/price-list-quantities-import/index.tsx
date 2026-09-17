@@ -76,7 +76,6 @@ export default function PriceListQuantitiesImport({
         Record<string, PpmpVerifyResult>
     >({});
     const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
-    const [hideEmptyQty, setHideEmptyQty] = useState(false);
     const [showOnlyUnmapped, setShowOnlyUnmapped] = useState(false);
     const [showOnlyWithQty, setShowOnlyWithQty] = useState(false);
     const [selectedOfficeId, setSelectedOfficeId] = useState<number | null>(
@@ -571,8 +570,6 @@ export default function PriceListQuantitiesImport({
                 allVerifyValid={allVerifyValid}
                 canRunExtraction={canReview}
                 onRunExtraction={runExtraction}
-                hideEmptyQty={hideEmptyQty}
-                onHideEmptyQtyChange={setHideEmptyQty}
                 mappedItems={mappedItems}
                 matchedCount={matchedCount}
                 effectiveImportSheet={effectiveImportSheet}
