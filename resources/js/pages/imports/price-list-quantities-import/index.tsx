@@ -241,8 +241,12 @@ export default function PriceListQuantitiesImport({
             return [];
         }
 
-        return matchQuantityItems(result.uniqueItems, existingPriceLists);
-    }, [extractResults, selectedSheet, existingPriceLists]);
+        return matchQuantityItems(result.uniqueItems, existingPriceLists, {
+            categories: existingCategories,
+            coas: existingCoas,
+            mappings: existingMappings,
+        });
+    }, [extractResults, selectedSheet, existingPriceLists, existingCategories, existingCoas, existingMappings]);
 
     const effectiveImportSheet = selectedSheet ?? '';
 
