@@ -40,9 +40,9 @@ export const AIP_SUMMARY_FIELD_LABELS: Record<AipSummaryField, string> = {
     endDate: 'Completion Date',
     expectedOutput: 'Expected Outputs',
     fundingSource: 'Funding Source',
-    adaptation: 'Adaptation',
-    mitigation: 'Mitigation',
-    typology: 'Typology Code',
+    adaptation: 'Climate Change Adaptation',
+    mitigation: 'Climate Change Mitigation',
+    typology: 'CC Typology Code',
 };
 
 export const AIP_SUMMARY_FIELD_GROUPS: Array<{

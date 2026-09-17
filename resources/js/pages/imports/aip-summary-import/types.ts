@@ -194,7 +194,7 @@ export type AipImportState = {
 
     // handlers
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
-    handleSheetChange: (v: string[]) => void;
+    handleSheetChange: (sheet: string) => void;
     updateColumn: (field: AipSummaryField, letter: string) => void;
     updateHeaderRow: (v: string) => void;
     updateHasNumberRow: (v: boolean) => void;
