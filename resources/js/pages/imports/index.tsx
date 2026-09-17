@@ -91,13 +91,13 @@ const IMPORT_SOURCES: ImportSource[] = [
             'Import workflows that read from the AIP Summary form (XLSX).',
         icon: ClipboardList,
         items: [
-            // {
-            //     title: 'AIP Summary Import',
-            //     description: 'Import AIP Summary from XLSX.',
-            //     href: aipSummaryImportIndex().url,
-            //     icon: FileSpreadsheet,
-            //     badge: 'AIP Summary',
-            // },
+            {
+                title: 'AIP Summary Import',
+                description: 'Import AIP Summary from XLSX.',
+                href: aipSummaryImportIndex().url,
+                icon: FileSpreadsheet,
+                badge: 'AIP Summary',
+            },
         ],
     },
 ];
