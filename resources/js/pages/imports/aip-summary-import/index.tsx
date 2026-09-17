@@ -23,7 +23,7 @@ import { normalize } from '@/lib/ppmp/normalize';
 import {
     effectiveOfficeIds,
     matchRecordOffices,
-    unmatchedOfficeFrequency,
+    visibleUnmatched,
 } from '@/lib/aip-summary-import/match-offices';
 import type {
     RecordOfficeMatch,
@@ -31,6 +31,7 @@ import type {
 } from '@/lib/aip-summary-import/match-offices';
 import {
     matchRecordFunds,
+    normalizeCode,
     unmatchedFundFrequency,
 } from '@/lib/aip-summary-import/match-funds';
 import type { RecordFundMatch } from '@/lib/aip-summary-import/match-funds';
@@ -41,6 +42,7 @@ import type {
 import { ImportPpaStep } from './steps/import-ppa-step';
 import { ImportOutputsStep } from './steps/import-outputs-step';
 import { ImportFundingStep } from './steps/import-funding-step';
+import { ReviewImportStep } from './steps/review-import-step';
 import type {
     CcTypology,
     ExistingFundLink,
@@ -53,6 +55,7 @@ import type {
     ImportFund,
     ImportOffice,
     ImportStep,
+    ImportTarget,
     OutputImportStatus,
     PpaBlock,
     UnmatchedFrequencyEntry,
@@ -93,6 +96,7 @@ export default function AipSummaryImport({
         activeFiscalYear ? String(activeFiscalYear.id) : '',
     );
     const [importing, setImporting] = useState(false);
+    const [importTarget, setImportTarget] = useState<ImportTarget>('ppa');
     const [officeOverrides, setOfficeOverrides] = useState<
         Record<string, number[]>
     >({});
@@ -115,6 +119,7 @@ export default function AipSummaryImport({
         Record<string, boolean>
     >({});
     const [fundPickerKey, setFundPickerKey] = useState<string | null>(null);
+    const [bulkFundToken, setBulkFundToken] = useState<string | null>(null);
     const [importingFunds, setImportingFunds] = useState(false);
 
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
@@ -152,6 +157,7 @@ export default function AipSummaryImport({
         setFundOverrides({});
         setDismissedFunds({});
         setFundPickerKey(null);
+        setBulkFundToken(null);
     }
 
     function handleSheetChange(sheet: string) {
@@ -335,10 +341,30 @@ export default function AipSummaryImport({
         return next;
     }, [extractResult, existingOffices]);
 
-    const unmatchedFrequency = useMemo<UnmatchedFrequencyEntry[]>(
-        () => unmatchedOfficeFrequency([...officeMatches.values()]),
-        [officeMatches],
-    );
+    const unmatchedFrequency = useMemo<UnmatchedFrequencyEntry[]>(() => {
+        const counts = new Map<string, { token: string; count: number }>();
+
+        for (const match of officeMatches.values()) {
+            const visible = visibleUnmatched(
+                match,
+                tokenMappings[match.key] ?? {},
+                dismissedTokens[match.key] ?? [],
+            );
+
+            for (const token of visible) {
+                const key = normalize(token);
+                const entry = counts.get(key);
+
+                if (entry) {
+                    entry.count++;
+                } else {
+                    counts.set(key, { token, count: 1 });
+                }
+            }
+        }
+
+        return [...counts.values()].sort((a, b) => b.count - a.count);
+    }, [officeMatches, tokenMappings, dismissedTokens]);
 
     const officeIdsForRecord = useCallback(
         (key: string): number[] =>
@@ -563,8 +589,15 @@ export default function AipSummaryImport({
     }, [extractResult, fundingSources, ccTypologies]);
 
     const unmatchedFundEntries = useMemo<UnmatchedFrequencyEntry[]>(
-        () => unmatchedFundFrequency([...fundMatches.values()]),
-        [fundMatches],
+        () =>
+            unmatchedFundFrequency(
+                [...fundMatches.values()].filter(
+                    (m) =>
+                        !dismissedFunds[m.key] &&
+                        fundOverrides[m.key] === undefined,
+                ),
+            ),
+        [fundMatches, dismissedFunds, fundOverrides],
     );
 
     const fundIdForRecord = useCallback(
@@ -572,6 +605,32 @@ export default function AipSummaryImport({
             fundOverrides[key] ?? fundMatches.get(key)?.fund?.id ?? null,
         [fundOverrides, fundMatches],
     );
+
+    function handleBulkFundMap(fundId: number) {
+        if (bulkFundToken === null || !extractResult) {
+            return;
+        }
+
+        const tokenKey = normalizeCode(bulkFundToken);
+
+        setFundOverrides((prev) => {
+            const next = { ...prev };
+
+            for (const record of extractResult.records) {
+                if (
+                    record.fundingSource != null &&
+                    normalizeCode(record.fundingSource) === tokenKey &&
+                    next[record.key] === undefined &&
+                    !dismissedFunds[record.key]
+                ) {
+                    next[record.key] = fundId;
+                }
+            }
+
+            return next;
+        });
+        setBulkFundToken(null);
+    }
 
     /** PPA resolution shared by fund link matching (mirrors outputs). */
     const resolvePpaForRecord = useCallback(
@@ -720,6 +779,11 @@ export default function AipSummaryImport({
         [importableFunds, fundStatuses],
     );
 
+    function goToImport(t: ImportTarget) {
+        setImportTarget(t);
+        setStep('review');
+    }
+
     function handleConfirmFunds() {
         if (
             !selectedOffice ||
@@ -778,18 +842,8 @@ export default function AipSummaryImport({
                     disabled: !canExtract,
                 },
                 {
-                    value: 'import-ppa',
-                    label: '5. Import PPA',
-                    disabled: !canImportPpa,
-                },
-                {
-                    value: 'import-outputs',
-                    label: '6. Import Outputs',
-                    disabled: !canImportPpa,
-                },
-                {
-                    value: 'import-funding',
-                    label: '7. Import Funding',
+                    value: 'review',
+                    label: '5. Review & Import',
                     disabled: !canImportPpa,
                 },
             ]}
@@ -831,85 +885,101 @@ export default function AipSummaryImport({
                 extractResult={extractResult}
                 canImportPpa={canImportPpa}
                 onExtract={handleExtract}
-                onImportPpa={() => setStep('import-ppa')}
-                onImportOutputs={() => setStep('import-outputs')}
-                onImportFunding={() => setStep('import-funding')}
+                onImportPpa={() => goToImport('ppa')}
+                onImportOutputs={() => goToImport('outputs')}
+                onImportFunding={() => goToImport('funding')}
                 onBack={() => setStep('verify')}
             />
-            <ImportPpaStep
-                selectedSheet={selectedSheet}
-                existingOffices={existingOffices}
-                fiscalYears={fiscalYears}
-                selectedOffice={selectedOffice}
-                onOfficeChange={setSelectedOffice}
-                selectedOfficeLabel={selectedOfficeLabel}
-                selectedFiscalYear={selectedFiscalYear}
-                onFiscalYearChange={setSelectedFiscalYear}
-                selectedFiscalYearLabel={selectedFiscalYearLabel}
-                blocksForImport={blocksForImport}
-                newBlocks={newBlocks}
-                importing={importing}
-                onConfirm={handleConfirmImport}
-                onBack={() => setStep('extract')}
-            />
-            <ImportOutputsStep
-                selectedSheet={selectedSheet}
-                existingOffices={existingOffices}
-                fiscalYears={fiscalYears}
-                selectedOffice={selectedOffice}
-                onOfficeChange={setSelectedOffice}
-                selectedOfficeLabel={selectedOfficeLabel}
-                selectedFiscalYear={selectedFiscalYear}
-                onFiscalYearChange={setSelectedFiscalYear}
-                selectedFiscalYearLabel={selectedFiscalYearLabel}
-                records={extractResult?.records ?? []}
-                outputStatuses={outputStatuses}
-                newOutputs={newOutputs}
-                officeMatches={officeMatches}
-                officeOverrides={officeOverrides}
-                setOfficeOverrides={setOfficeOverrides}
-                tokenMappings={tokenMappings}
-                dismissedTokens={dismissedTokens}
-                setDismissedTokens={setDismissedTokens}
-                unmatchedFrequency={unmatchedFrequency}
-                officeIdsForRecord={officeIdsForRecord}
-                setTokenMapping={setTokenMapping}
-                resetRowOffices={resetRowOffices}
-                officePickerKey={officePickerKey}
-                setOfficePickerKey={setOfficePickerKey}
-                mappingTarget={mappingTarget}
-                setMappingTarget={setMappingTarget}
-                importingOutputs={importingOutputs}
-                onConfirm={handleConfirmOutputs}
-                onBack={() => setStep('extract')}
-            />
-            <ImportFundingStep
-                selectedSheet={selectedSheet}
-                selectedOffice={selectedOffice}
-                selectedFiscalYear={selectedFiscalYear}
-                existingOffices={existingOffices}
-                fiscalYears={fiscalYears}
-                selectedOfficeLabel={selectedOfficeLabel}
-                selectedFiscalYearLabel={selectedFiscalYearLabel}
-                onOfficeChange={setSelectedOffice}
-                onFiscalYearChange={setSelectedFiscalYear}
-                fundingSources={fundingSources}
-                records={extractResult?.records ?? []}
-                fundMatches={fundMatches}
-                fundOverrides={fundOverrides}
-                setFundOverrides={setFundOverrides}
-                dismissedFunds={dismissedFunds}
-                setDismissedFunds={setDismissedFunds}
-                importableFunds={importableFunds}
-                fundStatuses={fundStatuses}
-                newFunds={newFunds}
-                unmatchedFundEntries={unmatchedFundEntries}
+            <ReviewImportStep
+                target={importTarget}
+                onTargetChange={setImportTarget}
+                ppaContent={
+                    <ImportPpaStep
+                        tabsValue="ppa"
+                        selectedSheet={selectedSheet}
+                        existingOffices={existingOffices}
+                        fiscalYears={fiscalYears}
+                        selectedOffice={selectedOffice}
+                        onOfficeChange={setSelectedOffice}
+                        selectedOfficeLabel={selectedOfficeLabel}
+                        selectedFiscalYear={selectedFiscalYear}
+                        onFiscalYearChange={setSelectedFiscalYear}
+                        selectedFiscalYearLabel={selectedFiscalYearLabel}
+                        blocksForImport={blocksForImport}
+                        newBlocks={newBlocks}
+                        importing={importing}
+                        onConfirm={handleConfirmImport}
+                        onBack={() => setStep('extract')}
+                    />
+                }
+                outputsContent={
+                    <ImportOutputsStep
+                        tabsValue="outputs"
+                        selectedSheet={selectedSheet}
+                        existingOffices={existingOffices}
+                        fiscalYears={fiscalYears}
+                        selectedOffice={selectedOffice}
+                        onOfficeChange={setSelectedOffice}
+                        selectedOfficeLabel={selectedOfficeLabel}
+                        selectedFiscalYear={selectedFiscalYear}
+                        onFiscalYearChange={setSelectedFiscalYear}
+                        selectedFiscalYearLabel={selectedFiscalYearLabel}
+                        records={extractResult?.records ?? []}
+                        outputStatuses={outputStatuses}
+                        newOutputs={newOutputs}
+                        officeMatches={officeMatches}
+                        officeOverrides={officeOverrides}
+                        setOfficeOverrides={setOfficeOverrides}
+                        tokenMappings={tokenMappings}
+                        dismissedTokens={dismissedTokens}
+                        setDismissedTokens={setDismissedTokens}
+                        unmatchedFrequency={unmatchedFrequency}
+                        officeIdsForRecord={officeIdsForRecord}
+                        setTokenMapping={setTokenMapping}
+                        resetRowOffices={resetRowOffices}
+                        officePickerKey={officePickerKey}
+                        setOfficePickerKey={setOfficePickerKey}
+                        mappingTarget={mappingTarget}
+                        setMappingTarget={setMappingTarget}
+                        importingOutputs={importingOutputs}
+                        onConfirm={handleConfirmOutputs}
+                        onBack={() => setStep('extract')}
+                    />
+                }
+                fundingContent={
+                    <ImportFundingStep
+                        tabsValue="funding"
+                        selectedSheet={selectedSheet}
+                        selectedOffice={selectedOffice}
+                        selectedFiscalYear={selectedFiscalYear}
+                        existingOffices={existingOffices}
+                        fiscalYears={fiscalYears}
+                        selectedOfficeLabel={selectedOfficeLabel}
+                        selectedFiscalYearLabel={selectedFiscalYearLabel}
+                        onOfficeChange={setSelectedOffice}
+                        onFiscalYearChange={setSelectedFiscalYear}
+                        fundingSources={fundingSources}
+                        records={extractResult?.records ?? []}
+                        fundMatches={fundMatches}
+                        fundOverrides={fundOverrides}
+                        setFundOverrides={setFundOverrides}
+                        dismissedFunds={dismissedFunds}
+                        setDismissedFunds={setDismissedFunds}
+                        importableFunds={importableFunds}
+                        fundStatuses={fundStatuses}
+                        newFunds={newFunds}
+                        unmatchedFundEntries={unmatchedFundEntries}
                 fundIdForRecord={fundIdForRecord}
                 fundPickerKey={fundPickerKey}
                 setFundPickerKey={setFundPickerKey}
+                bulkFundToken={bulkFundToken}
+                setBulkFundToken={setBulkFundToken}
+                onBulkConfirm={handleBulkFundMap}
                 importingFunds={importingFunds}
-                onConfirm={handleConfirmFunds}
-                onBack={() => setStep('extract')}
+                        onConfirm={handleConfirmFunds}
+                        onBack={() => setStep('extract')}
+                    />
+                }
             />
         </ImportPageShell>
     );

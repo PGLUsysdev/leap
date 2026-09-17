@@ -5,14 +5,16 @@
 // per row (auto-match + manual override + dismiss), links match PPA outputs
 // within the selected office + fiscal year.
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { X } from 'lucide-react';
 import DataTable from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
 import { TableSelect } from '@/components/table-select';
 import { TabsContent } from '@/components/ui/tabs';
 import {
@@ -24,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import type { AipSummaryRecord } from '@/lib/aip-summary-import/extract';
 import type { RecordFundMatch } from '@/lib/aip-summary-import/match-funds';
+import { normalizeCode } from '@/lib/aip-summary-import/match-funds';
 import { importFundColumns } from '../columns';
 import type {
     FiscalYear,
@@ -63,6 +66,9 @@ interface ImportFundingStepProps {
     fundIdForRecord: (key: string) => number | null;
     fundPickerKey: string | null;
     setFundPickerKey: (k: string | null) => void;
+    bulkFundToken: string | null;
+    setBulkFundToken: (t: string | null) => void;
+    onBulkConfirm: (fundId: number) => void;
 
     importingFunds: boolean;
     onConfirm: () => void;
@@ -96,6 +102,9 @@ export function ImportFundingStep({
     fundIdForRecord,
     fundPickerKey,
     setFundPickerKey,
+    bulkFundToken,
+    setBulkFundToken,
+    onBulkConfirm,
 
     importingFunds,
     onConfirm,
@@ -246,18 +255,34 @@ export function ImportFundingStep({
                     );
                 },
             }),
+            columnHelper.accessor('adaptation', {
+                size: 90,
+                header: () => <div className="px-1">Adapt.</div>,
+                cell: ({ getValue }) => (
+                    <span className="block whitespace-nowrap px-1">
+                        {getValue() ?? '—'}
+                    </span>
+                ),
+            }),
+            columnHelper.accessor('mitigation', {
+                size: 90,
+                header: () => <div className="px-1">Mitig.</div>,
+                cell: ({ getValue }) => (
+                    <span className="block whitespace-nowrap px-1">
+                        {getValue() ?? '—'}
+                    </span>
+                ),
+            }),
             columnHelper.display({
-                id: 'climate',
-                size: 140,
-                header: () => <div className="px-1">Climate</div>,
+                id: 'typology',
+                size: 100,
+                header: () => <div className="px-1">Typology</div>,
                 cell: ({ row }) => {
                     const record = row.original;
                     const match = fundMatches.get(record.key);
 
                     return (
                         <span className="block whitespace-nowrap px-1">
-                            {record.adaptation ?? '—'} /{' '}
-                            {record.mitigation ?? '—'} /{' '}
                             {match?.typology ? (
                                 <Badge
                                     variant="secondary"
@@ -336,6 +361,17 @@ export function ImportFundingStep({
     const existsCount = importableFunds.filter(
         (r) => fundStatuses.get(r.key) === 'exists',
     ).length;
+    const emptyCount = records.filter(
+        (r) => r.fundingSource == null,
+    ).length;
+    const [hideEmpty, setHideEmpty] = useState(false);
+    const visibleRecords = useMemo(
+        () =>
+            hideEmpty
+                ? records.filter((r) => r.fundingSource != null)
+                : records,
+        [records, hideEmpty],
+    );
 
     return (
         <TabsContent value={tabsValue} className="mt-4 flex flex-col gap-4">
@@ -471,22 +507,47 @@ export function ImportFundingStep({
                                 <Badge
                                     key={entry.token}
                                     variant="outline"
-                                    className="border-amber-300 text-amber-700 dark:text-amber-400"
+                                    className="inline-flex items-center gap-1 border-amber-300 text-amber-700 dark:text-amber-400"
                                     title={`${entry.count} row(s)`}
                                 >
                                     {entry.token} ×{entry.count}
+                                    <button
+                                        type="button"
+                                        className="cursor-pointer rounded px-0.5 font-semibold underline decoration-dotted underline-offset-2 opacity-70 hover:opacity-100"
+                                        onClick={() =>
+                                            setBulkFundToken(entry.token)
+                                        }
+                                        title={`Map all ${entry.count} "${entry.token}" rows at once`}
+                                    >
+                                        Map all
+                                    </button>
                                 </Badge>
                             ))}
                         </div>
                     )}
 
                     {records.length > 0 && (
-                        <DataTable
-                            data={records}
-                            columns={columns}
-                            withColgroup
-                            className="h-[420px]"
-                        />
+                        <>
+                            {emptyCount > 0 && (
+                                <div className="flex items-center gap-3">
+                                    <Switch
+                                        id="fund-hide-empty"
+                                        size="sm"
+                                        checked={hideEmpty}
+                                        onCheckedChange={setHideEmpty}
+                                    />
+                                    <Label htmlFor="fund-hide-empty">
+                                        Hide rows without fund ({emptyCount})
+                                    </Label>
+                                </div>
+                            )}
+                            <DataTable
+                                data={visibleRecords}
+                                columns={columns}
+                                withColgroup
+                                className="h-[420px]"
+                            />
+                        </>
                     )}
                 </>
             ) : (
@@ -543,6 +604,34 @@ export function ImportFundingStep({
                 valueKey="id"
                 title="Map fund to a funding source"
                 description="Click a row to map this token to that funding source."
+                className="sm:max-w-[30rem]"
+            />
+
+            <TableSelect<ImportFund>
+                data={fundingSources}
+                columns={importFundColumns}
+                open={bulkFundToken !== null}
+                onOpenChange={(open) => {
+                    if (!open) setBulkFundToken(null);
+                }}
+                onRowSelect={(row) => onBulkConfirm(row.id)}
+                value={undefined}
+                valueKey="id"
+                title={
+                    bulkFundToken
+                        ? `Bulk map "${bulkFundToken}"`
+                        : 'Bulk map fund'
+                }
+                description={
+                    bulkFundToken
+                        ? `Applies to ${records.filter(
+                              (r) =>
+                                  r.fundingSource != null &&
+                                  normalizeCode(r.fundingSource) ===
+                                      normalizeCode(bulkFundToken),
+                          ).length} row(s) sharing this token. Rows already mapped or dismissed are skipped.`
+                        : 'Click a row to map every matching token at once.'
+                }
                 className="sm:max-w-[30rem]"
             />
         </TabsContent>
