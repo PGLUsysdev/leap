@@ -271,6 +271,16 @@ export const permissionTree: PermissionNode[] = [
         ],
     },
     {
+        key: 'ppmp-category-mapping',
+        label: 'PPMP Category Mapping',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
         key: 'chart-of-account',
         label: 'Chart of Account',
         permissions: [],
@@ -278,6 +288,16 @@ export const permissionTree: PermissionNode[] = [
             { key: 'view', label: 'View', scopes: [], disableOption: true },
             { key: 'add', label: 'Add', scopes: [], disableOption: true },
             { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'expense-class-code',
+        label: 'Expense Class Code',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
             { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
         ],
     },

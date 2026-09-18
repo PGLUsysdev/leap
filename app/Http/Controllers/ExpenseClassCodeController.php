@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreExpenseClassCodeRequest;
 use App\Models\ChartOfAccount;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
 use App\Services\PpaFundingSourceTotalsService;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class ExpenseClassCodeController extends Controller
@@ -26,25 +26,26 @@ class ExpenseClassCodeController extends Controller
 
     public function index()
     {
+        Gate::authorize('viewAny', 'expense-class-code');
+
         return Inertia::render('expense-class-codes/index', [
             'classes' => self::classes(),
             'chartOfAccounts' => ChartOfAccount::select(['id', 'path', 'account_title', 'expense_class'])
                 ->where('is_postable', true)
                 ->orderBy('path')
                 ->get(),
+            'can' => [
+                'add' => request()->user()->can('create', 'expense-class-code'),
+                'delete' => request()->user()->can('delete', 'expense-class-code'),
+            ],
         ]);
     }
 
-    public function store(Request $request, PpaFundingSourceTotalsService $totalsService)
+    public function store(StoreExpenseClassCodeRequest $request, PpaFundingSourceTotalsService $totalsService)
     {
-        $postable = Rule::exists('chart_of_accounts', 'id')->where('is_postable', true);
+        Gate::authorize('create', 'expense-class-code');
 
-        $validated = $request->validate([
-            'chart_of_account_id' => ['required_without:chart_of_account_ids', 'integer', $postable],
-            'chart_of_account_ids' => ['array', 'min:1'],
-            'chart_of_account_ids.*' => ['integer', $postable],
-            'expense_class' => ['required', 'in:PS,MOOE,CO'],
-        ]);
+        $validated = $request->validated();
 
         $ids = collect($validated['chart_of_account_ids'] ?? [])
             ->when(
@@ -68,6 +69,8 @@ class ExpenseClassCodeController extends Controller
 
     public function destroy(ChartOfAccount $chartOfAccount, PpaFundingSourceTotalsService $totalsService)
     {
+        Gate::authorize('delete', 'expense-class-code');
+
         $chartOfAccount->update(['expense_class' => null]);
 
         $this->resyncAffectedBridges([$chartOfAccount->id], $totalsService);

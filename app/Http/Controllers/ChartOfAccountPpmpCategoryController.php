@@ -7,6 +7,7 @@ use App\Models\ChartOfAccount;
 use App\Models\ChartOfAccountPpmpCategory;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -17,7 +18,7 @@ class ChartOfAccountPpmpCategoryController extends Controller
      */
     public function index()
     {
-        Gate::authorize('viewAny', PpmpCategory::class);
+        Gate::authorize('viewAny', ChartOfAccountPpmpCategory::class);
 
         return Inertia::render('ppmp-category-mappings/index', [
             'mappings' => ChartOfAccountPpmpCategory::with([
@@ -42,8 +43,8 @@ class ChartOfAccountPpmpCategoryController extends Controller
                 ->orderBy('path')
                 ->get(),
             'can' => [
-                'add' => request()->user()->can('create', PpmpCategory::class),
-                'delete' => request()->user()->can('delete', new PpmpCategory),
+                'add' => request()->user()->can('create', ChartOfAccountPpmpCategory::class),
+                'delete' => request()->user()->can('delete', new ChartOfAccountPpmpCategory),
             ],
         ]);
     }
@@ -53,7 +54,7 @@ class ChartOfAccountPpmpCategoryController extends Controller
      */
     public function store(StoreChartOfAccountPpmpCategoryRequest $request)
     {
-        Gate::authorize('create', PpmpCategory::class);
+        Gate::authorize('create', ChartOfAccountPpmpCategory::class);
 
         $validated = $request->validated();
 
@@ -65,21 +66,31 @@ class ChartOfAccountPpmpCategoryController extends Controller
      */
     public function destroy(ChartOfAccountPpmpCategory $chartOfAccountPpmpCategory)
     {
-        Gate::authorize('delete', $chartOfAccountPpmpCategory->ppmpCategory);
+        Gate::authorize('delete', $chartOfAccountPpmpCategory);
+
+        $force = request()->validate(['force' => ['sometimes', 'boolean']])['force'] ?? false;
 
         $hasDependents = $chartOfAccountPpmpCategory->ppmpPriceLists()->exists();
 
-        if ($hasDependents && ! request('force')) {
+        if ($hasDependents && ! $force) {
             return back()->withErrors([
                 'force_delete' => 'This mapping has dependent PPMP price list items. Continuing will delete all price list items associated with this mapping.',
             ]);
         }
 
         if ($hasDependents) {
-            PpmpPriceList::where(
-                'chart_of_account_ppmp_category_id',
-                $chartOfAccountPpmpCategory->id,
-            )->delete();
+            Gate::authorize('forceDelete', $chartOfAccountPpmpCategory);
+
+            DB::transaction(function () use ($chartOfAccountPpmpCategory) {
+                PpmpPriceList::where(
+                    'chart_of_account_ppmp_category_id',
+                    $chartOfAccountPpmpCategory->id,
+                )->delete();
+
+                $chartOfAccountPpmpCategory->delete();
+            });
+
+            return redirect()->back();
         }
 
         $chartOfAccountPpmpCategory->delete();

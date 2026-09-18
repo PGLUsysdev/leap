@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\LguLevel;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -12,7 +13,7 @@ class StoreLguLevelRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', LguLevel::class) ?? false;
     }
 
     /**

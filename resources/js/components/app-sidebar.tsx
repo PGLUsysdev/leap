@@ -67,6 +67,7 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+        permission: 'dashboard.view',
     },
     {
         title: '',
@@ -130,7 +131,7 @@ const mainNavItems: NavItem[] = [
         title: 'Category-COA Mappings',
         href: ppmpCategoryMappingsIndex(),
         icon: Tags,
-        permission: 'ppmp-category.view',
+        permission: 'ppmp-category-mapping.view',
     },
     {
         title: 'Chart of Accounts',
@@ -142,6 +143,7 @@ const mainNavItems: NavItem[] = [
         title: 'Expense Class Codes',
         href: expenseClassCodesIndex(),
         icon: Tags,
+        permission: 'expense-class-code.view',
     },
     {
         title: 'Funding Sources',

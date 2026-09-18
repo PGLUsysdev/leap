@@ -32,6 +32,10 @@ interface PostableCoa {
 interface ExpenseClassCodesProps {
     classes: ExpenseClassInfo[];
     chartOfAccounts: PostableCoa[];
+    can?: {
+        add: boolean;
+        delete: boolean;
+    };
 }
 
 const coaColumnHelper = createColumnHelper<PostableCoa>();
@@ -132,6 +136,7 @@ function LinkPicker({
 export default function ExpenseClassCodes({
     classes,
     chartOfAccounts,
+    can,
 }: ExpenseClassCodesProps) {
     const [unlinkingId, setUnlinkingId] = useState<number | null>(null);
 
@@ -211,11 +216,13 @@ export default function ExpenseClassCodes({
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="flex flex-col gap-3">
-                                        <LinkPicker
-                                            accounts={linkable}
-                                            expenseClass={info.class}
-                                            className="w-full"
-                                        />
+                                        {can?.add && (
+                                            <LinkPicker
+                                                accounts={linkable}
+                                                expenseClass={info.class}
+                                                className="w-full"
+                                            />
+                                        )}
                                         {linked.length === 0 ? (
                                             <p className="text-muted-foreground text-sm">
                                                 No accounts linked yet.
@@ -242,8 +249,9 @@ export default function ExpenseClassCodes({
                                                             variant="outline"
                                                             size="sm"
                                                             disabled={
+                                                                !can?.delete ||
                                                                 unlinkingId ===
-                                                                coa.id
+                                                                    coa.id
                                                             }
                                                             onClick={() =>
                                                                 handleUnlink(

@@ -40,7 +40,7 @@ class LguLevelController extends Controller
      */
     public function store(StoreLguLevelRequest $request)
     {
-        Gate::authorize('viewAny', LguLevel::class);
+        Gate::authorize('create', LguLevel::class);
 
         $validated = $request->validated();
 
@@ -68,7 +68,7 @@ class LguLevelController extends Controller
      */
     public function update(UpdateLguLevelRequest $request, LguLevel $lguLevel)
     {
-        Gate::authorize('viewAny', $lguLevel);
+        Gate::authorize('update', $lguLevel);
 
         $validated = $request->validated();
 
@@ -80,7 +80,7 @@ class LguLevelController extends Controller
      */
     public function destroy(LguLevel $lguLevel)
     {
-        Gate::authorize('viewAny', $lguLevel);
+        Gate::authorize('delete', $lguLevel);
 
         if ($lguLevel->offices()->exists()) {
             return back()->withErrors([

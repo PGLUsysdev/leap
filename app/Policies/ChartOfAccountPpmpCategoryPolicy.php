@@ -12,7 +12,7 @@ class ChartOfAccountPpmpCategoryPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $this->has($user, 'ppmp-category-mapping.view');
     }
 
     /**
@@ -28,7 +28,7 @@ class ChartOfAccountPpmpCategoryPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $this->has($user, 'ppmp-category-mapping.add');
     }
 
     /**
@@ -44,7 +44,7 @@ class ChartOfAccountPpmpCategoryPolicy
      */
     public function delete(User $user, ChartOfAccountPpmpCategory $chartOfAccountPpmpCategory): bool
     {
-        return false;
+        return $this->has($user, 'ppmp-category-mapping.delete');
     }
 
     /**
@@ -56,10 +56,19 @@ class ChartOfAccountPpmpCategoryPolicy
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Determine whether the user can permanently delete the model,
+     * including cascading dependent price list items.
      */
     public function forceDelete(User $user, ChartOfAccountPpmpCategory $chartOfAccountPpmpCategory): bool
     {
-        return false;
+        return $this->has($user, 'ppmp-category-mapping.delete')
+            && $this->has($user, 'price-list.delete');
+    }
+
+    private function has(User $user, string $permission): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+
+        return $user->role?->permissionRoles->pluck('permission.name')->contains($permission) ?? false;
     }
 }

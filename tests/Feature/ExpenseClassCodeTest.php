@@ -8,6 +8,8 @@ use App\Models\FundingSource;
 use App\Models\LguLevel;
 use App\Models\Office;
 use App\Models\OfficeType;
+use App\Models\Permission;
+use App\Models\PermissionRole;
 use App\Models\Ppa;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
@@ -28,11 +30,20 @@ beforeEach(function () {
     }
 });
 
-function codeTestUser(): User
+function codeTestUser(array $permissionNames = ['expense-class-code.view', 'expense-class-code.add', 'expense-class-code.delete']): User
 {
-    return User::factory()->create([
-        'role_id' => Role::create(['name' => 'code-tester'])->id,
-    ]);
+    static $seq = 0;
+
+    $seq++;
+
+    $role = Role::create(['name' => "code-tester-{$seq}"]);
+
+    foreach ($permissionNames as $name) {
+        $permission = Permission::firstOrCreate(['name' => $name]);
+        PermissionRole::create(['role_id' => $role->id, 'permission_id' => $permission->id]);
+    }
+
+    return User::factory()->create(['role_id' => $role->id]);
 }
 
 function codeTestCoa(string $path, bool $postable = true, ?string $class = null): ChartOfAccount
@@ -111,6 +122,42 @@ function codeTestPpmp(PpaFundingSource $bridge, ChartOfAccount $coa, float $amou
         'jan_amount' => $amount,
     ]);
 }
+
+test('guests are redirected from the expense class codes page', function () {
+    $this->get('/expense-class-codes')->assertRedirect('/login');
+});
+
+test('it forbids the page without expense-class-code.view', function () {
+    // Chart-of-accounts perm alone must not grant access: proves the policy split.
+    $user = codeTestUser(['chart-of-account.view']);
+    $coa = codeTestCoa('5-02-03-010');
+
+    $this->actingAs($user)->get('/expense-class-codes')->assertForbidden();
+
+    $this->actingAs($user)->post('/expense-class-codes', [
+        'chart_of_account_id' => $coa->id,
+        'expense_class' => 'MOOE',
+    ])->assertForbidden();
+
+    $this->actingAs($user)->delete("/expense-class-codes/{$coa->id}")->assertForbidden();
+});
+
+test('it renders can flags reflecting expense-class-code permissions', function () {
+    $viewer = codeTestUser(['expense-class-code.view']);
+    $manager = codeTestUser();
+
+    $this->actingAs($viewer)->get('/expense-class-codes')->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('can.add', false)
+            ->where('can.delete', false)
+        );
+
+    $this->actingAs($manager)->get('/expense-class-codes')->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('can.add', true)
+            ->where('can.delete', true)
+        );
+});
 
 test('it lists the three class codes with postable accounts only', function () {
     $user = codeTestUser();
