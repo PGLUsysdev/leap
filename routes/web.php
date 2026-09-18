@@ -1,10 +1,8 @@
 <?php
 
 use App\Http\Controllers\AdminUserController;
-use App\Http\Controllers\AipCostingController;
 use App\Http\Controllers\AipEntryController;
 use App\Http\Controllers\AipOutputController;
-use App\Http\Controllers\AipRefCodeController;
 use App\Http\Controllers\AipSummaryImportController;
 use App\Http\Controllers\CategoryCoaMappingController;
 use App\Http\Controllers\CategoryImportController;
@@ -117,14 +115,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         SupplementalAipController::class,
         'destroy',
     ])->name('supplemental-aips.destroy');
-
-    // --- AIP Costing ---
-    Route::post('/aip-costing/{aipEntry}', [AipCostingController::class, 'store'])->name(
-        'aip-costing.store',
-    );
-    Route::delete('/aip-costing/{id}', [AipCostingController::class, 'destroy'])->name(
-        'aip-costing.destroy',
-    );
 
     // --- PPA (Programs, Projects, and Activities) ---
     Route::get('ppa', [PpaController::class, 'index'])->name('ppa.index');
@@ -473,9 +463,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         AipSummaryImportController::class,
         'storeFundingSources',
     ])->name('aip-summary-import.store-funding-sources');
-
-    // Misc
-    Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
 });
 
 require __DIR__.'/settings.php';
