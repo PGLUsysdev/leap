@@ -521,28 +521,6 @@ export interface DashboardCoaBudget {
     value: number;
 }
 
-export interface PlantillaPosition {
-    id: number;
-    office_id: number;
-    fiscal_year_id: number;
-    item_number: string;
-    position_title: string;
-    incumbent_name: string;
-    position_type: 'permanent' | 'casual' | 'contractual' | 'coterminous';
-    current_sg: number;
-    current_step: number;
-    current_annual_rate: string;
-    budget_sg: number;
-    budget_step: number;
-    budget_annual_rate: string;
-    remarks: string | null;
-    created_at: string | null;
-    updated_at: string | null;
-
-    office?: Office;
-    fiscal_year?: FiscalYear;
-}
-
 export interface Position {
     id: number;
     office_id: number;
@@ -557,19 +535,6 @@ export interface Position {
     office?: Office;
     ios?: Ios;
     user?: User;
-}
-
-export interface GovSalarySchedule {
-    id: number;
-    fiscal_year_id: number;
-    tranche_id: number;
-    salary_grade: number;
-    step: number;
-    annual_rate: string;
-    created_at: string | null;
-    updated_at: string | null;
-
-    fiscal_year?: FiscalYear;
 }
 
 export interface SalaryStandard {
@@ -604,7 +569,6 @@ export interface PsBreakdownItem {
     id: number;
     ppa_funding_source_id: number;
     chart_of_account_id: number;
-    plantilla_position_id: number | null;
     amount: string;
     is_manual: boolean;
     created_at: string | null;

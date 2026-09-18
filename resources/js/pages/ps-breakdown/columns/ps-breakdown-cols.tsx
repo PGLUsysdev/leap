@@ -27,7 +27,7 @@ export default function getColumns(
     const manualLookup = new Map<string, string>();
 
     for (const item of breakdownItems) {
-        const key = `${item.chart_of_account_id}_${item.plantilla_position_id ?? ''}`;
+        const key = `${item.chart_of_account_id}`;
         manualLookup.set(key, item.amount);
     }
 

@@ -17,7 +17,6 @@ class PsBreakdownItem extends Model
         'chart_of_account_id',
         'amount',
         'is_manual',
-        'plantilla_position_id',
     ];
 
     protected function casts(): array

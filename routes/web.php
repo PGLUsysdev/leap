@@ -19,8 +19,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseClassCodeController;
 use App\Http\Controllers\FiscalYearController;
 // Disabled for now — PS logic refactor in progress (kept for later).
-// use App\Http\Controllers\PlantillaPositionController;
-// Disabled for now — PS logic refactor in progress (kept for later).
 // use App\Http\Controllers\PositionController;
 use App\Http\Controllers\FundingSourceController;
 use App\Http\Controllers\ImportsController;
@@ -387,7 +385,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'cc-typology.destroy',
     );
 
-    // position / plantilla-position (disabled for now — PS logic refactor in
+    // position (disabled for now — PS logic refactor in
     // progress; kept for later)
     // Route::get('position', [PositionController::class, 'index'])->name('position.index');
     // Route::post('position', [PositionController::class, 'store'])->name('position.store');
@@ -397,17 +395,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Route::delete('position/{position}', [PositionController::class, 'destroy'])->name(
     //     'position.destroy',
     // );
-    // Route::post('plantilla-position', [PlantillaPositionController::class, 'store'])->name(
-    //     'plantilla-position.store',
-    // );
-    // Route::patch('plantilla-position/{plantillaPosition}', [
-    //     PlantillaPositionController::class,
-    //     'update',
-    // ])->name('plantilla-position.update');
-    // Route::delete('plantilla-position/{plantillaPosition}', [
-    //     PlantillaPositionController::class,
-    //     'destroy',
-    // ])->name('plantilla-position.destroy');
 
     // ios (disabled for now — PS logic refactor in progress; kept for later)
     // Route::get('ios', [IosController::class, 'index'])->name('ios.index');
