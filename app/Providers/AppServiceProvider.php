@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use App\Policies\DashboardPolicy;
 use App\Policies\ImportPolicy;
 use Illuminate\Support\Facades\Gate;
 
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Ppmp::observe(PpmpObserver::class);
 
+        Gate::policy('dashboard', DashboardPolicy::class);
         Gate::policy('imports', ImportPolicy::class);
 
         $this->configureDefaults();

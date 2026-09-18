@@ -17,6 +17,14 @@ export interface PermissionNode {
 
 export const permissionTree: PermissionNode[] = [
     {
+        key: 'dashboard',
+        label: 'Dashboard',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+        ],
+    },
+    {
         key: 'fiscal-year',
         label: 'AIP',
         permissions: [],
