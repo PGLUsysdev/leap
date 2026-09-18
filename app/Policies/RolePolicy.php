@@ -44,6 +44,22 @@ class RolePolicy
         return $permissions->contains('role.delete');
     }
 
+    public function viewPermissions(User $user, Role $role): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        return $permissions->contains('role.edit.permissions');
+    }
+
+    public function updatePermissions(User $user, Role $role): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        return $permissions->contains('role.edit.permissions');
+    }
+
     public function restore(User $user, Role $role): bool
     {
         return false;

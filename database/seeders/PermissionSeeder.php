@@ -127,6 +127,7 @@ class PermissionSeeder extends Seeder
             'aip-summary.set.ps-pool',
             'ps-breakdown.edit',
             'ps-breakdown.view',
+            'dashboard.view',
         ];
 
         foreach ($names as $name) {
