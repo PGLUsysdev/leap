@@ -9,8 +9,8 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import NewTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
+import NewTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -18,7 +18,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
@@ -32,22 +32,21 @@ interface PpaMoveDialogProps {
     filters: Filter;
     dialogPpaTree: PaginatedResponse<Ppa> | [];
     dialogCurrent: Ppa[];
+    ppaTypes: Ppa['type'][];
 }
 
-const isValidParentType = (targetType: string, sourceType: string): boolean => {
-    if (sourceType === 'Project') {
-        return targetType === 'Program';
-    }
-
-    if (sourceType === 'Activity') {
-        return targetType === 'Project';
-    }
-
-    if (sourceType === 'Sub-Activity') {
-        return targetType === 'Activity';
-    }
-
-    return false;
+const isValidParentType = (
+    targetType: string,
+    sourceType: string,
+    ppaTypes: string[] = [],
+): boolean => {
+    const targetIndex = ppaTypes.indexOf(targetType);
+    const sourceIndex = ppaTypes.indexOf(sourceType);
+    return (
+        targetIndex !== -1 &&
+        sourceIndex !== -1 &&
+        targetIndex === sourceIndex - 1
+    );
 };
 
 export default function PpaMoveDialog({
@@ -57,6 +56,7 @@ export default function PpaMoveDialog({
     dialogPpaTree = [],
     dialogCurrent = [],
     filters,
+    ppaTypes = [],
 }: PpaMoveDialogProps) {
     const [selectedTarget, setSelectedTarget] = useState<Ppa | null>(null);
     const [loading, setLoading] = useState(false);
@@ -69,7 +69,7 @@ export default function PpaMoveDialog({
     const buttonLabels = useMemo(() => {
         const currentFolder =
             dialogCurrent.length > 0 ? dialogCurrent[0] : null;
-        const isProgram = ppaToMove?.type === 'Program';
+        const isProgram = ppaToMove?.type === (ppaTypes[0] || 'Program');
         const isSameFolder =
             ppaToMove &&
             currentFolder &&
@@ -139,6 +139,7 @@ export default function PpaMoveDialog({
             const canMoveHere = isValidParentType(
                 currentFolder.type,
                 ppaToMove.type,
+                ppaTypes,
             );
 
             return {
@@ -157,7 +158,7 @@ export default function PpaMoveDialog({
         }
 
         return defaultState;
-    }, [selectedTarget, ppaToMove, dialogCurrent]);
+    }, [selectedTarget, ppaToMove, dialogCurrent, ppaTypes]);
 
     const handleMove = (direction: 'top' | 'bottom' | 'into') => {
         const finalTargetId = buttonLabels.targetId;
@@ -208,8 +209,8 @@ export default function PpaMoveDialog({
 
     const handleOpenChange = (open: boolean) => {
         if (!open) {
-setSelectedTarget(null);
-}
+            setSelectedTarget(null);
+        }
 
         onOpenChange(open);
     };
@@ -259,11 +260,11 @@ setSelectedTarget(null);
                         <CardContent>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="rounded-md bg-primary p-2 text-primary-foreground shadow-sm">
+                                    <div className="bg-primary text-primary-foreground rounded-md p-2 shadow-sm">
                                         <Move />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold tracking-wider text-primary/70 uppercase">
+                                        <p className="text-primary/70 text-[10px] font-bold tracking-wider uppercase">
                                             Currently Moving
                                         </p>
                                         <p className="max-w-[400px] truncate text-sm font-bold">
@@ -302,6 +303,7 @@ setSelectedTarget(null);
                                 const isParent = isValidParentType(
                                     ppa.type,
                                     ppaToMove?.type ?? '',
+                                    ppaTypes,
                                 );
 
                                 if ((isSibling || isParent) && !isSelf) {
@@ -323,6 +325,7 @@ setSelectedTarget(null);
                                 {
                                     ppaToMove: ppaToMove,
                                     onShowChildren: handleShowChildren,
+                                    ppaTypes: ppaTypes,
                                 } as any
                             }
                             className="h-1000"
@@ -332,12 +335,12 @@ setSelectedTarget(null);
 
                 <div className="px-4">
                     <DialogFooter className="flex items-center justify-between">
-                        <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground italic">
-                            <Info className="h-4 w-4 text-primary/50" />
+                        <div className="text-muted-foreground flex flex-1 items-center gap-2 text-sm italic">
+                            <Info className="text-primary/50 h-4 w-4" />
                             {selectedTarget ? (
-                                <span className="flex animate-in gap-1 fade-in slide-in-from-left-2">
+                                <span className="animate-in fade-in slide-in-from-left-2 flex gap-1">
                                     <span>Moving relative to:</span>
-                                    <strong className="block max-w-[400px] truncate text-foreground">
+                                    <strong className="text-foreground block max-w-[400px] truncate">
                                         {selectedTarget.name}
                                     </strong>
                                 </span>

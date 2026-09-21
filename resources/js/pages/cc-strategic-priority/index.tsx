@@ -1,12 +1,9 @@
 import { router } from '@inertiajs/react';
 import { useState, useCallback } from 'react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+import DataTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import type { CcStrategicPriority } from '@/types';
 import columns from './columns/cc-strategic-priority-cols';
@@ -55,8 +52,8 @@ export default function CcStrategicPriorityPage({
 
     const handleDeleteConfirm = useCallback(() => {
         if (!deletingPriority) {
-return;
-}
+            return;
+        }
 
         setIsDeleting(true);
         router.delete(`/cc-strategic-priority/${deletingPriority.id}`, {

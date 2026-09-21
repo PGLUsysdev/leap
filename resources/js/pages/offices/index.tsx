@@ -1,11 +1,8 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+import DataTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import type { LguLevel, Office, OfficeType, Sector } from '@/types';
 import columns from './columns/columns';
@@ -124,7 +121,7 @@ export default function OfficesPage({
                 description={
                     <>
                         Are you sure you want to remove{' '}
-                        <span className="font-bold text-foreground">
+                        <span className="text-foreground font-bold">
                             "{selectedOffice?.name}"
                         </span>
                         ?

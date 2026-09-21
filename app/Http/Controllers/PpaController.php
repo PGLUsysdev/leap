@@ -14,23 +14,36 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Log;
 
 class PpaController extends Controller
 {
     /**
-     * Get the digit length for code suffix based on PPA type.
-     * Returns 0 for dynamic formatting (no padding).
+     * Get all office IDs in the hierarchy (parent + all descendants).
      */
-    private function getCodeSuffixLength(string $type): int
+    private function getOfficeHierarchyIds($officeId): array
     {
-        return match ($type) {
-            'Program' => 3,
-            'Project' => 2,
-            'Activity' => 2,
-            'Sub-Activity' => 0,
-            default => 3,
-        };
+        if (! $officeId) {
+            return [];
+        }
+
+        $officeIds = [(int) $officeId];
+        $children = $this->getChildOfficeIds((int) $officeId);
+
+        return array_merge($officeIds, $children);
+    }
+
+    /**
+     * Recursively get child office IDs.
+     */
+    private function getChildOfficeIds($parentId): array
+    {
+        $children = Office::where('parent_id', $parentId)->pluck('id')->toArray();
+        $descendants = $children;
+        foreach ($children as $childId) {
+            $descendants = array_merge($descendants, $this->getChildOfficeIds($childId));
+        }
+
+        return $descendants;
     }
 
     public function index(Request $request)
@@ -41,9 +54,11 @@ class PpaController extends Controller
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
         $showAll = $permissions->contains('ppa.show.all');
-        $userOfficeId = $showAll
-            ? $request->query('selected_office_id')
-            : $user->office_id;
+        $userOfficeId = $showAll ? $request->query('selected_office_id') : $user->office_id;
+
+        // Build office ID list (including sub‑offices) if a base office is selected
+        $officeIds = $userOfficeId ? $this->getOfficeHierarchyIds($userOfficeId) : null;
+
         $mode = $request->query('dialog_mode');
 
         return Inertia::render('ppa/index', [
@@ -54,12 +69,7 @@ class PpaController extends Controller
             'showAllOffices' => $showAll,
             'selectedOfficeId' => $userOfficeId ? (int) $userOfficeId : null,
             'parentOffices' => Office::whereNull('parent_id')->get(),
-            'ppaTree' => $this->getPpaQuery(
-                $request,
-                $userOfficeId,
-                'id',
-                'search',
-            )
+            'ppaTree' => $this->getPpaQuery($request, $officeIds, 'id', 'search')
                 ->paginate(100)
                 ->withQueryString()
                 ->through(function ($ppa) use ($user) {
@@ -73,16 +83,10 @@ class PpaController extends Controller
                 }),
 
             'current' => $request->query('id')
-                ? $this->flattenAncestors(
-                    Ppa::with('parent.parent')->find($request->query('id')),
-                )
+                ? $this->flattenAncestors(Ppa::with('parent.parent')->find($request->query('id')))
                 : [],
 
-            'offices' => Office::with([
-                'sector',
-                'lguLevel',
-                'officeType',
-            ])->get(),
+            'offices' => Office::with(['sector', 'lguLevel', 'officeType'])->get(),
 
             'filters' => $request->only([
                 'id',
@@ -97,20 +101,15 @@ class PpaController extends Controller
 
             'dialogPpaTree' => Inertia::optional(function () use (
                 $request,
-                $userOfficeId,
+                $officeIds,
                 $user,
                 $mode,
             ) {
                 if ($mode === 'import') {
-                    return $this->getPreviousYearPpas($request, $userOfficeId);
+                    return $this->getPreviousYearPpas($request, $officeIds);
                 }
 
-                return $this->getPpaQuery(
-                    $request,
-                    $userOfficeId,
-                    'dialog_id',
-                    'dialog_search',
-                )
+                return $this->getPpaQuery($request, $officeIds, 'dialog_id', 'dialog_search')
                     ->paginate(100, ['*'], 'dialog_page')
                     ->withQueryString()
                     ->through(function ($ppa) use ($user) {
@@ -126,30 +125,33 @@ class PpaController extends Controller
 
             'dialogCurrent' => Inertia::optional(function () use ($request) {
                 $id = $request->query('dialog_id');
-                if (!$id) {
+                if (! $id) {
                     return [];
                 }
-
                 $ppa = Ppa::with('parent.parent')->find($id);
 
                 return $ppa ? $this->flattenAncestors($ppa) : [];
             }),
+
+            'ppaTypes' => array_keys(config('ppa.type_padding')),
+            'ppaTypePadding' => config('ppa.type_padding'),
         ]);
     }
 
-    private function getPpaQuery($request, $officeId, $idKey, $searchKey)
+    /**
+     * Build the PPA query with office filtering (including sub‑offices)
+     * and hierarchy navigation.
+     */
+    private function getPpaQuery($request, $officeIds, $idKey, $searchKey)
     {
         $fiscalYearId = session('active_fiscal_year_id');
-
-        Log::info($fiscalYearId);
-
         $id = $request->query($idKey);
         $search = $request->query($searchKey);
 
         return Ppa::when(
-            $officeId,
-            fn($q) => $q->where('office_id', $officeId),
-            fn($q) => $q->whereNull('id'),
+            $officeIds,
+            fn ($q) => $q->whereIn('office_id', $officeIds),
+            fn ($q) => $q, // no office filter if null (show all)
         )
             ->where('fiscal_year_id', $fiscalYearId)
             ->when(
@@ -171,11 +173,7 @@ class PpaController extends Controller
                         $segments = explode('-', $search);
                         $lastSegment = end($segments);
                         if ($lastSegment) {
-                            $inner->orWhere(
-                                'code_suffix',
-                                'like',
-                                "%$lastSegment%",
-                            );
+                            $inner->orWhere('code_suffix', 'like', "%$lastSegment%");
                         }
                     }
                 });
@@ -184,12 +182,12 @@ class PpaController extends Controller
             ->withCount('children');
     }
 
-    public function getPreviousYearPpas($request, $userOfficeId)
+    /**
+     * Get previous year PPAs for import, respecting office hierarchy.
+     */
+    public function getPreviousYearPpas($request, $officeIds)
     {
-        // $userOfficeId = Auth::user()->office_id;
         $currentFiscalYearId = session('active_fiscal_year_id');
-
-        // get previous year
         $currentYear = FiscalYear::find($currentFiscalYearId);
         $prevYear = FiscalYear::where('year', $currentYear->year - 1)->first();
         $prevYearId = $prevYear->id;
@@ -197,12 +195,7 @@ class PpaController extends Controller
         $id = $request->query('dialog_id');
         $search = $request->query('dialog_search');
 
-        // get ppa null first
-        return Ppa::when(
-            $userOfficeId,
-            fn($q) => $q->where('office_id', $userOfficeId),
-            fn($q) => $q->whereNull('id'),
-        )
+        return Ppa::when($officeIds, fn ($q) => $q->whereIn('office_id', $officeIds), fn ($q) => $q)
             ->where('fiscal_year_id', $prevYearId)
             ->when(
                 $id,
@@ -223,11 +216,7 @@ class PpaController extends Controller
                         $segments = explode('-', $search);
                         $lastSegment = end($segments);
                         if ($lastSegment) {
-                            $inner->orWhere(
-                                'code_suffix',
-                                'like',
-                                "%$lastSegment%",
-                            );
+                            $inner->orWhere('code_suffix', 'like', "%$lastSegment%");
                         }
                     }
                 });
@@ -238,18 +227,18 @@ class PpaController extends Controller
             ->withQueryString();
     }
 
+    /**
+     * Flatten ancestors for breadcrumbs.
+     */
     private function flattenAncestors($ppa)
     {
         $result = [];
         $current = $ppa;
 
         while ($current) {
-            // Create a copy without the parent relation to keep output flat
             $item = $current->toArray();
             unset($item['parent']);
             $result[] = $item;
-
-            // Move to the next level up
             $current = $current->parent;
         }
 
@@ -257,15 +246,7 @@ class PpaController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * Store a newly created PPA.
      */
     public function store(StorePpaRequest $request)
     {
@@ -283,13 +264,12 @@ class PpaController extends Controller
 
         if ($parentId) {
             $parent = Ppa::findOrFail($parentId);
-            abort_if(!$showAll && $parent->office_id !== $user->office_id, 403);
+            abort_if(! $showAll && $parent->office_id !== $user->office_id, 403);
             $officeId = $parent->office_id;
         } else {
             $officeId = $showAll ? $validated['office_id'] : $user->office_id;
         }
 
-        // ONE query to get both count and max order
         $stats = Ppa::where('office_id', $officeId)
             ->where('parent_id', $parentId)
             ->where('fiscal_year_id', $fiscalYearId)
@@ -298,15 +278,8 @@ class PpaController extends Controller
 
         $siblingCount = $stats->total ?? 0;
         $maxSortOrder = $stats->max_sort ?? -1;
-
-        $digitLength = $this->getCodeSuffixLength($type);
         $sortOrder = $maxSortOrder + 1;
-
-        // Formatting logic
-        $codeSuffix =
-            $digitLength === 0
-                ? (string) ($siblingCount + 1)
-                : str_pad($siblingCount + 1, $digitLength, '0', STR_PAD_LEFT);
+        $codeSuffix = (string) ($siblingCount + 1);
 
         $validated['code_suffix'] = $codeSuffix;
         $validated['sort_order'] = $sortOrder;
@@ -317,32 +290,18 @@ class PpaController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(Ppa $ppa)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Ppa $ppa)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
+     * Update an existing PPA.
      */
     public function update(UpdatePpaRequest $request, Ppa $ppa)
     {
         Gate::authorize('update', $ppa);
-
         $validated = $request->validated();
         $ppa->update($validated);
     }
 
+    /**
+     * Move a PPA (re‑order or change parent).
+     */
     public function move(Request $request, Ppa $ppa)
     {
         Gate::authorize('move', $ppa);
@@ -351,7 +310,7 @@ class PpaController extends Controller
         $direction = $request->direction;
 
         $officeId = $ppa->office_id;
-        $fiscalYearId = $ppa->fiscal_year_id; // Scope by the record's year
+        $fiscalYearId = $ppa->fiscal_year_id;
         $oldParentId = $ppa->parent_id;
 
         $isSibling = $target->type === $ppa->type;
@@ -367,10 +326,10 @@ class PpaController extends Controller
             $officeId,
             $fiscalYearId,
         ) {
-            // 1. Move to new parent with a globally unique temp suffix
+            // 1. Move with temporary suffix
             $ppa->update([
                 'parent_id' => $newParentId,
-                'code_suffix' => 'MOVING_' . $ppa->id,
+                'code_suffix' => 'MOVING_'.$ppa->id,
                 'sort_order' => $isSibling
                     ? ($direction === 'top'
                         ? $target->sort_order - 0.5
@@ -380,35 +339,23 @@ class PpaController extends Controller
                         : 999999),
             ]);
 
-            // 2. Re-index target folder (filtered by year)
-            $this->syncSiblingIndexes(
-                $newParentId,
-                $officeId,
-                $ppa->type,
-                $fiscalYearId,
-            );
+            // 2. Re‑index target folder
+            $this->syncSiblingIndexes($newParentId, $officeId, $ppa->type, $fiscalYearId);
 
-            // 3. Re-index source folder (if different)
+            // 3. Re‑index source folder if different
             if ($oldParentId !== $newParentId) {
-                $this->syncSiblingIndexes(
-                    $oldParentId,
-                    $officeId,
-                    $ppa->type,
-                    $fiscalYearId,
-                );
+                $this->syncSiblingIndexes($oldParentId, $officeId, $ppa->type, $fiscalYearId);
             }
         });
 
         return to_route('ppa.index', $request->query());
     }
 
-    protected function syncSiblingIndexes(
-        $parentId,
-        $officeId,
-        $type,
-        $fiscalYearId,
-    ) {
-        // Filter strictly by Office AND Year AND Type
+    /**
+     * Re‑index siblings after a move or delete.
+     */
+    protected function syncSiblingIndexes($parentId, $officeId, $type, $fiscalYearId)
+    {
         $query = Ppa::where('office_id', $officeId)
             ->where('fiscal_year_id', $fiscalYearId)
             ->where('type', $type)
@@ -422,97 +369,53 @@ class PpaController extends Controller
 
         $siblings = $query->get();
 
-        // Pass 1: Set temporary values to avoid collision with other years/items
         foreach ($siblings as $sibling) {
-            $sibling->update(['code_suffix' => 'TEMP_' . $sibling->id]);
+            $sibling->update(['code_suffix' => 'TEMP_'.$sibling->id]);
         }
 
-        // Pass 2: Final sequential numbering (01, 02, 03...)
         foreach ($siblings as $index => $sibling) {
             $newPos = $index + 1;
             $sibling->update([
                 'sort_order' => (float) $newPos,
-                'code_suffix' => str_pad($newPos, 3, '0', STR_PAD_LEFT),
+                'code_suffix' => (string) $newPos,
             ]);
         }
     }
 
-    private function isParentLevel($typeA, $typeB)
-    {
-        return match ($typeB) {
-            'Project' => $typeA === 'Program',
-            'Activity' => $typeA === 'Project',
-            'Sub-Activity' => $typeA === 'Activity',
-            default => false,
-        };
-    }
-
-    protected function isDescendantOf($target, $sourceId)
-    {
-        $current = $target;
-
-        while ($current) {
-            if ($current->id == $sourceId) {
-                return true;
-            }
-            $current = $current->parent;
-        }
-
-        return false;
-    }
-
     /**
-     * Remove the specified resource from storage.
+     * Delete a PPA and its descendants.
      */
     public function destroy(Ppa $ppa)
     {
         Gate::authorize('delete', $ppa);
 
-        // Get a flat array of all IDs in this branch (Parent + all children)
         $allIds = $this->getAllDescendantIds($ppa);
-
-        // 3. Check for AIP Entry dependencies across the entire branch
         $hasDependencies = AipEntry::whereIn('ppa_id', $allIds)->exists();
 
         if ($hasDependencies) {
             return redirect()
                 ->back()
                 ->withErrors([
-                    'error' =>
-                        'Cannot delete: This PPA or its sub-items are linked to existing AIP entries.',
+                    'error' => 'Cannot delete: This PPA or its sub‑items are linked to existing AIP entries.',
                 ]);
         }
 
-        // 4. Proceed with deletion
         $parentId = $ppa->parent_id;
         $officeId = $ppa->office_id;
         $type = $ppa->type;
         $fiscalYearId = $ppa->fiscal_year_id;
 
-        DB::transaction(function () use (
-            $ppa,
-            $parentId,
-            $officeId,
-            $type,
-            $fiscalYearId,
-        ) {
-            // Since you have ON DELETE CASCADE, this deletes the PPA AND all its children
-            $ppa->delete();
-
-            // Re-index the remaining siblings
-            $this->syncSiblingIndexes(
-                $parentId,
-                $officeId,
-                $type,
-                $fiscalYearId,
-            );
+        DB::transaction(function () use ($ppa, $parentId, $officeId, $type, $fiscalYearId) {
+            $ppa->delete(); // cascade deletes children
+            $this->syncSiblingIndexes($parentId, $officeId, $type, $fiscalYearId);
         });
 
-        return redirect()
-            ->back()
-            ->with('success', 'PPA and all sub-items deleted successfully.');
+        return redirect()->back()->with('success', 'PPA and all sub‑items deleted successfully.');
     }
 
+    /**
+     * Recursively collect all descendant PPA IDs.
+     */
     private function getAllDescendantIds($ppa, &$ids = [])
     {
         $ids[] = $ppa->id;
@@ -523,27 +426,8 @@ class PpaController extends Controller
         return $ids;
     }
 
-    private function getDescendantPpaIds($parentId)
-    {
-        $children = DB::table('ppas')
-            ->where('parent_id', $parentId)
-            ->where('office_id', Auth::user()->office_id)
-            ->pluck('id')
-            ->toArray();
-
-        $descendants = $children;
-        foreach ($children as $childId) {
-            $descendants = array_merge(
-                $descendants,
-                $this->getDescendantPpaIds($childId),
-            );
-        }
-
-        return $descendants;
-    }
-
     /**
-     * Import selected PPAs from previous year to current year
+     * Import selected PPAs from previous year.
      */
     public function importFromPreviousYear(Request $request)
     {
@@ -561,28 +445,24 @@ class PpaController extends Controller
         $userOfficeId = $showAll
             ? $request->input('office_id', $user->office_id)
             : $user->office_id;
+
         $currentFiscalYearId = session('active_fiscal_year_id');
 
-        if (!$currentFiscalYearId) {
+        if (! $currentFiscalYearId) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'No active fiscal year set']);
         }
 
-        // Get previous fiscal year by querying the database
         $currentFiscalYear = FiscalYear::find($currentFiscalYearId);
-        if (!$currentFiscalYear) {
+        if (! $currentFiscalYear) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Current fiscal year not found']);
         }
 
-        $previousFiscalYear = FiscalYear::where(
-            'year',
-            $currentFiscalYear->year - 1,
-        )->first();
-
-        if (!$previousFiscalYear) {
+        $previousFiscalYear = FiscalYear::where('year', $currentFiscalYear->year - 1)->first();
+        if (! $previousFiscalYear) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Previous fiscal year not found']);
@@ -595,66 +475,41 @@ class PpaController extends Controller
             DB::beginTransaction();
 
             $importedCount = 0;
-            $parentIdMap = []; // Maps old parent IDs to new parent IDs
+            $parentIdMap = [];
 
-            // First, get all original PPAs and sort them to ensure parents come first
             $originalPpas = Ppa::whereIn('id', $ppaIds)
                 ->where('fiscal_year_id', $previousFiscalYearId)
                 ->where('office_id', $userOfficeId)
-                ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END') // Parents first
+                ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END')
                 ->orderBy('sort_order')
                 ->get();
 
             foreach ($originalPpas as $originalPpa) {
-                // Determine the correct parent_id for the new PPA
                 $newParentId = null;
-                if ($originalPpa->parent_id) {
-                    // Check if the parent was also selected for import
-                    if (isset($parentIdMap[$originalPpa->parent_id])) {
-                        $newParentId = $parentIdMap[$originalPpa->parent_id];
-                    }
-                    // For now, if parent wasn't selected for import, we'll make this a root-level PPA
-                    // In a future implementation, you could add logic to find matching parents by name/type/code
+                if ($originalPpa->parent_id && isset($parentIdMap[$originalPpa->parent_id])) {
+                    $newParentId = $parentIdMap[$originalPpa->parent_id];
                 }
 
-                // Create new PPA as copy of original
                 $newPpa = $originalPpa->replicate();
                 $newPpa->fiscal_year_id = $currentFiscalYearId;
-                $newPpa->parent_id = $newParentId; // Set the correct parent
+                $newPpa->parent_id = $newParentId;
 
-                // Calculate proper sort_order and code_suffix like in add/move functionality
                 $stats = Ppa::where('office_id', $userOfficeId)
                     ->where('parent_id', $newParentId)
                     ->where('fiscal_year_id', $currentFiscalYearId)
-                    ->selectRaw(
-                        'COUNT(*) as total, MAX(sort_order) as max_sort',
-                    )
+                    ->selectRaw('COUNT(*) as total, MAX(sort_order) as max_sort')
                     ->first();
 
                 $siblingCount = $stats->total ?? 0;
                 $maxSortOrder = $stats->max_sort ?? -1;
-
-                $digitLength = $this->getCodeSuffixLength($newPpa->type);
                 $sortOrder = $maxSortOrder + 1;
-
-                // Formatting logic for code suffix
-                $codeSuffix =
-                    $digitLength === 0
-                        ? (string) ($siblingCount + 1)
-                        : str_pad(
-                            $siblingCount + 1,
-                            $digitLength,
-                            '0',
-                            STR_PAD_LEFT,
-                        );
+                $codeSuffix = (string) ($siblingCount + 1);
 
                 $newPpa->sort_order = $sortOrder;
                 $newPpa->code_suffix = $codeSuffix;
                 $newPpa->save();
 
-                // Map the old ID to the new ID for child PPAs
                 $parentIdMap[$originalPpa->id] = $newPpa->id;
-
                 $importedCount++;
             }
 
@@ -662,65 +517,60 @@ class PpaController extends Controller
 
             return redirect()
                 ->back()
-                ->with(
-                    'success',
-                    "Successfully imported {$importedCount} PPAs.",
-                );
+                ->with('success', "Successfully imported {$importedCount} PPAs.");
         } catch (\Exception $e) {
             DB::rollBack();
 
             return redirect()
                 ->back()
                 ->withErrors([
-                    'error' => 'Error importing PPAs: ' . $e->getMessage(),
+                    'error' => 'Error importing PPAs: '.$e->getMessage(),
                 ]);
         }
     }
 
+    /**
+     * Set a PPA as the PS pool.
+     * Moves the previous pool's ps_amount over and rebuilds this PPA as a
+     * single PS-only funding source (funding_source_id = 1).
+     */
     public function setAsPsPool(Ppa $ppa, PSPoolService $poolService)
     {
         Gate::authorize('setPsPool', AipEntry::class);
 
         try {
-            DB::transaction(function () use ($ppa, $poolService) {
-                // Find the current pool before we switch
-                $oldPool = Ppa::psPoolForFiscalYear($ppa->fiscal_year_id)
-                    ->lockForUpdate()
-                    ->first();
+            $transferred = DB::transaction(function () use ($ppa, $poolService) {
+                $oldPool = Ppa::psPoolForFiscalYear($ppa->fiscal_year_id)->lockForUpdate()->first();
+
+                $transferred = $poolService->handoff($oldPool, $ppa);
 
                 $poolService->setPool($ppa);
 
-                // Reset the old pool's funding sources completely: detach the
-                // funding source and clear every amount so it reverts to a normal
-                // (empty) AIP entry instead of keeping the pool-only GF Proper structure.
-                if ($oldPool) {
-                    foreach ($oldPool->aipEntries as $entry) {
-                        $entry->ppaFundingSources()->update([
-                            'funding_source_id' => null,
-                            'ps_amount' => 0,
-                            'mooe_amount' => 0,
-                            'fe_amount' => 0,
-                            'co_amount' => 0,
-                            'ccet_adaptation' => 0,
-                            'ccet_mitigation' => 0,
-                            'cc_typology_id' => null,
-                        ]);
-                    }
-                }
-
-                // Sync new pool's PS amounts (auto-creates GF Proper if needed)
-                foreach ($ppa->aipEntries as $entry) {
-                    PsBreakdownController::syncPoolPsAmount($entry);
-                }
+                return $transferred;
             });
 
-            return redirect()
-                ->back()
-                ->with('success', "{$ppa->name} is now the PS pool.");
+            $message = "{$ppa->name} is now the PS pool.";
+
+            if ($transferred > 0) {
+                $message .=
+                    ' '.
+                    number_format($transferred, 2).
+                    ' in PS was transferred from the previous pool.';
+            }
+
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => $message,
+            ]);
+
+            return redirect()->back();
         } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->withErrors(['error' => $e->getMessage()]);
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => $e->getMessage(),
+            ]);
+
+            return redirect()->back();
         }
     }
 }

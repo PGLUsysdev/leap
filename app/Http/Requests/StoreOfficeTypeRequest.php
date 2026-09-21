@@ -26,6 +26,7 @@ class StoreOfficeTypeRequest extends FormRequest
             'code' => [
                 'required',
                 'string',
+                'min:1',
                 'max:2',
                 'unique:office_types,code',
             ],

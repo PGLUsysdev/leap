@@ -21,12 +21,16 @@ export default function Register({ passwordRules, flash }: Props) {
                 <Head title="Account Pending" />
 
                 <div className="space-y-4 text-center">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                         An administrator needs to approve your account before
                         you can log in. You'll get an email once you're cleared!
                     </p>
-                    <Button asChild className="w-full">
-                        <Link href={login()}>Back to Login</Link>
+                    <Button
+                        render={<Link href={login()} />}
+                        nativeButton={false}
+                        className="w-full"
+                    >
+                        Back to Login
                     </Button>
                 </div>
             </>
@@ -120,7 +124,7 @@ export default function Register({ passwordRules, flash }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="text-muted-foreground text-center text-sm">
                             Already have an account?{' '}
                             <TextLink href={login()} tabIndex={6}>
                                 Log in

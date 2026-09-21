@@ -6,11 +6,6 @@ import type { InertiaLinkProps } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import type { Auth, User } from './auth';
 
-export interface BreadcrumbItem {
-    title: string | null;
-    href: string | null;
-}
-
 export interface NavGroup {
     title: string;
     items: NavItem[];
@@ -26,6 +21,7 @@ export interface NavItem {
 }
 
 export interface SharedData {
+    version: string;
     name: string;
     auth: Auth;
     sidebarOpen: boolean;
@@ -113,19 +109,39 @@ export interface SupplementalAip {
 
 export interface AipEntry {
     id: number;
-    start_date: string | null;
-    end_date: string | null;
-    expected_output: string | null;
     is_supplemental: boolean;
-    created_at: string | null;
-    updated_at: string | null;
 
     ppa_id: number;
     supplemental_aip_id: number | null;
 
     ppa?: Ppa;
     supplemental_aip?: SupplementalAip;
+
+    outputs?: AipOutput[];
+
+    /** @deprecated Moved to AipOutput (entry.outputs[].start_date). */
+    start_date?: string | null;
+    /** @deprecated Moved to AipOutput (entry.outputs[].end_date). */
+    end_date?: string | null;
+    /** @deprecated Moved to AipOutput (entry.outputs[].expected_output). */
+    expected_output?: string | null;
+    /** @deprecated Replaced by entry.outputs[].funding_sources. */
     ppa_funding_sources?: PpaFundingSource[];
+    created_at?: string | null;
+    updated_at?: string | null;
+}
+
+export interface AipOutput {
+    id: number;
+    aip_entry_id: number;
+
+    expected_output: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    sort_order: number;
+
+    offices?: Office[];
+    funding_sources?: PpaFundingSource[];
 }
 
 export interface FundingSource {
@@ -153,25 +169,28 @@ export interface PpaFundingSource {
     co_amount: string;
     ccet_adaptation: string;
     ccet_mitigation: string;
-    cc_typology_id?: number | null;
     created_at: string | null;
     updated_at: string | null;
 
-    ppa_id: number;
+    aip_output_id: number | null;
+    /** @deprecated Replaced by aip_output_id. */
+    aip_entry_id?: number | null;
     funding_source_id: number;
-    aip_entry_id: number;
-    supplemental_aip_id?: number | null;
+    supplemental_aip_id: number | null;
+    cc_typology_id: number | null;
+    // ppa_id: number;
 
     funding_source?: FundingSource;
     cc_typology?: { id: number; code: string; description: string };
 }
 
-export type PpaTye = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
+export type PpaType = string;
+export type PpaTye = string;
 
 export interface Ppa {
     id: number;
     name: string;
-    type: PpaTye;
+    type: PpaType;
     code_suffix: string;
     is_active: boolean;
     sort_order: number;
@@ -230,6 +249,7 @@ export interface CcTypology {
 export interface ChartOfAccount {
     id: number;
     account_number: string;
+    path: string;
     account_title: string;
     account_type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
     expense_class: 'PS' | 'MOOE' | 'FE' | 'CO';
@@ -277,7 +297,7 @@ export interface Ppmp {
     created_at: string | null;
     updated_at: string | null;
 
-    ppmp_funding_source_id: number;
+    ppa_funding_source_id: number;
     ppmp_price_list_id: number | null;
 
     ppa_funding_source?: PpaFundingSource;
@@ -302,12 +322,15 @@ export interface PriceList {
     chart_of_account_ppmp_category_id: number;
 
     chart_of_account_ppmp_category?: ChartOfAccountPpmpCategory;
+
+    ppmps_count?: number;
 }
 
 export interface PpmpCategory {
     id: number;
     name: string;
     is_non_procurement: boolean;
+    is_additional: boolean;
 
     created_at: string | null;
     updated_at: string | null;
@@ -364,8 +387,13 @@ export interface Role {
 
 // not a table in the database
 
-export interface App {
-    ppmp_price_list: PriceList;
+export interface AppItem {
+    ppmp_price_list: {
+        item_number?: string | null;
+        description?: string | null;
+        unit_of_measurement?: string | null;
+        price?: number | null;
+    };
 
     q1_qty: number;
     q2_qty: number;
@@ -379,6 +407,12 @@ export interface App {
     q4_amount: number;
     total_amount: number;
 }
+
+/**
+ * APP payload from FiscalYearController@index — nested grouping of
+ * PPMP category -> chart-of-account title -> aggregated items.
+ */
+export type App = Record<string, Record<string, AppItem[]>>;
 
 export interface PaginationLink {
     active: boolean;
@@ -488,28 +522,6 @@ export interface DashboardCoaBudget {
     value: number;
 }
 
-export interface PlantillaPosition {
-    id: number;
-    office_id: number;
-    fiscal_year_id: number;
-    item_number: string;
-    position_title: string;
-    incumbent_name: string;
-    position_type: 'permanent' | 'casual' | 'contractual' | 'coterminous';
-    current_sg: number;
-    current_step: number;
-    current_annual_rate: string;
-    budget_sg: number;
-    budget_step: number;
-    budget_annual_rate: string;
-    remarks: string | null;
-    created_at: string | null;
-    updated_at: string | null;
-
-    office?: Office;
-    fiscal_year?: FiscalYear;
-}
-
 export interface Position {
     id: number;
     office_id: number;
@@ -524,19 +536,6 @@ export interface Position {
     office?: Office;
     ios?: Ios;
     user?: User;
-}
-
-export interface GovSalarySchedule {
-    id: number;
-    fiscal_year_id: number;
-    tranche_id: number;
-    salary_grade: number;
-    step: number;
-    annual_rate: string;
-    created_at: string | null;
-    updated_at: string | null;
-
-    fiscal_year?: FiscalYear;
 }
 
 export interface SalaryStandard {
@@ -571,7 +570,6 @@ export interface PsBreakdownItem {
     id: number;
     ppa_funding_source_id: number;
     chart_of_account_id: number;
-    plantilla_position_id: number | null;
     amount: string;
     is_manual: boolean;
     created_at: string | null;

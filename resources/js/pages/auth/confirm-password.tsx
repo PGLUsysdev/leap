@@ -1,15 +1,15 @@
-import { Form, Head } from "@inertiajs/react";
+import { Form, Head } from '@inertiajs/react';
 import {
     index as confirmOptions,
     store as confirmStore,
-} from "@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController";
-import InputError from "@/components/input-error";
-import PasskeyVerify from "@/components/passkey-verify";
-import PasswordInput from "@/components/password-input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
-import { store } from "@/routes/password/confirm";
+} from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController';
+import InputError from '@/components/input-error';
+import PasskeyVerify from '@/components/passkey-verify';
+import PasswordInput from '@/components/password-input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { store } from '@/routes/password/confirm';
 
 export default function ConfirmPassword() {
     return (
@@ -26,7 +26,7 @@ export default function ConfirmPassword() {
                 separator="Or confirm with password"
             />
 
-            <Form {...store.form()} resetOnSuccess={["password"]}>
+            <Form {...store.form()} resetOnSuccess={['password']}>
                 {({ processing, errors }) => (
                     <div className="space-y-6">
                         <div className="grid gap-2">
@@ -60,7 +60,7 @@ export default function ConfirmPassword() {
 }
 
 ConfirmPassword.layout = {
-    title: "Confirm password",
+    title: 'Confirm password',
     description:
-        "This is a secure area of the application. Please confirm your password before continuing.",
+        'This is a secure area of the application. Please confirm your password before continuing.',
 };

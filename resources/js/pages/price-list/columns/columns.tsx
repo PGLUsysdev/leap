@@ -1,6 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, Trash, Move } from 'lucide-react';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { PriceList } from '@/types';
 
 const columnHelper = createColumnHelper<PriceList>();
@@ -55,6 +55,18 @@ const columns = [
         size: 200,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
+    columnHelper.accessor(
+        'chart_of_account_ppmp_category.chart_of_account.path',
+        {
+            header: () => <div className="px-1">COA Code</div>,
+            size: 150,
+            cell: (info) => (
+                <div className="px-1 text-wrap slashed-zero tabular-nums">
+                    {info.getValue()}
+                </div>
+            ),
+        },
+    ),
     columnHelper.accessor(
         'chart_of_account_ppmp_category.chart_of_account.account_title',
         {

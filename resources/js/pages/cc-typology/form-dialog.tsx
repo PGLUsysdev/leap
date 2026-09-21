@@ -137,7 +137,10 @@ export default function FormDialog({
                         : 'none',
                     response_type: initialData.response_type as 'A' | 'M',
                     category_code: initialData.category_code as
-                        '1' | '2' | '3' | '4',
+                        | '1'
+                        | '2'
+                        | '3'
+                        | '4',
                     item_num: String(initialData.item_num),
                     description: initialData.description,
                     is_nccap_activity: initialData.is_nccap_activity,
@@ -270,14 +273,14 @@ export default function FormDialog({
                             onSubmit={form.handleSubmit(onSubmit)}
                         >
                             <FieldGroup>
-                                <div className="rounded-lg bg-muted p-3 text-center">
-                                    <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                <div className="bg-muted rounded-lg p-3 text-center">
+                                    <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                                         Generated Code
                                     </span>
-                                    <div className="font-mono text-xl font-bold tracking-widest text-primary">
+                                    <div className="text-primary font-mono text-xl font-bold tracking-widest">
                                         {generatedCode}
                                     </div>
-                                    <p className="mt-1 text-xs text-muted-foreground">
+                                    <p className="text-muted-foreground mt-1 text-xs">
                                         Sub sector defaults to{' '}
                                         <span className="font-mono">1</span>{' '}
                                         when set to None
@@ -509,7 +512,7 @@ export default function FormDialog({
                                                 {(!watchedStrategicPriority ||
                                                     filteredSubSectors.length ===
                                                         0) && (
-                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                    <p className="text-muted-foreground mt-1 text-xs">
                                                         Defaults to{' '}
                                                         <span className="font-mono">
                                                             1

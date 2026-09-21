@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Office extends Model
@@ -25,20 +26,37 @@ class Office extends Model
         'is_lee',
     ];
 
-    // protected $appends = ['full_code'];
+    protected $appends = ['full_code'];
 
-    // protected function fullCode(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: fn () => sprintf(
-    //             '%s-%s-%s-%s',
-    //             $this->sector?->code ?? '0000',
-    //             $this->lguLevel?->code ?? '0',
-    //             $this->officeType?->code ?? '00',
-    //             $this->code ?? '000',
-    //         ),
-    //     );
-    // }
+    protected function fullCode(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $sectorCode = $this->sector?->code ?? '0000';
+                $lguCode = $this->lguLevel?->code ?? '0';
+                $officeTypeCode = str_pad(
+                    $this->officeType?->code ?? '00',
+                    2,
+                    '0',
+                    STR_PAD_LEFT,
+                );
+                $officeCode = str_pad(
+                    (string) ($this->code ?? ''),
+                    3,
+                    '0',
+                    STR_PAD_LEFT,
+                );
+
+                return sprintf(
+                    '%s-%s-%s-%s',
+                    $sectorCode,
+                    $lguCode,
+                    $officeTypeCode,
+                    $officeCode,
+                );
+            },
+        );
+    }
 
     // hasMany
     public function children(): HasMany
@@ -59,6 +77,13 @@ class Office extends Model
     public function supplementalAips(): HasMany
     {
         return $this->hasMany(SupplementalAip::class, 'office_id');
+    }
+
+    // belongsToMany
+    public function aipOutputs(): BelongsToMany
+    {
+        return $this->belongsToMany(AipOutput::class, 'aip_output_office')
+            ->withTimestamps();
     }
 
     // belongsTo

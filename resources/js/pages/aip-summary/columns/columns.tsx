@@ -57,9 +57,13 @@ const columns = [
         id: 'full_code',
         size: 220,
         header: () => <div className="px-1">AIP Reference Code</div>,
-        cell: (info) => (
-            <div className="px-1 font-mono text-wrap">{info.getValue()}</div>
-        ),
+        cell: (info) => {
+            return (
+                <div className="px-1 font-mono text-wrap">
+                    {info.getValue()}
+                </div>
+            );
+        },
         meta: { rowSpan: true },
     }),
     columnHelper.accessor('name', {
@@ -84,7 +88,7 @@ const columns = [
                         )}
 
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                            <span className="text-muted-foreground text-[10px] font-bold uppercase">
                                 {ppa.type}
                             </span>
                             <div className="flex flex-wrap items-center gap-1.5">
@@ -410,7 +414,7 @@ const columns = [
 
             if (isReadOnly) {
                 return (
-                    <div className="text-center text-muted-foreground">-</div>
+                    <div className="text-muted-foreground text-center">-</div>
                 );
             }
 

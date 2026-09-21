@@ -18,8 +18,9 @@ import {
     ChartNetwork,
     Waypoints,
     Network,
-    Scale,
-    AppWindow,
+    Upload,
+    // Scale,      // disabled: Salary Standards
+    // AppWindow,  // disabled: IOS
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 // import { NavFooter } from "@/components/nav-footer";
@@ -31,7 +32,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/base-ui-components/ui/sidebar';
+} from '@/components/ui/sidebar';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { dashboard } from '@/routes';
@@ -40,17 +41,23 @@ import { index as ccStrategicPriorityIndex } from '@/routes/cc-strategic-priorit
 import { index as ccSubSectorIndex } from '@/routes/cc-sub-sector';
 import { index as ccTypologyIndex } from '@/routes/cc-typology';
 import { manage as chartOfAccountsManage } from '@/routes/chart-of-accounts';
+import { index as expenseClassCodesIndex } from '@/routes/expense-class-codes';
 import { index as fundingSourcesIndex } from '@/routes/funding-sources';
-import { index as iosIndex } from '@/routes/ios';
+// Disabled for now — PS logic refactor in progress (kept for later).
+// import { index as iosIndex } from "@/routes/ios";
 import { index as lguLevelsIndex } from '@/routes/lgu-levels';
 import { index as officeTypesIndex } from '@/routes/office-types';
 import { index as officesIndex } from '@/routes/offices';
-import { index as positionIndex } from '@/routes/position';
+// Disabled for now — PS logic refactor in progress (kept for later).
+// import { index as positionIndex } from "@/routes/position";
 import { index as ppaIndex } from '@/routes/ppa';
 import { index as ppmpCategoriesIndex } from '@/routes/ppmp-categories';
+import { index as ppmpCategoryMappingsIndex } from '@/routes/ppmp-category-mappings';
 import { index as priceListsIndex } from '@/routes/price-lists';
 import { index as rolesIndex } from '@/routes/roles';
-import { index as salaryStandardIndex } from '@/routes/salary-standard';
+// Disabled for now — PS logic refactor in progress (kept for later).
+// import { index as salaryStandardIndex } from "@/routes/salary-standard";
+import { index as importsIndex } from '@/routes/imports';
 import { index as sectorsIndex } from '@/routes/sectors';
 import { index as usersIndex } from '@/routes/users';
 import type { NavItem, SharedData } from '@/types';
@@ -60,6 +67,7 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+        permission: 'dashboard.view',
     },
     {
         title: '',
@@ -120,16 +128,34 @@ const mainNavItems: NavItem[] = [
         permission: 'ppmp-category.view',
     },
     {
+        title: 'Category-COA Mappings',
+        href: ppmpCategoryMappingsIndex(),
+        icon: Tags,
+        permission: 'ppmp-category-mapping.view',
+    },
+    {
         title: 'Chart of Accounts',
         href: chartOfAccountsManage(),
         icon: Calculator,
         permission: 'chart-of-account.view',
     },
     {
+        title: 'Expense Class Codes',
+        href: expenseClassCodesIndex(),
+        icon: Tags,
+        permission: 'expense-class-code.view',
+    },
+    {
         title: 'Funding Sources',
         href: fundingSourcesIndex(),
         icon: Landmark,
         permission: 'funding-source.view',
+    },
+    {
+        title: 'Imports',
+        href: importsIndex(),
+        icon: Upload,
+        permission: 'imports.view',
     },
     {
         title: '',
@@ -159,29 +185,30 @@ const mainNavItems: NavItem[] = [
         href: '',
         type: 'separator',
     },
-    {
-        title: 'Salary Standards',
-        href: salaryStandardIndex(),
-        icon: Scale,
-        permission: 'salary-standard.view',
-    },
-    {
-        title: 'IOS',
-        href: iosIndex(),
-        icon: AppWindow,
-        permission: 'ios.view',
-    },
-    {
-        title: 'Positions',
-        href: positionIndex(),
-        icon: Briefcase,
-        permission: 'position.view',
-    },
-    {
-        title: '',
-        href: '',
-        type: 'separator',
-    },
+    // Disabled for now — PS logic refactor in progress (kept for later).
+    // {
+    //     title: "Salary Standards",
+    //     href: salaryStandardIndex(),
+    //     icon: Scale,
+    //     permission: "salary-standard.view",
+    // },
+    // {
+    //     title: "IOS",
+    //     href: iosIndex(),
+    //     icon: AppWindow,
+    //     permission: "ios.view",
+    // },
+    // {
+    //     title: "Positions",
+    //     href: positionIndex(),
+    //     icon: Briefcase,
+    //     permission: "position.view",
+    // },
+    // {
+    //     title: "",
+    //     href: "",
+    //     type: "separator",
+    // },
     {
         title: 'Roles',
         href: rolesIndex(),

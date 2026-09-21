@@ -1,5 +1,5 @@
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
+import DataTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -7,7 +7,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import type { PriceList, PaginatedResponse } from '@/types';
 import columns from './columns/columns';
 
@@ -58,7 +58,7 @@ export default function MoveDialog({
                 </DialogHeader>
 
                 <div className="p-4">
-                    <div className="rounded-lg border bg-muted/50 p-3 text-sm">
+                    <div className="bg-muted/50 rounded-lg border p-3 text-sm">
                         <span className="text-muted-foreground">Moving: </span>
                         <span className="font-medium">
                             {selectedItem?.description}

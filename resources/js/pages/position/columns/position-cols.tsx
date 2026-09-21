@@ -1,6 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { Position } from '@/types';
 
 const columnHelper = createColumnHelper<Position>();

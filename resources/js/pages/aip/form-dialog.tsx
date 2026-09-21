@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -11,23 +11,16 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
-import {
-    Field,
-    FieldError,
-    FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/dialog';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/base-ui-components/ui/select';
+} from '@/components/ui/select';
 import { generateYearRange } from '@/pages/aip/utils/generate-year-range';
 
 interface FormDialogProps {
@@ -162,11 +155,7 @@ export default function FormDialog({ open, onOpenChange }: FormDialogProps) {
                         Cancel
                     </Button>
 
-                    <Button
-                        type="submit"
-                        form="aip-form"
-                        disabled={isLoading}
-                    >
+                    <Button type="submit" form="aip-form" disabled={isLoading}>
                         {isLoading ? 'Initializing...' : 'Initialize'}
                     </Button>
                 </DialogFooter>

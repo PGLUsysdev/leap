@@ -62,7 +62,7 @@ const columns = [
                     )}
 
                     <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        <span className="text-muted-foreground text-[10px] font-bold uppercase">
                             {ppa.type}
                         </span>
 
@@ -105,6 +105,12 @@ const columns = [
         id: 'actions',
         size: 146,
         cell: ({ row, table }) => {
+            const meta = table.options.meta as any;
+            const ppaTypes = meta?.ppaTypes || [];
+            const isLastLeaf =
+                ppaTypes.length > 0
+                    ? row.original.type === ppaTypes[ppaTypes.length - 1]
+                    : false;
             const childrenCount = row.original.children_count;
             const canEdit = row.original.can?.edit;
             const canDelete = row.original.can?.delete;
@@ -123,12 +129,8 @@ const columns = [
                             size="icon"
                             variant="outline"
                             title="Open PPA"
-                            onClick={() =>
-                                table.options.meta?.onShowChildren?.(
-                                    row.original,
-                                )
-                            }
-                            disabled={row.original.type === 'Sub-Activity'}
+                            onClick={() => meta?.onShowChildren?.(row.original)}
+                            disabled={isLastLeaf}
                         >
                             <FolderOpen />
                         </Button>

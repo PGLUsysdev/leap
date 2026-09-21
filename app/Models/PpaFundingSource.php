@@ -33,8 +33,7 @@ class PpaFundingSource extends Model
     // }
 
     protected $fillable = [
-        'id',
-        'aip_entry_id',
+        'aip_output_id',
         'funding_source_id',
         'ps_amount',
         'mooe_amount',
@@ -48,6 +47,28 @@ class PpaFundingSource extends Model
     ];
 
     // hasMany
+    public function aipOutput()
+    {
+        return $this->belongsTo(AipOutput::class, 'aip_output_id');
+    }
+
+    /**
+     * The owning AIP entry, resolved through the output.
+     * (ppa_funding_sources.aip_entry_id was dropped; rows link to
+     * aip_outputs which in turn belong to aip_entries.)
+     */
+    public function aipEntry()
+    {
+        return $this->hasOneThrough(
+            AipEntry::class,
+            AipOutput::class,
+            'id', // FK on aip_outputs matched against aip_output_id below
+            'id', // PK on aip_entries
+            'aip_output_id', // local key on ppa_funding_sources
+            'aip_entry_id', // FK on aip_outputs
+        );
+    }
+
     public function ppmps(): HasMany
     {
         return $this->hasMany(Ppmp::class, 'ppa_funding_source_id');
@@ -57,11 +78,6 @@ class PpaFundingSource extends Model
     public function fundingSource(): BelongsTo
     {
         return $this->belongsTo(FundingSource::class, 'funding_source_id');
-    }
-
-    public function aipEntry(): BelongsTo
-    {
-        return $this->belongsTo(AipEntry::class, 'aip_entry_id');
     }
 
     public function supplementalAip(): BelongsTo

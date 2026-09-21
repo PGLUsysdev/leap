@@ -12,10 +12,11 @@ class PpmpCategory extends Model
     /** @use HasFactory<PpmpCategoryFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'is_non_procurement'];
+    protected $fillable = ['name', 'is_non_procurement', 'is_additional'];
 
     protected $casts = [
         'is_non_procurement' => 'boolean',
+        'is_additional' => 'boolean',
     ];
 
     // hasMany

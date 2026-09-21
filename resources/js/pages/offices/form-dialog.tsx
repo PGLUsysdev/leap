@@ -154,10 +154,10 @@ export default function FormDialog({
     }, [errors]); // This triggers when errors object changes
 
     function onSubmit(data: FormValues) {
-        const paddedCode = data.code.padStart(3, '0');
+        // const paddedCode = data.code.padStart(3, '0');
         const payload = {
             ...data,
-            code: paddedCode,
+            code: data.code,
             parent_id: data.parent_id === 'none' ? null : data.parent_id,
         };
 
@@ -236,12 +236,12 @@ export default function FormDialog({
                             onSubmit={form.handleSubmit(onSubmit)}
                         >
                             <FieldGroup>
-                                <div className="rounded-lg bg-muted p-3 text-center">
-                                    <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                <div className="bg-muted rounded-lg p-3 text-center">
+                                    <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                                         Generated Account Code
                                     </span>
 
-                                    <div className="font-mono text-xl font-bold text-primary">
+                                    <div className="text-primary font-mono text-xl font-bold">
                                         {(() => {
                                             const sectorId =
                                                 form.watch('sector_id');
@@ -274,8 +274,11 @@ export default function FormDialog({
                                             const lguLevelCode =
                                                 selectedLguLevel?.code || '0';
                                             const officeTypeCode =
-                                                selectedOfficeType?.code ||
-                                                '00';
+                                                selectedOfficeType?.code
+                                                    ? String(
+                                                          selectedOfficeType.code,
+                                                      ).padStart(2, '0')
+                                                    : '00';
                                             // Pad suffix to 3 digits for preview
                                             const suffixCode = suffixRaw?.trim()
                                                 ? suffixRaw.padStart(3, '0')
@@ -762,7 +765,7 @@ export default function FormDialog({
                                     )}
                                 />
 
-                                <div className="rounded bg-card p-4">
+                                <div className="bg-card rounded p-4">
                                     {/* final checkbox controller */}
                                     <Controller
                                         name="is_lee"

@@ -1,12 +1,15 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, Trash } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { ChartOfAccount } from '@/types';
 
-const columnHelper = createColumnHelper<ChartOfAccount>();
+const columnHelper = createColumnHelper<
+    ChartOfAccount & { path: string | null }
+>();
 
 const columns = [
-    columnHelper.accessor('account_number', {
+    columnHelper.accessor('path', {
         size: 150,
         header: () => <div className="px-1">Account Number</div>,
         cell: (value) => (
@@ -14,6 +17,76 @@ const columns = [
                 {value.getValue()}
             </div>
         ),
+    }),
+    columnHelper.display({
+        id: 'account_group',
+        size: 180,
+        header: () => <div className="px-1">Account Group</div>,
+        cell: ({ row, table }) => {
+            const path = row.original.path;
+            const ag = path?.split('-')[0];
+            if (!ag) return <div className="px-1 text-wrap">-</div>;
+            const agPath = ag;
+            const metaChart = (table.options.meta as any)?.chartOfAccounts as
+                | (ChartOfAccount & { path: string | null })[]
+                | undefined;
+            const data =
+                metaChart ??
+                (table.options.data as (ChartOfAccount & {
+                    path: string | null;
+                })[]);
+            const title =
+                data.find((c) => c.path === agPath)?.account_title ?? ag;
+            return <div className="px-1 text-wrap">{title}</div>;
+        },
+    }),
+    columnHelper.display({
+        id: 'major_account_group',
+        size: 220,
+        header: () => <div className="px-1">Major Account Group</div>,
+        cell: ({ row, table }) => {
+            const parts = row.original.path?.split('-');
+            const ag = parts?.[0];
+            const mag = parts?.[1];
+            if (!ag || !mag) return <div className="px-1 text-wrap">-</div>;
+            const magPath = `${ag}-${mag}`;
+            const metaChart = (table.options.meta as any)?.chartOfAccounts as
+                | (ChartOfAccount & { path: string | null })[]
+                | undefined;
+            const data =
+                metaChart ??
+                (table.options.data as (ChartOfAccount & {
+                    path: string | null;
+                })[]);
+            const title =
+                data.find((c) => c.path === magPath)?.account_title ?? mag;
+            return <div className="px-1 text-wrap">{title}</div>;
+        },
+    }),
+    columnHelper.display({
+        id: 'sub_major_account_group',
+        size: 220,
+        header: () => <div className="px-1">Sub-Major Account Group</div>,
+        cell: ({ row, table }) => {
+            const parts = row.original.path?.split('-');
+            const ag = parts?.[0];
+            const mag = parts?.[1];
+            const smag = parts?.[2];
+            if (!ag || !mag || !smag)
+                return <div className="px-1 text-wrap">-</div>;
+            const smagPath = `${ag}-${mag}-${smag}`;
+            const metaChart = (table.options.meta as any)?.chartOfAccounts as
+                | (ChartOfAccount & { path: string | null })[]
+                | undefined;
+            const data =
+                metaChart ??
+                (table.options.data as (ChartOfAccount & {
+                    path: string | null;
+                })[]);
+            const title =
+                data.find((c) => c.path === smagPath)?.account_title ?? smag;
+            return <div className="px-1 text-wrap">{title}</div>;
+        },
     }),
     columnHelper.accessor('account_title', {
         size: 300,
@@ -59,19 +132,27 @@ const columns = [
     }),
     columnHelper.accessor('is_postable', {
         size: 100,
-        header: () => <div className="px-1">Postable</div>,
+        header: () => <div className="px-1 text-center">Postable</div>,
         cell: (value) => (
-            <div className="px-1 text-wrap">
-                {value.getValue() ? 'Yes' : 'No'}
+            <div className="flex justify-center">
+                {value.getValue() ? (
+                    <Badge variant="default">true</Badge>
+                ) : (
+                    <Badge variant="destructive">false</Badge>
+                )}
             </div>
         ),
     }),
     columnHelper.accessor('is_active', {
         size: 100,
-        header: () => <div className="px-1">Active</div>,
+        header: () => <div className="px-1 text-center">Active</div>,
         cell: (value) => (
-            <div className="px-1 text-wrap">
-                {value.getValue() ? 'Yes' : 'No'}
+            <div className="flex justify-center">
+                {value.getValue() ? (
+                    <Badge variant="default">true</Badge>
+                ) : (
+                    <Badge variant="destructive">false</Badge>
+                )}
             </div>
         ),
     }),

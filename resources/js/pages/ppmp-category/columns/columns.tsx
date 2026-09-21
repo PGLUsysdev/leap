@@ -1,6 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, Trash } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { PpmpCategory } from '@/types';
 
@@ -15,30 +14,22 @@ const columns = [
         ),
     }),
     columnHelper.accessor('is_non_procurement', {
-        size: 200,
-        header: () => <div className="px-1">Procurement Type</div>,
+        size: 160,
+        header: () => <div className="px-1">Procurement</div>,
         cell: (value) => (
             <div className="px-1 text-wrap">
                 {value.getValue() ? 'Non-Procurement' : 'Procurement'}
             </div>
         ),
     }),
-    columnHelper.accessor('chart_of_account_ppmp_categories', {
-        size: 300,
-        header: () => <div className="px-1">Chart of Accounts</div>,
-        cell: ({ getValue }) => {
-            return (
-                <div className="flex flex-wrap gap-2 px-1">
-                    {getValue().map((item) => {
-                        return (
-                            <Badge key={item.id}>
-                                {item.chart_of_account?.account_title}
-                            </Badge>
-                        );
-                    })}
-                </div>
-            );
-        },
+    columnHelper.accessor('is_additional', {
+        size: 120,
+        header: () => <div className="px-1">Additional</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">
+                {value.getValue() ? 'Yes' : 'No'}
+            </div>
+        ),
     }),
     columnHelper.display({
         id: 'actions',

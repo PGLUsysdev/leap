@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
 import { ChevronRight, Home, Info, Download } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
+import DataTable from '@/components/data-table';
 import {
     Dialog,
     DialogContent,
@@ -9,7 +9,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import type { Ppa, PaginatedResponse, Filter } from '@/types';
@@ -22,6 +22,7 @@ interface PpaImportDialogProps {
     dialogCurrent: Ppa[];
     filters: Filter;
     selectedOfficeId?: number | null;
+    ppaTypes?: Ppa['type'][];
 }
 
 export default function PpaImportDialog({
@@ -31,6 +32,7 @@ export default function PpaImportDialog({
     dialogPpaTree,
     dialogCurrent,
     selectedOfficeId,
+    ppaTypes = [],
 }: PpaImportDialogProps) {
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
         new Map(),
@@ -45,8 +47,8 @@ export default function PpaImportDialog({
 
     const handleOpenChange = (open: boolean) => {
         if (!open) {
-setSelectedItems(new Map());
-}
+            setSelectedItems(new Map());
+        }
 
         onOpenChange(open);
     };
@@ -135,8 +137,8 @@ setSelectedItems(new Map());
         const ids = Array.from(selectedItems.keys());
 
         if (ids.length === 0) {
-return;
-}
+            return;
+        }
 
         setLoading(true);
 
@@ -158,8 +160,8 @@ return;
 
     const paginationData = useMemo(() => {
         if (!dialogPpaTree || Array.isArray(dialogPpaTree)) {
-return undefined;
-}
+            return undefined;
+        }
 
         const { data, ...rest } = dialogPpaTree;
 
@@ -168,8 +170,8 @@ return undefined;
 
     const displayData = useMemo(() => {
         if (!dialogPpaTree || Array.isArray(dialogPpaTree)) {
-return [];
-}
+            return [];
+        }
 
         return dialogPpaTree.data.map((ppa) => ({
             ...ppa,
@@ -226,7 +228,7 @@ return [];
 
                 {/* Breadcrumbs */}
                 <div className="px-4">
-                    <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2 text-sm">
+                    <div className="bg-muted/50 flex items-center gap-2 rounded-md p-2 text-sm">
                         <Button
                             variant="ghost"
                             size="sm"
@@ -273,13 +275,14 @@ return [];
                         onToggle: handleToggle,
                         onToggleAll: handleToggleAll,
                         onShowChildren: handleShowChildren,
+                        ppaTypes: ppaTypes,
                     }}
                 ></DataTable>
 
                 <div className="px-4">
                     <DialogFooter>
                         <div className="flex w-full justify-between">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="text-muted-foreground flex items-center gap-2 text-sm">
                                 <Info className="h-4 w-4" />
                                 {selectedItems.size} items selected
                             </div>

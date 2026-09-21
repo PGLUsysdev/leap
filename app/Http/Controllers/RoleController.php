@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreRoleRequest;
+use App\Http\Requests\UpdateRolePermissionsRequest;
 use App\Http\Requests\UpdateRoleRequest;
 use App\Models\Permission;
 use App\Models\Role;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -24,7 +25,7 @@ class RoleController extends Controller
                 'delete' => request()->user()->can('delete', new Role),
                 'managePermissions' => request()
                     ->user()
-                    ->can('update', new Role),
+                    ->can('updatePermissions', new Role),
             ],
         ]);
     }
@@ -67,6 +68,8 @@ class RoleController extends Controller
 
     public function getPermissions(Role $role)
     {
+        Gate::authorize('viewPermissions', $role);
+
         $permissionNames = $role
             ->permissionRoles()
             ->with('permission')
@@ -76,27 +79,28 @@ class RoleController extends Controller
         return response()->json(['permissions' => $permissionNames]);
     }
 
-    public function updatePermissions(Request $request, Role $role)
+    public function updatePermissions(UpdateRolePermissionsRequest $request, Role $role)
     {
-        $request->validate([
-            'permissions' => 'array',
-            'permissions.*' => 'string',
-        ]);
+        Gate::authorize('updatePermissions', $role);
+
+        $permissions = $request->validated()['permissions'];
 
         $permissionIds = Permission::whereIn(
             'name',
-            $request->permissions,
+            $permissions,
         )->pluck('id', 'name');
 
-        $role->permissionRoles()->delete();
+        DB::transaction(function () use ($role, $permissions, $permissionIds) {
+            $role->permissionRoles()->delete();
 
-        foreach ($request->permissions as $name) {
-            if (isset($permissionIds[$name])) {
-                $role->permissionRoles()->create([
-                    'permission_id' => $permissionIds[$name],
-                ]);
+            foreach ($permissions as $name) {
+                if (isset($permissionIds[$name])) {
+                    $role->permissionRoles()->create([
+                        'permission_id' => $permissionIds[$name],
+                    ]);
+                }
             }
-        }
+        });
 
         return back();
     }

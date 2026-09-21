@@ -1,6 +1,8 @@
+// resources/js/pages/users/columns/columns.tsx
+
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil } from 'lucide-react';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { User } from '@/types';
 
 const columnHelper = createColumnHelper<User>();
@@ -27,37 +29,6 @@ const columns = [
         cell: (info) => (
             <div className="px-1 text-wrap">{info.getValue() ?? '-'}</div>
         ),
-    }),
-    columnHelper.accessor('position', {
-        size: 200,
-        header: () => <div className="px-1">Assigned Position</div>,
-        cell: (info) => {
-            const position = info.getValue();
-
-            if (!position) {
-                return <div className="px-1 text-wrap">-</div>;
-            }
-
-            return (
-                <div className="px-1 text-wrap">
-                    {position.item_number}
-                    {position.ios ? ` — ${position.ios.class}` : ''}
-                </div>
-            );
-        },
-    }),
-    columnHelper.accessor('step', {
-        size: 100,
-        header: () => <div className="px-1">Step</div>,
-        cell: (info) => {
-            const step = info.getValue();
-
-            return (
-                <div className="px-1 text-wrap slashed-zero tabular-nums">
-                    {step ?? '-'}
-                </div>
-            );
-        },
     }),
     columnHelper.accessor('status', {
         size: 100,

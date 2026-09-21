@@ -1,7 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, ExternalLink, FileText } from 'lucide-react';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Pencil, ExternalLink, FileText, List } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
-} from '@/components/base-ui-components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import type { FiscalYear } from '@/types';
 
 const columnHelper = createColumnHelper<FiscalYear>();
@@ -82,7 +82,7 @@ const columns = [
     }),
     columnHelper.display({
         id: 'actions',
-        size: 154,
+        size: 120,
         cell: ({ row, table }) => {
             const initialStatus = row.original.status;
 
@@ -103,7 +103,7 @@ const columns = [
                                 </Button>
                             }
                         ></DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent align="end">
                             <DropdownMenuGroup>
                                 <DropdownMenuLabel>
                                     Change AIP Status
@@ -156,17 +156,52 @@ const columns = [
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    <Button
-                        variant="outline"
-                        title="Generate APP"
-                        size="icon"
-                        disabled={!table.options.meta?.canGenerateApp}
-                        onClick={() => {
-                            table.options.meta?.onGeneratePdf?.(row.original);
-                        }}
-                    >
-                        <FileText />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    title="Reports & Summaries"
+                                >
+                                    <List />
+                                </Button>
+                            }
+                        ></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-45">
+                            <DropdownMenuGroup>
+                                <DropdownMenuLabel>
+                                    Reports & Summaries
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem
+                                    disabled={
+                                        !table.options.meta?.canGenerateApp
+                                    }
+                                    onClick={() => {
+                                        table.options.meta?.onGeneratePdf?.(
+                                            row.original,
+                                        );
+                                    }}
+                                >
+                                    <FileText />
+                                    Generate APP
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    disabled={
+                                        !table.options.meta?.canOpenPpmpSummary
+                                    }
+                                    onClick={() => {
+                                        table.options.meta?.onOpenPpmpSummary?.(
+                                            row.original,
+                                        );
+                                    }}
+                                >
+                                    <ExternalLink />
+                                    Open PPMP Summary
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
                     <Button
                         variant="outline"
@@ -179,20 +214,6 @@ const columns = [
                         onClick={() =>
                             table.options.meta?.onOpen?.(row.original)
                         }
-                    >
-                        <ExternalLink />
-                    </Button>
-
-                    <Button
-                        variant="outline"
-                        title="Open PPMP Summary"
-                        size="icon"
-                        disabled={!table.options.meta?.canOpenPpmpSummary}
-                        onClick={() => {
-                            table.options.meta?.onOpenPpmpSummary?.(
-                                row.original,
-                            );
-                        }}
                     >
                         <ExternalLink />
                     </Button>

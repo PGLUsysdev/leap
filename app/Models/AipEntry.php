@@ -14,21 +14,7 @@ class AipEntry extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        // 'id',
-        'ppa_id',
-        'start_date',
-        'end_date',
-        'expected_output',
-        'supplemental_aip_id',
-        'is_supplemental',
-    ];
-
-    // hasMany
-    public function ppaFundingSources(): HasMany
-    {
-        return $this->hasMany(PpaFundingSource::class, 'aip_entry_id');
-    }
+    protected $fillable = ['ppa_id', 'supplemental_aip_id', 'is_supplemental'];
 
     // belongsTo
     public function ppa(): BelongsTo
@@ -39,5 +25,11 @@ class AipEntry extends Model
     public function supplementalAip(): BelongsTo
     {
         return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
+    }
+
+    // hasMany
+    public function outputs(): HasMany
+    {
+        return $this->hasMany(AipOutput::class, 'aip_entry_id');
     }
 }

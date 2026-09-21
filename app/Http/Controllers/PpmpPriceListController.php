@@ -12,7 +12,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
 class PpmpPriceListController extends Controller
@@ -31,6 +30,7 @@ class PpmpPriceListController extends Controller
                 'chartOfAccountPpmpCategory.chartOfAccount',
                 'chartOfAccountPpmpCategory.ppmpCategory',
             )
+            ->withCount('ppmps')
             ->orderBy('sort_order');
 
         if ($request->filled('search')) {
@@ -39,18 +39,18 @@ class PpmpPriceListController extends Controller
                 $q->where(
                     'unit_of_measurement',
                     'like',
-                    '%' . $searchTerm . '%',
+                    '%'.$searchTerm.'%',
                 )
-                    ->orWhere('description', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('item_number', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('price', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('description', 'like', '%'.$searchTerm.'%')
+                    ->orWhere('item_number', 'like', '%'.$searchTerm.'%')
+                    ->orWhere('price', 'like', '%'.$searchTerm.'%')
                     ->orWhereHas(
                         'chartOfAccountPpmpCategory.ppmpCategory',
                         function ($subQuery) use ($searchTerm) {
                             $subQuery->where(
                                 'name',
                                 'like',
-                                '%' . $searchTerm . '%',
+                                '%'.$searchTerm.'%',
                             );
                         },
                     )
@@ -61,7 +61,7 @@ class PpmpPriceListController extends Controller
                             $subQuery->where(
                                 'account_title',
                                 'like',
-                                '%' . $searchTerm . '%',
+                                '%'.$searchTerm.'%',
                             );
                         },
                     );
@@ -99,10 +99,10 @@ class PpmpPriceListController extends Controller
             'coaCategoryPairs' => $coaCategoryPairs,
             'can' => [
                 'add' => request()->user()->can('create', PpmpPriceList::class),
-                'edit' => request()->user()->can('update', new PpmpPriceList()),
+                'edit' => request()->user()->can('update', new PpmpPriceList),
                 'delete' => request()
                     ->user()
-                    ->can('delete', new PpmpPriceList()),
+                    ->can('delete', new PpmpPriceList),
                 'move' => request()->user()->can('move', PpmpPriceList::class),
             ],
             'filters' => $request->only([
@@ -131,26 +131,26 @@ class PpmpPriceListController extends Controller
                         ->where(
                             'unit_of_measurement',
                             'like',
-                            '%' . $searchTerm . '%',
+                            '%'.$searchTerm.'%',
                         )
                         ->orWhere(
                             'description',
                             'like',
-                            '%' . $searchTerm . '%',
+                            '%'.$searchTerm.'%',
                         )
                         ->orWhere(
                             'item_number',
                             'like',
-                            '%' . $searchTerm . '%',
+                            '%'.$searchTerm.'%',
                         )
-                        ->orWhere('price', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('price', 'like', '%'.$searchTerm.'%')
                         ->orWhereHas(
                             'chartOfAccountPpmpCategory.ppmpCategory',
                             function ($subQuery) use ($searchTerm) {
                                 $subQuery->where(
                                     'name',
                                     'like',
-                                    '%' . $searchTerm . '%',
+                                    '%'.$searchTerm.'%',
                                 );
                             },
                         )
@@ -160,7 +160,7 @@ class PpmpPriceListController extends Controller
                                 $subQuery->where(
                                     'account_title',
                                     'like',
-                                    '%' . $searchTerm . '%',
+                                    '%'.$searchTerm.'%',
                                 );
                             },
                         );
@@ -255,35 +255,31 @@ class PpmpPriceListController extends Controller
     {
         Gate::authorize('delete', $ppmpPriceList);
 
-        // abort(404);
+        try {
+            DB::transaction(function () use ($ppmpPriceList) {
+                $ppmpPriceList->delete();
 
-        // try {
-        //     $ppmpPriceList->delete();
+                // Linked ppmps rows are kept but unlinked via nullOnDelete.
+                // Resequence so sort_order/item_number stay gapless (mirrors reorder()).
+                $all = PpmpPriceList::orderBy('sort_order')->get();
+                foreach ($all as $index => $item) {
+                    $item->update([
+                        'sort_order' => $index + 1,
+                        'item_number' => $index + 1,
+                    ]);
+                }
+            });
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return back()->withErrors([
+                    'database' => 'This record cannot be deleted because it is being used by another part of the system.',
+                ]);
+            }
 
-        //     $all = PpmpPriceList::orderBy('sort_order')->get();
-        //     foreach ($all as $index => $item) {
-        //         $item->update([
-        //             'sort_order' => $index + 1,
-        //             'item_number' => $index + 1,
-        //         ]);
-        //     }
+            throw $e;
+        }
 
-        //     return Redirect::back()->with(
-        //         'success',
-        //         'Price list deleted successfully.',
-        //     );
-        // } catch (QueryException $e) {
-        //     if ($e->getCode() === '23000') {
-        //         return Redirect::back()->withErrors([
-        //             'database' =>
-        //                 'This record cannot be deleted because it is being used by another part of the system.',
-        //         ]);
-        //     }
-
-        //     return Redirect::back()->withErrors([
-        //         'database' => 'An unexpected database error occurred.',
-        //     ]);
-        // }
+        return redirect()->back();
     }
 
     /**

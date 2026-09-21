@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Input } from '@/components/base-ui-components/ui/input';
+import { Input } from '@/components/ui/input';
 import { getCellNumericValue } from '@/lib/ps-calculations';
 import type { ChartOfAccount, Position } from '@/types';
 import type { PsBreakdownItem } from '@/types';
@@ -27,7 +27,7 @@ export default function getColumns(
     const manualLookup = new Map<string, string>();
 
     for (const item of breakdownItems) {
-        const key = `${item.chart_of_account_id}_${item.plantilla_position_id ?? ''}`;
+        const key = `${item.chart_of_account_id}`;
         manualLookup.set(key, item.amount);
     }
 
@@ -143,7 +143,7 @@ export default function getColumns(
                         return (
                             <Input
                                 type="number"
-                                className="w-full rounded border bg-background px-2 py-1 text-sm text-foreground focus:ring-2 focus:ring-primary focus:outline-none"
+                                className="bg-background text-foreground focus:ring-primary w-full rounded border px-2 py-1 text-sm focus:ring-2 focus:outline-none"
                                 defaultValue={storedValue ?? ''}
                                 placeholder="0.00"
                                 onBlur={(e) => {

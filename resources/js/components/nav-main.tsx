@@ -1,15 +1,12 @@
 import { Link } from '@inertiajs/react';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/base-ui-components/ui/sidebar';
+} from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
 
@@ -30,7 +27,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                             return (
                                 <span
                                     key={`sep-${index}`}
-                                    className="px-4 text-muted-foreground"
+                                    className="text-muted-foreground px-4"
                                 >
                                     -
                                 </span>
@@ -43,14 +40,12 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                 className="mr-4 py-[0.1rem]"
                             >
                                 <SidebarMenuButton
-                                    asChild
+                                    render={<Link href={item.href} prefetch />}
                                     isActive={isCurrentUrl(item.href)}
                                     tooltip={{ children: item.title }}
                                 >
-                                    <Link href={item.href} prefetch>
-                                        {item.icon && <item.icon />}
-                                        <span>{item.title}</span>
-                                    </Link>
+                                    {item.icon && <item.icon />}
+                                    <span>{item.title}</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         );

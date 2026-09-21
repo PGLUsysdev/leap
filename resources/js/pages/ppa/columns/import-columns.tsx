@@ -94,7 +94,7 @@ const columns = [
                     className={`flex flex-col py-1 ${isAdded ? 'opacity-50' : ''}`}
                 >
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        <span className="text-muted-foreground text-[10px] font-bold uppercase">
                             {ppa.type}
                         </span>
                         {isAdded && (
@@ -133,7 +133,12 @@ const columns = [
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
             const ppa = row.original;
-            const canOpen = ppa.type !== 'Sub-Activity';
+            const ppaTypes = meta?.ppaTypes || [];
+            const isLastLeaf =
+                ppaTypes.length > 0
+                    ? ppa.type === ppaTypes[ppaTypes.length - 1]
+                    : false;
+            const canOpen = !isLastLeaf;
             const childrenCount = ppa.children_count;
 
             return (

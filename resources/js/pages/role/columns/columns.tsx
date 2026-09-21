@@ -1,6 +1,8 @@
+// resources/js/pages/role/columns/columns.tsx
+
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, Shield, Trash } from 'lucide-react';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { Role } from '@/types';
 
 const columnHelper = createColumnHelper<Role>();

@@ -12,9 +12,9 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/base-ui-components/ui/alert-dialog';
-import { Button } from '@/components/base-ui-components/ui/button';
-import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -22,7 +22,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     Field,
     // FieldDescription,
@@ -33,10 +33,10 @@ import {
     // FieldSeparator,
     FieldSet,
     // FieldTitle,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import { ScrollArea } from '@/components/base-ui-components/ui/scroll-area';
-import { Textarea } from '@/components/base-ui-components/ui/textarea';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Command,
     CommandDialog,
@@ -54,7 +54,7 @@ const formSchema = z.object({
     office_id: z.string().min(1, 'Implementing office is required'),
     name: z.string().min(1, 'Name is required'),
     code_suffix: z.string().optional(),
-    type: z.enum(['Program', 'Project', 'Activity', 'Sub-Activity']),
+    type: z.string(),
     is_active: z.boolean(),
 });
 
@@ -70,6 +70,7 @@ interface PpaFormDialogProps {
     offices: Office[];
     auth: Auth;
     selectedOfficeId?: number | null;
+    ppaTypePadding: Record<string, number>;
 }
 
 export default function PpaFormDialog({
@@ -82,6 +83,7 @@ export default function PpaFormDialog({
     offices,
     auth,
     selectedOfficeId,
+    ppaTypePadding = {},
 }: PpaFormDialogProps) {
     const isEditing = mode === 'edit';
     const isAddingChild = mode === 'add' && !!parentPpa;
@@ -110,8 +112,8 @@ export default function PpaFormDialog({
 
     useEffect(() => {
         if (!isOpen) {
-return;
-}
+            return;
+        }
 
         if (isEditing && editPpa) {
             form.reset({
@@ -147,41 +149,28 @@ return;
     const getCodePreview = () => {
         // For add mode, show type-specific auto-generated placeholder
         if (!isEditing) {
-            // Determine placeholder based on type
-            let suffix: string;
-
-            switch (targetType) {
-                case 'Program':
-                    suffix = 'XXX'; // 3 digits
-                    break;
-                case 'Project':
-                    suffix = 'XX'; // 2 digits
-                    break;
-                case 'Activity':
-                    suffix = 'XX'; // 2 digits
-                    break;
-                case 'Sub-Activity':
-                    suffix = 'X'; // 1 digit, dynamic
-                    break;
-                default:
-                    suffix = 'XXX';
-            }
+            const padding = ppaTypePadding?.[targetType] || 0;
+            const suffixPlaceholder = padding > 0 ? 'X'.repeat(padding) : 'X';
 
             if (isAddingChild && parentPpa?.full_code) {
-                return `${parentPpa.full_code}-${suffix}`;
+                return `${parentPpa.full_code}-${suffixPlaceholder}`;
             }
 
             const officeFullCode = offices.find(
                 (o) => o.id === watchedOfficeId,
             )?.full_code;
 
-            return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
+            return `${officeFullCode || '0000-000-0-00-000'}-${suffixPlaceholder}`;
         }
 
-        // For edit mode, show the actual suffix
-        const suffix = codeSuffix || '000';
+        // For edit mode, show the actual suffix padded
+        const currentType = editPpa?.type ?? targetType;
+        const padding = ppaTypePadding?.[currentType] || 0;
+        const rawSuffix = codeSuffix || '';
+        const suffix =
+            padding > 0 ? rawSuffix.padStart(padding, '0') : rawSuffix || '0';
 
-        if (editPpa?.full_code && editPpa.type !== 'Program') {
+        if (editPpa?.parent_id && editPpa.full_code) {
             const baseCode = editPpa.full_code
                 .split('-')
                 .slice(0, -1)
@@ -257,10 +246,18 @@ return;
 
     return (
         <>
-            <Dialog open={isOpen} onOpenChange={onOpenChange} modal={isSubmitting}>
+            <Dialog
+                open={isOpen}
+                onOpenChange={onOpenChange}
+                modal={isSubmitting}
+            >
                 <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>{isEditing ? `Edit ${targetType}` : `Add ${targetType}`}</DialogTitle>
+                        <DialogTitle>
+                            {isEditing
+                                ? `Edit ${targetType}`
+                                : `Add ${targetType}`}
+                        </DialogTitle>
                         <DialogDescription>
                             {isAddingChild
                                 ? `Creating under: ${parentPpa?.name}`
@@ -272,44 +269,45 @@ return;
 
                     <div className="flex min-h-0 flex-1">
                         <ScrollArea className="w-full pr-3">
-                        <form
-                            id="ppa-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
-                            <FieldGroup>
-                                <div className="grid grid-cols-3 gap-6">
-                                    <div className="col-span-2 flex flex-col gap-1 rounded-lg bg-card p-3">
-                                        <div className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
-                                            AIP Reference Code Preview
+                            <form
+                                id="ppa-form"
+                                onSubmit={form.handleSubmit(onSubmit)}
+                            >
+                                <FieldGroup>
+                                    <div className="grid grid-cols-3 gap-6">
+                                        <div className="bg-card col-span-2 flex flex-col gap-1 rounded-lg p-3">
+                                            <div className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                                                AIP Reference Code Preview
+                                            </div>
+
+                                            <code className="bg-muted relative rounded px-[0.3rem] py-[0.2rem] font-mono text-xl font-semibold">
+                                                {getCodePreview()}
+                                            </code>
                                         </div>
 
-                                        <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xl font-semibold">
-                                            {getCodePreview()}
-                                        </code>
-                                    </div>
+                                        <div className="bg-card col-span-1 rounded-lg p-3">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                                                    Entry Type
+                                                </span>
 
-                                    <div className="col-span-1 rounded-lg bg-card p-3">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
-                                                Entry Type
-                                            </span>
-
-                                            <span className="w-fit rounded border bg-background px-2 py-1 text-sm font-bold text-primary shadow-sm">
-                                                {targetType}
-                                            </span>
+                                                <span className="bg-background text-primary w-fit rounded border px-2 py-1 text-sm font-bold shadow-sm">
+                                                    {targetType}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* final textarea */}
-                                <Controller
-                                    name="name"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            
+                                    {/* final textarea */}
+                                    <Controller
+                                        name="name"
+                                        control={form.control}
+                                        render={({ field, fieldState }) => (
+                                            <Field
+                                                data-invalid={
+                                                    fieldState.invalid
+                                                }
+                                            >
                                                 <FieldLabel
                                                     htmlFor={field.name}
                                                     className="gap-1"
@@ -337,19 +335,19 @@ return;
                                                         ]}
                                                     />
                                                 )}
-                                            
-                                        </Field>
-                                    )}
-                                />
+                                            </Field>
+                                        )}
+                                    />
 
-                                <Controller
-                                    name="office_id"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            
+                                    <Controller
+                                        name="office_id"
+                                        control={form.control}
+                                        render={({ field, fieldState }) => (
+                                            <Field
+                                                data-invalid={
+                                                    fieldState.invalid
+                                                }
+                                            >
                                                 <FieldLabel
                                                     htmlFor={field.name}
                                                     className="gap-1"
@@ -463,29 +461,27 @@ return;
                                                         ]}
                                                     />
                                                 )}
-                                            
-                                        </Field>
-                                    )}
-                                />
+                                            </Field>
+                                        )}
+                                    />
 
-                                {/* final text input controller - only for add mode */}
-                                {!isEditing && (
-                                    <Controller
-                                        name="code_suffix"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => (
-                                            <Field
-                                                data-invalid={
-                                                    fieldState.invalid
-                                                }
-                                            >
-                                                
+                                    {/* final text input controller - only for add mode */}
+                                    {!isEditing && (
+                                        <Controller
+                                            name="code_suffix"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
                                                     <FieldLabel
                                                         htmlFor={field.name}
                                                         className="gap-1"
                                                     >
                                                         Code Suffix
-                                                        <span className="text-xs text-muted-foreground">
+                                                        <span className="text-muted-foreground text-xs">
                                                             (Auto-generated,
                                                             read-only)
                                                         </span>
@@ -511,20 +507,18 @@ return;
                                                             ]}
                                                         />
                                                     )}
-                                                
-                                            </Field>
-                                        )}
-                                    />
-                                )}
+                                                </Field>
+                                            )}
+                                        />
+                                    )}
 
-                                <div className="rounded bg-card p-4">
-                                    {/* final checkbox controller */}
-                                    <Controller
-                                        name="is_active"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => (
-                                            <FieldSet>
-                                                
+                                    <div className="bg-card rounded p-4">
+                                        {/* final checkbox controller */}
+                                        <Controller
+                                            name="is_active"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <FieldSet>
                                                     <FieldLegend variant="label">
                                                         Status
                                                     </FieldLegend>
@@ -567,32 +561,46 @@ return;
                                                             ]}
                                                         />
                                                     )}
-                                                
-                                            </FieldSet>
-                                        )}
+                                                </FieldSet>
+                                            )}
+                                        />
+                                    </div>
+
+                                    {/* Hidden field to ensure type is always submitted */}
+                                    <input
+                                        {...form.register('type')}
+                                        type="hidden"
                                     />
-                                </div>
+                                </FieldGroup>
+                            </form>
+                        </ScrollArea>
+                    </div>
 
-                                {/* Hidden field to ensure type is always submitted */}
-                                <input
-                                    {...form.register('type')}
-                                    type="hidden"
-                                />
-                            </FieldGroup>
-                        </form>
-                    </ScrollArea>
-                </div>
-
-                <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-                        Cancel
-                    </Button>
-                    <Button type="submit" form="ppa-form" disabled={isSubmitting}>
-                        {isSubmitting ? (isEditing ? 'Saving...' : 'Creating...') : isEditing ? 'Save Changes' : 'Create PPA'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            form="ppa-form"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting
+                                ? isEditing
+                                    ? 'Saving...'
+                                    : 'Creating...'
+                                : isEditing
+                                  ? 'Save Changes'
+                                  : 'Create PPA'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <AlertDialog
                 open={isErrorAlertOpen}
@@ -608,7 +616,7 @@ return;
                             {errorMessage}
                         </AlertDialogDescription>
 
-                        <div className="mt-2 text-sm text-muted-foreground">
+                        <div className="text-muted-foreground mt-2 text-sm">
                             The AIP Reference Code combination (Office + Type +
                             Suffix) must be unique. Please change the suffix and
                             try again.

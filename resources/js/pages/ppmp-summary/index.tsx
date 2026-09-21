@@ -1,10 +1,7 @@
 // import { type BreadcrumbItem } from '@/types';
 import { useMemo } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+import DataTable from '@/components/data-table';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { index as aipIndex } from '@/routes/aip';
 import { getPriceListColumns } from './columns/columns';
 
@@ -15,7 +12,7 @@ interface PpmpSummaryPageProps {
 
 export default function PpmpSummaryPage({
     priceLists,
-    fiscalYear: fiscalYear,
+    fiscalYear,
 }: PpmpSummaryPageProps) {
     // console.log(priceLists);
 

@@ -1,3 +1,5 @@
+// resources/js/lib/permissions.ts
+
 export interface ScopedPermission {
     key: string;
     label: string;
@@ -14,6 +16,14 @@ export interface PermissionNode {
 }
 
 export const permissionTree: PermissionNode[] = [
+    {
+        key: 'dashboard',
+        label: 'Dashboard',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+        ],
+    },
     {
         key: 'fiscal-year',
         label: 'AIP',
@@ -261,6 +271,16 @@ export const permissionTree: PermissionNode[] = [
         ],
     },
     {
+        key: 'ppmp-category-mapping',
+        label: 'PPMP Category Mapping',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
         key: 'chart-of-account',
         label: 'Chart of Account',
         permissions: [],
@@ -268,6 +288,16 @@ export const permissionTree: PermissionNode[] = [
             { key: 'view', label: 'View', scopes: [], disableOption: true },
             { key: 'add', label: 'Add', scopes: [], disableOption: true },
             { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'expense-class-code',
+        label: 'Expense Class Code',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
             { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
         ],
     },
@@ -389,13 +419,51 @@ export const permissionTree: PermissionNode[] = [
             {
                 key: 'edit.office',
                 label: 'Edit Office',
-                scopes: ['own', 'all'],
+                scopes: ['all'],
                 disableOption: true,
             },
             {
                 key: 'edit.role',
                 label: 'Edit Role',
                 scopes: ['own', 'all'],
+                disableOption: true,
+            },
+        ],
+    },
+    {
+        key: 'imports',
+        label: 'Imports',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View Hub', scopes: [], disableOption: true },
+            {
+                key: 'category',
+                label: 'Category Import',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'category-coa-mapping',
+                label: 'Category–COA Mapping',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'price-list',
+                label: 'Price List Import',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'price-list-quantities',
+                label: 'Price List Quantities',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'aip-summary',
+                label: 'AIP Summary Import',
+                scopes: [],
                 disableOption: true,
             },
         ],

@@ -3,55 +3,79 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePpaFundingSourceRequest;
-use App\Models\AipEntry;
+use App\Http\Requests\UpdatePpaFundingSourceRequest;
+use App\Models\AipOutput;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
+use Illuminate\Validation\ValidationException;
 
 class PpaFundingSourceController extends Controller
 {
-    public function store(
-        StorePpaFundingSourceRequest $request,
-        AipEntry $aipEntry,
-    ) {
+    public function store(StorePpaFundingSourceRequest $request, AipOutput $aipOutput)
+    {
         $validated = $request->validated();
-
         $saipId = $validated['supplemental_aip_id'] ?? null;
 
-        $source = $aipEntry->ppaFundingSources()->create([
+        $exists = $aipOutput
+            ->fundingSources()
+            ->where('funding_source_id', $validated['funding_source_id'])
+            ->when(
+                $saipId,
+                fn ($query) => $query->where('supplemental_aip_id', $saipId),
+                fn ($query) => $query->whereNull('supplemental_aip_id'),
+            )
+            ->exists();
+
+        if ($exists) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'funding_source_id' => 'This funding source is already assigned to this output.',
+                ]);
+        }
+
+        $aipOutput->fundingSources()->create([
             'funding_source_id' => $validated['funding_source_id'],
-            'ps_amount' => $validated['ps_amount'],
-            'mooe_amount' => $validated['mooe_amount'],
-            'fe_amount' => $validated['fe_amount'],
-            'co_amount' => $validated['co_amount'],
-            'ccet_adaptation' => $validated['ccet_adaptation'] ?? 0,
-            'ccet_mitigation' => $validated['ccet_mitigation'] ?? 0,
-            'cc_typology_id' => $validated['cc_typology_id'] ?? null,
-            'supplemental_aip_id' => $saipId ?: null,
-            'is_supplemental' => (bool) $saipId,
         ]);
-
-        // PS Pool sync: if the parent PPA is the PS pool,
-        // auto-calculate ps_amount onto the GF Proper funding source (id=1),
-        // creating it if needed.
-        PsBreakdownController::syncPoolPsAmount($aipEntry, $saipId);
-
-        return redirect()->back();
     }
 
-    public function destroy(
-        AipEntry $aipEntry,
-        PpaFundingSource $ppaFundingSource,
-    ) {
+    public function destroy(AipOutput $aipOutput, PpaFundingSource $ppaFundingSource)
+    {
+        if ($ppaFundingSource->aip_output_id !== $aipOutput->id) {
+            abort(404, 'Funding source does not belong to this output.');
+        }
+
         $user = auth()->user();
 
-        if (! $user->can('editFundingSources', $aipEntry)) {
+        if (! $user->can('editFundingSources', $aipOutput->aipEntry)) {
             abort(403, 'You do not have permission to edit funding sources.');
         }
 
         Ppmp::where('ppa_funding_source_id', $ppaFundingSource->id)->delete();
 
         $ppaFundingSource->delete();
+    }
 
-        return response()->json(['success' => true]);
+    /**
+     * Update PS and FE amounts (manual only).
+     */
+    public function update(
+        UpdatePpaFundingSourceRequest $request,
+        PpaFundingSource $ppaFundingSource,
+    ) {
+        $validated = $request->validated();
+
+        // A PS pool holds only a ps_amount — reject every other amount.
+        if ($ppaFundingSource->aipOutput?->aipEntry?->ppa?->is_ps_pool) {
+            foreach (['fe_amount', 'ccet_adaptation', 'ccet_mitigation'] as $field) {
+                if (array_key_exists($field, $validated) && (float) $validated[$field] !== 0.0) {
+                    throw ValidationException::withMessages([
+                        $field => 'A PS Pool can only hold Personal Services (PS) amounts.',
+                    ]);
+                }
+            }
+        }
+
+        $ppaFundingSource->update($validated);
     }
 }

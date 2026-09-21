@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 
 const formatNumber = (val: string | null) => {
     if (!val) {
-return '-';
-}
+        return '-';
+    }
 
     const num = parseFloat(val);
 
@@ -176,8 +176,8 @@ const columns = [
                     const fs = row.original.current_fs;
 
                     if (!fs) {
-return <div className="text-right">-</div>;
-}
+                        return <div className="text-right">-</div>;
+                    }
 
                     const total = new Decimal(fs.co_amount || 0)
                         .plus(fs.fe_amount || 0)

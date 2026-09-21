@@ -43,10 +43,16 @@ export function DeleteDialog({
     // console.log(isLoading);
 
     return (
-        <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-            <AlertDialogContent
-                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
-            >
+        <AlertDialog
+            open={isOpen}
+            onOpenChange={(open) => {
+                if (!open && isLoading) {
+                    return;
+                }
+                onOpenChange(open);
+            }}
+        >
+            <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>{title}</AlertDialogTitle>
 

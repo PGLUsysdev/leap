@@ -47,8 +47,7 @@ export default function PasskeyVerify({
                     variant="outline"
                     className="w-full"
                     onClick={verify}
-                    // disabled={isLoading}
-                    disabled={true}
+                    disabled={isLoading}
                 >
                     {isLoading ? <Spinner /> : <KeyRound className="h-4 w-4" />}
                     {isLoading
@@ -65,7 +64,7 @@ export default function PasskeyVerify({
                     <Separator className="w-full" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
+                    <span className="bg-background text-muted-foreground px-2">
                         {separator ?? 'Or continue with email'}
                     </span>
                 </div>

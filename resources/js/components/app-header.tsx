@@ -1,10 +1,25 @@
 import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import { Fragment } from 'react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { Breadcrumbs } from '@/components/breadcrumbs';
+import {
+    Breadcrumb,
+    BreadcrumbEllipsis,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu as BaseDropdownMenu,
+    DropdownMenuContent as BaseDropdownMenuContent,
+    DropdownMenuItem as BaseDropdownMenuItem,
+    DropdownMenuTrigger as BaseDropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,11 +47,12 @@ import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
+import { collapseBreadcrumbs } from '@/lib/breadcrumb-collapse';
 import { dashboard } from '@/routes';
-import type { BreadcrumbItem, NavItem } from '@/types';
+import type { BreadcrumbItem as BreadcrumbItemType, NavItem } from '@/types';
 
 type Props = {
-    breadcrumbs?: BreadcrumbItem[];
+    breadcrumbs?: BreadcrumbItemType[];
 };
 
 const mainNavItems: NavItem[] = [
@@ -68,26 +84,56 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const { visibleHead, hidden, tail, showEllipsis } = collapseBreadcrumbs(
+        breadcrumbs,
+        4,
+    );
+
+    const renderItem = (item: BreadcrumbItemType, isLast: boolean) => (
+        <BreadcrumbItem
+            key={`${item.title}-${item.href}`}
+            className="min-w-0 shrink-0"
+        >
+            {isLast ? (
+                <BreadcrumbPage
+                    className="max-w-[14rem] truncate lg:max-w-[18rem]"
+                    title={item.title}
+                >
+                    {item.title}
+                </BreadcrumbPage>
+            ) : (
+                <BreadcrumbLink
+                    render={<Link href={item.href} />}
+                    className="max-w-[14rem] truncate lg:max-w-[18rem]"
+                    title={item.title}
+                >
+                    {item.title}
+                </BreadcrumbLink>
+            )}
+        </BreadcrumbItem>
+    );
 
     return (
         <>
-            <div className="border-b border-sidebar-border/80">
+            <div className="border-sidebar-border/80 border-b">
                 <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
                     {/* Mobile Menu */}
                     <div className="lg:hidden">
                         <Sheet>
-                            <SheetTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="mr-2 h-[34px] w-[34px]"
-                                >
-                                    <Menu className="h-5 w-5" />
-                                </Button>
+                            <SheetTrigger
+                                render={
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="mr-2 h-[34px] w-[34px]"
+                                    />
+                                }
+                            >
+                                <Menu className="h-5 w-5" />
                             </SheetTrigger>
                             <SheetContent
                                 side="left"
-                                className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar"
+                                className="bg-sidebar flex h-full w-64 flex-col items-stretch justify-between"
                             >
                                 <SheetTitle className="sr-only">
                                     Navigation menu
@@ -193,7 +239,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                 href={toUrl(item.href)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="group inline-flex h-9 w-9 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium text-accent-foreground ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                                                className="group text-accent-foreground ring-offset-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 w-9 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
                                             >
                                                 <span className="sr-only">
                                                     {item.title}
@@ -211,21 +257,23 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             </div>
                         </div>
                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className="size-10 rounded-full p-1"
-                                >
-                                    <Avatar className="size-8 overflow-hidden rounded-full">
-                                        <AvatarImage
-                                            src={auth.user?.avatar}
-                                            alt={auth.user?.name}
-                                        />
-                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                                            {getInitials(auth.user?.name ?? '')}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                </Button>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        variant="ghost"
+                                        className="size-10 rounded-full p-1"
+                                    />
+                                }
+                            >
+                                <Avatar className="size-8 overflow-hidden rounded-full">
+                                    <AvatarImage
+                                        src={auth.user?.avatar}
+                                        alt={auth.user?.name}
+                                    />
+                                    <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                        {getInitials(auth.user?.name ?? '')}
+                                    </AvatarFallback>
+                                </Avatar>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end">
                                 {auth.user && (
@@ -237,9 +285,91 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 </div>
             </div>
             {breadcrumbs.length > 1 && (
-                <div className="flex w-full border-b border-sidebar-border/70">
-                    <div className="mx-auto flex h-12 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl">
-                        <Breadcrumbs breadcrumbs={breadcrumbs} />
+                <div className="border-sidebar-border/70 flex w-full overflow-hidden border-b">
+                    <div className="mx-auto flex h-12 w-full min-w-0 items-center justify-start overflow-hidden px-4 text-neutral-500 md:max-w-7xl">
+                        <Breadcrumb className="min-w-0 flex-1 overflow-hidden">
+                            <BreadcrumbList className="flex-nowrap overflow-hidden">
+                                {showEllipsis ? (
+                                    <>
+                                        {visibleHead.map((item) => (
+                                            <Fragment
+                                                key={`head-${item.title}-${item.href}`}
+                                            >
+                                                {renderItem(item, false)}
+                                                <BreadcrumbSeparator />
+                                            </Fragment>
+                                        ))}
+                                        <BreadcrumbItem>
+                                            <BaseDropdownMenu>
+                                                <BaseDropdownMenuTrigger
+                                                    render={
+                                                        <button
+                                                            type="button"
+                                                            className="hover:bg-accent hover:text-accent-foreground flex items-center justify-center rounded-md p-1"
+                                                            aria-label="More breadcrumbs"
+                                                        />
+                                                    }
+                                                >
+                                                    <BreadcrumbEllipsis />
+                                                </BaseDropdownMenuTrigger>
+                                                <BaseDropdownMenuContent
+                                                    align="start"
+                                                    sideOffset={8}
+                                                    className="w-60 max-w-[40rem]"
+                                                >
+                                                    {hidden.map((item) => (
+                                                        <BaseDropdownMenuItem
+                                                            key={`hidden-${item.title}-${item.href}`}
+                                                            render={
+                                                                <Link
+                                                                    href={
+                                                                        item.href
+                                                                    }
+                                                                />
+                                                            }
+                                                        >
+                                                            <span className="truncate">
+                                                                {item.title}
+                                                            </span>
+                                                        </BaseDropdownMenuItem>
+                                                    ))}
+                                                </BaseDropdownMenuContent>
+                                            </BaseDropdownMenu>
+                                        </BreadcrumbItem>
+                                        <BreadcrumbSeparator />
+                                        {tail.map((item, idx) => {
+                                            const isLast =
+                                                idx === tail.length - 1;
+                                            return (
+                                                <Fragment
+                                                    key={`tail-${item.title}-${item.href}`}
+                                                >
+                                                    {renderItem(item, isLast)}
+                                                    {!isLast && (
+                                                        <BreadcrumbSeparator />
+                                                    )}
+                                                </Fragment>
+                                            );
+                                        })}
+                                    </>
+                                ) : (
+                                    breadcrumbs.map((item, index) => {
+                                        const isLast =
+                                            index === breadcrumbs.length - 1;
+                                        return (
+                                            <Fragment
+                                                key={`${item.title}-${index}`}
+                                            >
+                                                {renderItem(item, isLast)}
+                                                {!isLast && (
+                                                    <BreadcrumbSeparator />
+                                                )}
+                                            </Fragment>
+                                        );
+                                    })
+                                )}
+                            </BreadcrumbList>
+                        </Breadcrumb>
                     </div>
                 </div>
             )}

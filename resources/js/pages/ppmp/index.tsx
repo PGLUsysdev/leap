@@ -1,385 +1,558 @@
-import { router, usePage } from '@inertiajs/react';
+// resources\js\pages\ppmp\index.tsx
+
+import { router } from '@inertiajs/react';
 import { Decimal } from 'decimal.js';
-import { Plus, FileDown, Sheet, FileText, Printer } from 'lucide-react';
-import { useState, useMemo } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+import { Check, Filter, FileUp } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import DataTable from '@/components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    // DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-    SelectLabel,
-} from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ExpenseAccountSummaryDialog from '@/pages/ppmp/expense-account-summary-dialog';
-import PpmpFormDialog from '@/pages/ppmp/form-dialog';
-import NewPpmpFormDialog from '@/pages/ppmp/new-ppmp-form-dialog';
-import {
-    exportToExcel,
-    exportToPDF,
-    exportToPrint,
-} from '@/pages/ppmp/utils/export';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
+import { PdfPreviewPane } from '@/lib/pdf/pdf-preview-pane';
+import { usePdfPreview } from '@/lib/pdf/use-pdf-preview';
+import { formatCurrency } from '@/lib/utils';
+import FormDialog from '@/pages/ppmp/form-dialog';
 import { index, summary } from '@/routes/aip';
 import type {
-    FiscalYear,
-    Ppmp,
-    ChartOfAccount,
     AipEntry,
+    ChartOfAccount,
+    FiscalYear,
+    PpaFundingSource,
     PpmpCategory,
-    FundingSource,
     PriceList,
-    SharedData,
+    Ppmp,
+    PaginatedResponse,
+    // FundingSource,
+    // SharedData,
 } from '@/types';
-import columns from './columns/columns';
+import ppmpColumns from './columns/ppmp-columns';
+// import { router, usePage } from '@inertiajs/react';
+// import { Decimal } from 'decimal.js';
+// import { DeleteDialog } from '@/components/delete-dialog';
+// import {
+//     AlertDialog,
+//     AlertDialogAction,
+//     AlertDialogContent,
+//     AlertDialogDescription,
+//     AlertDialogFooter,
+//     AlertDialogHeader,
+//     AlertDialogTitle,
+// } from '@/components/ui/alert-dialog';
+// import { Button } from '@/components/ui/button';
+// import {
+//     DropdownMenu,
+//     DropdownMenuContent,
+//     DropdownMenuGroup,
+//     DropdownMenuItem,
+//     DropdownMenuTrigger,
+// } from '@/components/ui/dropdown-menu';
+// import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// import ExpenseAccountSummaryDialog from '@/pages/ppmp/expense-account-summary-dialog';
+// import NewPpmpFormDialog from '@/pages/ppmp/new-ppmp-form-dialog';
+// import {
+//     exportToExcel,
+//     exportToPDF,
+//     exportToPrint,
+// } from '@/pages/ppmp/utils/export';
+// import columns from './columns/columns';
 
 interface PpmpPageProps {
-    fiscalYear: FiscalYear;
     aipEntry: AipEntry;
-    allAipEntries?: AipEntry[];
-    ppmps: Ppmp[];
-    priceLists: PriceList[];
-    chartOfAccounts: ChartOfAccount[];
-    ppmpCategories: PpmpCategory[];
-    fundingSources: FundingSource[];
-    currentTab: string;
-    initialChoice: 'MOOE' | 'CO';
-    initialPpaFundingSourceId: number;
-    can?: {
-        addPriceList: boolean;
-        viewSupplemental: boolean;
-        export: boolean;
-        generateSummary: boolean;
-        showSummaryAll?: boolean;
-    };
-    selectedOfficeId?: string;
+    categories: PaginatedResponse<PpmpCategory>;
+    chartOfAccounts: PaginatedResponse<ChartOfAccount>;
+    fiscalYear: FiscalYear;
+    ppaFundingSource: PpaFundingSource;
+    ppmpItems: Ppmp[];
+    priceLists: PaginatedResponse<PriceList>;
+
+    // fiscalYear: FiscalYear;
+    // allAipEntries?: AipEntry[];
+    // fundingSources: FundingSource[];
+    // currentTab: string;
+    // initialChoice: 'MOOE' | 'CO';
+    // initialPpaFundingSourceId: number;
+    // can?: {
+    //     addPriceList: boolean;
+    //     viewSupplemental: boolean;
+    //     export: boolean;
+    //     generateSummary: boolean;
+    //     showSummaryAll?: boolean;
+    // };
+    // selectedOfficeId?: string;
+    // fundingSourceId: number;
+    // fundingSource: FundingSource;
 }
 
 export default function PpmpPage({
-    fiscalYear,
     aipEntry,
-    allAipEntries = [],
-    ppmps,
-    // isSupplemental = false,
-    priceLists,
+    categories,
     chartOfAccounts,
-    ppmpCategories,
-    fundingSources,
-    initialChoice,
-    initialPpaFundingSourceId,
-    currentTab,
-    can,
-    selectedOfficeId,
+    fiscalYear,
+    ppaFundingSource,
+    ppmpItems,
+    priceLists,
+
+    // fiscalYear,
+    // allAipEntries = [],
+    // ppmps,
+    // fundingSources,
+    // initialChoice,
+    // initialPpaFundingSourceId,
+    // currentTab,
+    // can,
+    // selectedOfficeId,
+    // fundingSourceId,
+    // isSupplemental = false,
 }: PpmpPageProps) {
-    const { auth } = usePage<SharedData>().props;
+    const jsonString = JSON.stringify({
+        aipEntry,
+        categories,
+        chartOfAccounts,
+        fiscalYear,
+        ppaFundingSource,
+        ppmpItems,
+        priceLists,
+    });
 
-    const buildQuery = (extra: Record<string, any> = {}) => {
-        const query = { ...extra };
+    // 2. Calculate size in Bytes, KB, and MB
+    const bytes = new Blob([jsonString]).size;
+    const kilobytes = (bytes / 1024).toFixed(2);
+    const megabytes = (bytes / (1024 * 1024)).toFixed(2);
 
-        if (can?.showSummaryAll && selectedOfficeId) {
-            query.selected_office_id = selectedOfficeId;
+    console.log(
+        `Props Payload Size: ${bytes} B | ${kilobytes} KB | ${megabytes} MB`,
+    );
+
+    // Counter so editing multiple cells at once keeps the indicator on
+    const [savingCount, setSavingCount] = useState(0);
+    const isSaving = savingCount > 0;
+    const [openFormDialog, setOpenFormDialog] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [selectedPpmp, setSelectedPpmp] = useState<Ppmp | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [openPdfPreview, setOpenPdfPreview] = useState(false);
+    const [openCoaPdfPreview, setOpenCoaPdfPreview] = useState(false);
+
+    // Department Head signatory — left, name bold underlined, position regular as-is
+    const [deptHead, setDeptHead] = useState('');
+    const [deptHeadPosition, setDeptHeadPosition] = useState('Department Head');
+    const [debouncedSignatories, setDebouncedSignatories] = useState({
+        deptHead: '',
+        deptHeadPosition: 'Department Head',
+    });
+
+    useEffect(() => {
+        const id = setTimeout(() => {
+            setDebouncedSignatories({ deptHead, deptHeadPosition });
+        }, 300);
+
+        return () => clearTimeout(id);
+    }, [deptHead, deptHeadPosition]);
+
+    function handlePpmpOpenChange(nextOpen: boolean) {
+        if (!nextOpen) {
+            setDeptHead('');
+            setDeptHeadPosition('Department Head');
+            setDebouncedSignatories({
+                deptHead: '',
+                deptHeadPosition: 'Department Head',
+            });
         }
 
-        return query;
-    };
-
-    const initialFsId = useMemo(() => {
-        const bridge = aipEntry.ppa_funding_sources?.find(
-            (pfs) => pfs.id === Number(initialPpaFundingSourceId),
-        );
-
-        return bridge?.funding_source_id || 0;
-    }, [aipEntry, initialPpaFundingSourceId]);
-
-    const [selectedExpenseClass, setSelectedExpenseClass] =
-        useState(initialChoice);
-    const [selectedFundingSourceId, setSelectedFundingSourceId] =
-        useState(initialFsId);
-
-    const [open, setOpen] = useState(false);
-    const [openAlert, setOpenAlert] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [selectedSource, setSelectedSource] = useState<Ppmp | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [
-        openExpenseAccountSummaryDialog,
-        setOpenExpenseAccountSummaryDialog,
-    ] = useState(false);
-    const [openNewPpmpForm, setOpenNewPpmpForm] = useState(false);
-
-    const activeAipEntry = useMemo(() => {
-        if (currentTab === 'original') {
-            return allAipEntries.find((e) => !e.supplemental_aip_id);
-        }
-
-        if (currentTab.startsWith('supplemental_')) {
-            const entryId = Number(currentTab.replace('supplemental_', ''));
-
-            return allAipEntries.find((e) => e.id === entryId);
-        }
-
-        return null;
-    }, [currentTab, allAipEntries]);
-
-    const isActiveTab = useMemo(() => {
-        return currentTab !== 'combined';
-    }, [currentTab]);
-
-    const activeFundingSources = useMemo(() => {
-        if (currentTab === 'combined') {
-            return fundingSources;
-        }
-
-        const currentEntry = activeAipEntry || aipEntry;
-        const entryFsIds = new Set(
-            currentEntry?.ppa_funding_sources?.map(
-                (pfs) => pfs.funding_source_id,
-            ) || [],
-        );
-
-        return fundingSources.filter((fs) => entryFsIds.has(fs.id));
-    }, [currentTab, activeAipEntry, aipEntry, fundingSources]);
-
-    const effectiveFsId = useMemo(() => {
-        if (activeFundingSources.length === 0) {
-            return selectedFundingSourceId;
-        }
-
-        return activeFundingSources.some(
-            (fs) => fs.id === selectedFundingSourceId,
-        )
-            ? selectedFundingSourceId
-            : activeFundingSources[0].id;
-    }, [activeFundingSources, selectedFundingSourceId]);
-
-    if (effectiveFsId !== selectedFundingSourceId) {
-        setSelectedFundingSourceId(effectiveFsId);
+        setOpenPdfPreview(nextOpen);
     }
 
-    const tabsList = useMemo(() => {
-        const list: { value: string; label: string }[] = [];
-        list.push({ value: 'original', label: 'Original' });
-        allAipEntries.forEach((entry) => {
-            if (
-                entry.supplemental_aip_id &&
-                (entry.ppa_funding_sources?.length ?? 0) > 0
-            ) {
-                const name = entry.supplemental_aip?.name || 'Supplemental';
-                list.push({
-                    value: `supplemental_${entry.id}`,
-                    label: name.replace('AIP', 'PPMP'),
-                });
-            }
-        });
-        list.push({ value: 'combined', label: 'Combined' });
+    // Shared, worker-rendered PDF payloads; only generated while open so
+    // closing a preview releases the blob URL instead of regenerating.
+    const pdfPayload = useMemo(
+        () => ({
+            aipEntry,
+            fiscalYear,
+            groupedData: ppmpItems,
+            ppaFundingSource,
+            signatories: debouncedSignatories,
+        }),
+        [
+            aipEntry,
+            fiscalYear,
+            ppaFundingSource,
+            ppmpItems,
+            debouncedSignatories,
+        ],
+    );
 
-        return list;
-    }, [allAipEntries]);
+    const { url: ppmpPdfUrl, status: ppmpPdfStatus } = usePdfPreview(
+        'ppmp',
+        openPdfPreview ? pdfPayload : null,
+    );
 
-    const handleExpenseClassChange = (value: 'MOOE' | 'CO') => {
-        setSelectedExpenseClass(value);
-        router.get(
-            window.location.pathname,
-            buildQuery({
-                choice: value,
-                ppa_funding_source_id: currentPpaFundingSourceId,
-            }),
-            { preserveState: true, replace: true },
-        );
-    };
+    const { url: coaPdfUrl, status: coaPdfStatus } = usePdfPreview(
+        'ppmp-coa-summary',
+        openCoaPdfPreview ? pdfPayload : null,
+    );
 
-    const handleFundingSourceChange = (value: string) => {
-        const fsId = Number(value);
-        setSelectedFundingSourceId(fsId);
-        const bridgeId = (activeAipEntry || aipEntry).ppa_funding_sources?.find(
-            (pfs) => pfs.funding_source_id === fsId,
-        )?.id;
-        router.get(
-            window.location.pathname,
-            buildQuery({
-                choice: selectedExpenseClass,
-                ppa_funding_source_id: bridgeId,
-            }),
-            { preserveState: true, replace: true },
-        );
-    };
-
-    const activePpmpItems = useMemo(() => {
-        if (currentTab === 'combined') {
-            return ppmps;
-        }
-
-        if (currentTab === 'original') {
-            const origEntry = allAipEntries.find((e) => !e.supplemental_aip_id);
-
-            if (!origEntry) {
-                return [];
-            }
-
-            return ppmps.filter(
-                (item) =>
-                    item.ppa_funding_source?.aip_entry_id === origEntry.id,
-            );
-        }
-
-        if (currentTab.startsWith('supplemental_')) {
-            const entryId = Number(currentTab.replace('supplemental_', ''));
-
-            return ppmps.filter(
-                (item) => item.ppa_funding_source?.aip_entry_id === entryId,
-            );
-        }
-
-        return [];
-    }, [currentTab, ppmps, allAipEntries]);
+    // View filter: show all items, or only MOOE/CO expense-class items
+    const [expenseClassFilter, setExpenseClassFilter] = useState<
+        'ALL' | 'MOOE' | 'CO'
+    >('ALL');
 
     const filteredPpmpItems = useMemo(() => {
-        const items = activePpmpItems.filter((ppmp) => {
-            const matchesFunding =
-                ppmp.ppa_funding_source?.funding_source_id ===
-                selectedFundingSourceId;
-
-            const matchesExpenseClass =
-                ppmp.ppmp_price_list?.chart_of_account_ppmp_category
-                    ?.chart_of_account?.expense_class === selectedExpenseClass;
-
-            return matchesFunding && matchesExpenseClass;
-        });
-
-        if (currentTab === 'combined') {
-            const grouped = new Map<number, Ppmp[]>();
-            items.forEach((item) => {
-                const key = item.ppmp_price_list_id;
-
-                if (!key) {
-                    return;
-                }
-
-                const list = grouped.get(key) || [];
-                list.push(item);
-                grouped.set(key, list);
-            });
-
-            return Array.from(grouped.values()).map((list) => {
-                const base = { ...list[0] };
-                const months = [
-                    'jan',
-                    'feb',
-                    'mar',
-                    'apr',
-                    'may',
-                    'jun',
-                    'jul',
-                    'aug',
-                    'sep',
-                    'oct',
-                    'nov',
-                    'dec',
-                ];
-
-                months.forEach((m) => {
-                    const qtyKey = `${m}_qty`;
-                    const amtKey = `${m}_amount`;
-
-                    let totalQty = 0;
-                    let totalAmt = new Decimal(0);
-
-                    list.forEach((item) => {
-                        totalQty += Number((item as any)[qtyKey] || 0);
-                        totalAmt = totalAmt.plus(
-                            new Decimal((item as any)[amtKey] || 0),
-                        );
-                    });
-
-                    (base as any)[qtyKey] = totalQty;
-                    (base as any)[amtKey] = totalAmt.toString();
-                });
-
-                base.isCombined = true;
-
-                return base;
-            });
+        if (expenseClassFilter === 'ALL') {
+            return ppmpItems;
         }
 
-        return items;
-    }, [
-        activePpmpItems,
-        selectedFundingSourceId,
-        selectedExpenseClass,
-        currentTab,
-    ]);
+        return ppmpItems.filter(
+            (item) =>
+                item.ppmp_price_list?.chart_of_account_ppmp_category
+                    ?.chart_of_account?.expense_class === expenseClassFilter,
+        );
+    }, [ppmpItems, expenseClassFilter]);
+
+    const MONTHS = [
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
+    ] as const;
+
+    const getItemTotal = (item: Ppmp): Decimal => {
+        const price = new Decimal(item.ppmp_price_list?.price || 0);
+
+        return MONTHS.reduce(
+            (acc, month) =>
+                acc.plus(new Decimal(item[`${month}_qty`] || 0).times(price)),
+            new Decimal(0),
+        );
+    };
+
+    const totals = useMemo(() => {
+        let mooe = new Decimal(0);
+        let co = new Decimal(0);
+        let total = new Decimal(0);
+
+        ppmpItems.forEach((item) => {
+            const amount = getItemTotal(item);
+            total = total.plus(amount);
+
+            const expenseClass =
+                item.ppmp_price_list?.chart_of_account_ppmp_category
+                    ?.chart_of_account?.expense_class;
+
+            if (expenseClass === 'MOOE') {
+                mooe = mooe.plus(amount);
+            } else if (expenseClass === 'CO') {
+                co = co.plus(amount);
+            }
+        });
+
+        return { mooe, co, total };
+    }, [ppmpItems]);
+
+    // const filterLabel = {
+    //     ALL: 'All items',
+    //     MOOE: 'MOOE only',
+    //     CO: 'CO only',
+    // }[expenseClassFilter];
 
     function handleDeleteDialogOpen(source: Ppmp) {
-        setSelectedSource(source);
-        setIsDeleteDialogOpen(true);
+        setSelectedPpmp(source);
+        setDeleteDialogOpen(true);
     }
 
     function handleDelete() {
-        router.delete(`/ppmp/${selectedSource?.id}`, {
-            preserveState: true,
+        if (!selectedPpmp) return;
+
+        setIsDeleting(true);
+
+        router.delete(`/ppmp/${selectedPpmp.id}`, {
             preserveScroll: true,
-            onStart: () => setIsLoading(true),
+            preserveState: true,
             onSuccess: () => {
-                setIsDeleteDialogOpen(false);
-                setSelectedSource(null);
+                setDeleteDialogOpen(false);
+                setSelectedPpmp(null);
+                // Optional: reload ppmpItems to update totals
+                router.reload({ only: ['ppmpItems'] });
             },
-            onFinish: () => setIsLoading(false),
+            onError: () => {
+                setIsDeleting(false);
+                // Optionally show error message
+            },
+            onFinish: () => setIsDeleting(false),
         });
     }
 
-    const filteredChartOfAccounts = useMemo(() => {
-        return chartOfAccounts.filter(
-            (coa) => coa.expense_class === selectedExpenseClass,
-        );
-    }, [chartOfAccounts, selectedExpenseClass]);
+    // const { auth } = usePage<SharedData>().props;
 
-    const selectedFundingSource = fundingSources.find((fs) => {
-        return fs.id === selectedFundingSourceId;
-    });
+    // const buildQuery = (extra: Record<string, any> = {}) => {
+    //     const query = { ...extra };
 
-    const currentPpaFundingSourceId = useMemo(() => {
-        // Look for the record in the pivot/bridge table
-        const bridge = (activeAipEntry || aipEntry).ppa_funding_sources?.find(
-            (pfs) => pfs.funding_source_id === selectedFundingSourceId,
-        );
+    //     if (can?.showSummaryAll && selectedOfficeId) {
+    //         query.selected_office_id = selectedOfficeId;
+    //     }
 
-        return bridge?.id; // This is the primary key of ppa_funding_sources
-    }, [activeAipEntry, aipEntry, selectedFundingSourceId]);
+    //     return query;
+    // };
 
-    const allPpmpItemsForFundingSource = useMemo(() => {
-        if (!selectedFundingSourceId) {
-            return [];
-        }
+    // const initialFsId = useMemo(() => {
+    //     const bridge = aipEntry.ppa_funding_sources?.find(
+    //         (pfs) => pfs.id === Number(initialPpaFundingSourceId),
+    //     );
 
-        return activePpmpItems.filter(
-            (ppmp) =>
-                ppmp.ppa_funding_source?.funding_source_id ===
-                selectedFundingSourceId,
-        );
-    }, [activePpmpItems, selectedFundingSourceId]);
+    //     return bridge?.funding_source_id || 0;
+    // }, [aipEntry, initialPpaFundingSourceId]);
+
+    // const [selectedFundingSourceId, setSelectedFundingSourceId] =
+    //     useState(fundingSourceId);
+
+    // const [open, setOpen] = useState(false);
+    // const [openAlert, setOpenAlert] = useState(false);
+    // const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    // const [selectedSource, setSelectedSource] = useState<Ppmp | null>(null);
+    // const [isLoading, setIsLoading] = useState(false);
+    // const [
+    //     openExpenseAccountSummaryDialog,
+    //     setOpenExpenseAccountSummaryDialog,
+    // ] = useState(false);
+    // const [openNewPpmpForm, setOpenNewPpmpForm] = useState(false);
+
+    // const activeAipEntry = useMemo(() => {
+    //     if (currentTab === 'original') {
+    //         return allAipEntries.find((e) => !e.supplemental_aip_id);
+    //     }
+
+    //     if (currentTab.startsWith('supplemental_')) {
+    //         const entryId = Number(currentTab.replace('supplemental_', ''));
+
+    //         return allAipEntries.find((e) => e.id === entryId);
+    //     }
+
+    //     return null;
+    // }, [currentTab, allAipEntries]);
+
+    // const isActiveTab = useMemo(() => {
+    //     return currentTab !== 'combined';
+    // }, [currentTab]);
+
+    // const activeFundingSources = useMemo(() => {
+    //     if (currentTab === 'combined') {
+    //         return fundingSources;
+    //     }
+
+    //     const currentEntry = activeAipEntry || aipEntry;
+    //     const entryFsIds = new Set(
+    //         currentEntry?.ppa_funding_sources?.map(
+    //             (pfs) => pfs.funding_source_id,
+    //         ) || [],
+    //     );
+
+    //     return fundingSources.filter((fs) => entryFsIds.has(fs.id));
+    // }, [currentTab, activeAipEntry, aipEntry, fundingSources]);
+
+    // const effectiveFsId = useMemo(() => {
+    //     if (activeFundingSources.length === 0) {
+    //         return selectedFundingSourceId;
+    //     }
+
+    //     return activeFundingSources.some(
+    //         (fs) => fs.id === selectedFundingSourceId,
+    //     )
+    //         ? selectedFundingSourceId
+    //         : activeFundingSources[0].id;
+    // }, [activeFundingSources, selectedFundingSourceId]);
+
+    // if (effectiveFsId !== selectedFundingSourceId) {
+    //     setSelectedFundingSourceId(effectiveFsId);
+    // }
+
+    // const tabsList = useMemo(() => {
+    //     const list: { value: string; label: string }[] = [];
+    //     list.push({ value: 'original', label: 'Original' });
+    //     allAipEntries.forEach((entry) => {
+    //         if (
+    //             entry.supplemental_aip_id &&
+    //             (entry.ppa_funding_sources?.length ?? 0) > 0
+    //         ) {
+    //             const name = entry.supplemental_aip?.name || 'Supplemental';
+    //             list.push({
+    //                 value: `supplemental_${entry.id}`,
+    //                 label: name.replace('AIP', 'PPMP'),
+    //             });
+    //         }
+    //     });
+    //     list.push({ value: 'combined', label: 'Combined' });
+
+    //     return list;
+    // }, [allAipEntries]);
+
+    // const activePpmpItems = useMemo(() => {
+    //     if (currentTab === 'combined') {
+    //         return ppmps;
+    //     }
+
+    //     if (currentTab === 'original') {
+    //         const origEntry = allAipEntries.find((e) => !e.supplemental_aip_id);
+
+    //         if (!origEntry) {
+    //             return [];
+    //         }
+
+    //         return ppmps.filter(
+    //             (item) =>
+    //                 item.ppa_funding_source?.aip_entry_id === origEntry.id,
+    //         );
+    //     }
+
+    //     if (currentTab.startsWith('supplemental_')) {
+    //         const entryId = Number(currentTab.replace('supplemental_', ''));
+
+    //         return ppmps.filter(
+    //             (item) => item.ppa_funding_source?.aip_entry_id === entryId,
+    //         );
+    //     }
+
+    //     return [];
+    // }, [currentTab, ppmps, allAipEntries]);
+
+    // const filteredPpmpItems = useMemo(() => {
+    //     const items = activePpmpItems.filter((ppmp) => {
+    //         const matchesFunding =
+    //             ppmp.ppa_funding_source?.funding_source_id ===
+    //             selectedFundingSourceId;
+
+    //         return matchesFunding;
+    //     });
+
+    //     if (currentTab === 'combined') {
+    //         const grouped = new Map<number, Ppmp[]>();
+    //         items.forEach((item) => {
+    //             const key = item.ppmp_price_list_id;
+
+    //             if (!key) {
+    //                 return;
+    //             }
+
+    //             const list = grouped.get(key) || [];
+    //             list.push(item);
+    //             grouped.set(key, list);
+    //         });
+
+    //         return Array.from(grouped.values()).map((list) => {
+    //             const base = { ...list[0] };
+    //             const months = [
+    //                 'jan',
+    //                 'feb',
+    //                 'mar',
+    //                 'apr',
+    //                 'may',
+    //                 'jun',
+    //                 'jul',
+    //                 'aug',
+    //                 'sep',
+    //                 'oct',
+    //                 'nov',
+    //                 'dec',
+    //             ];
+
+    //             months.forEach((m) => {
+    //                 const qtyKey = `${m}_qty`;
+    //                 const amtKey = `${m}_amount`;
+
+    //                 let totalQty = 0;
+    //                 let totalAmt = new Decimal(0);
+
+    //                 list.forEach((item) => {
+    //                     totalQty += Number((item as any)[qtyKey] || 0);
+    //                     totalAmt = totalAmt.plus(
+    //                         new Decimal((item as any)[amtKey] || 0),
+    //                     );
+    //                 });
+
+    //                 (base as any)[qtyKey] = totalQty;
+    //                 (base as any)[amtKey] = totalAmt.toString();
+    //             });
+
+    //             base.isCombined = true;
+
+    //             return base;
+    //         });
+    //     }
+
+    //     return items;
+    // }, [activePpmpItems, selectedFundingSourceId, currentTab]);
+
+    // function handleDeleteDialogOpen(source: Ppmp) {
+    //     setSelectedSource(source);
+    //     setIsDeleteDialogOpen(true);
+    // }
+
+    // function handleDelete() {
+    //     router.delete(`/ppmp/${selectedSource?.id}`, {
+    //         preserveState: true,
+    //         preserveScroll: true,
+    //         onStart: () => setIsLoading(true),
+    //         onSuccess: () => {
+    //             setIsDeleteDialogOpen(false);
+    //             setSelectedSource(null);
+    //         },
+    //         onFinish: () => setIsLoading(false),
+    //     });
+    // }
+
+    // const selectedFundingSource = fundingSources.find((fs) => {
+    //     return fs.id === selectedFundingSourceId;
+    // });
+
+    // const currentPpaFundingSourceId = useMemo(() => {
+    //     // Look for the record in the pivot/bridge table
+    //     const bridge = (activeAipEntry || aipEntry).ppa_funding_sources?.find(
+    //         (pfs) => pfs.funding_source_id === selectedFundingSourceId,
+    //     );
+
+    //     return bridge?.id; // This is the primary key of ppa_funding_sources
+    // }, [activeAipEntry, aipEntry, selectedFundingSourceId]);
+
+    // const allPpmpItemsForFundingSource = useMemo(() => {
+    //     if (!selectedFundingSourceId) {
+    //         return [];
+    //     }
+
+    //     return activePpmpItems.filter(
+    //         (ppmp) =>
+    //             ppmp.ppa_funding_source?.funding_source_id ===
+    //             selectedFundingSourceId,
+    //     );
+    // }, [activePpmpItems, selectedFundingSourceId]);
 
     return (
         <>
@@ -388,12 +561,46 @@ export default function PpmpPage({
                     // className="flex flex-wrap items-center justify-between gap-4"
                     className="flex flex-col gap-2 px-4 pt-4"
                 >
-                    <small className="text-sm leading-none font-medium">
-                        Viewing: {aipEntry?.ppa?.name}
-                    </small>
+                    <div className="flex w-full items-center justify-between">
+                        <div>
+                            <div className="text-sm">
+                                {aipEntry?.ppa?.office?.acronym || 'N/A'}
+                            </div>
+                            <div className="text-sm">
+                                {ppaFundingSource.funding_source?.code || 'N/A'}
+                            </div>
+                            <div className="text-sm">
+                                {aipEntry.ppa?.full_code || '-'}
+                            </div>
+                            <div className="text-sm">{aipEntry?.ppa?.name}</div>
+                        </div>
 
+                        <div className="w-100">
+                            <div className="flex justify-between">
+                                <div>MOOE</div>
+                                <div className="slashed-zero tabular-nums">
+                                    {formatCurrency(totals.mooe.toString())}
+                                </div>
+                            </div>
+                            <div className="flex justify-between">
+                                <div>CO</div>
+                                <div className="slashed-zero tabular-nums">
+                                    {formatCurrency(totals.co.toString())}
+                                </div>
+                            </div>
+                            <Separator orientation="horizontal" />
+                            <div className="flex justify-between">
+                                <div>TOTAL</div>
+                                <div className="slashed-zero tabular-nums">
+                                    {formatCurrency(totals.total.toString())}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* hide these for now */}
                     {/*{hasSupplementalEntries && (*/}
-                    <Tabs
+                    {/*<Tabs
                         value={currentTab}
                         onValueChange={(val: any) => {
                             const newEntry =
@@ -436,7 +643,6 @@ export default function PpmpPage({
 
                             const query: Record<string, any> = {
                                 tab: val,
-                                choice: selectedExpenseClass,
                                 ppa_funding_source_id: bridgeId,
                             };
 
@@ -471,83 +677,116 @@ export default function PpmpPage({
                                 </TabsTrigger>
                             ))}
                         </TabsList>
-                    </Tabs>
+                    </Tabs>*/}
                     {/*)}*/}
                 </div>
 
                 <DataTable
-                    columns={columns}
+                    className="pr-2"
+                    columns={ppmpColumns}
                     data={filteredPpmpItems}
                     showFooter={true}
-                    meta={
-                        {
-                            readOnly: !isActiveTab,
-                            onDelete: handleDeleteDialogOpen,
-                        } as any
-                    }
-                    className="pr-3"
+                    meta={{
+                        year: fiscalYear,
+                        onSavingChange: (saving: boolean) =>
+                            setSavingCount((c) =>
+                                Math.max(0, c + (saving ? 1 : -1)),
+                            ),
+                        onDeletePpmpItem: handleDeleteDialogOpen,
+                    }}
                 >
-                    <div className="flex gap-2">
-                        <Select
-                            onValueChange={handleExpenseClassChange}
-                            value={selectedExpenseClass}
-                        >
-                            <SelectTrigger className="w-full max-w-40 min-w-30">
-                                <SelectValue placeholder="Expense Class" />
-                            </SelectTrigger>
+                    <div className="flex items-center gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button variant="outline" size="icon">
+                                        <Filter />
+                                    </Button>
+                                }
+                            />
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuRadioGroup
+                                    value={expenseClassFilter}
+                                    onValueChange={(value) =>
+                                        setExpenseClassFilter(
+                                            value as 'ALL' | 'MOOE' | 'CO',
+                                        )
+                                    }
+                                >
+                                    <DropdownMenuRadioItem
+                                        value="ALL"
+                                        closeOnClick
+                                    >
+                                        All items
+                                    </DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem
+                                        value="MOOE"
+                                        closeOnClick
+                                    >
+                                        MOOE only
+                                    </DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem
+                                        value="CO"
+                                        closeOnClick
+                                    >
+                                        CO only
+                                    </DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Expense Class</SelectLabel>
-                                    <SelectItem value="MOOE">MOOE</SelectItem>
-                                    <SelectItem value="CO">CO</SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button variant="outline" size="icon" />
+                                }
+                            >
+                                <FileUp />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>
+                                        Export
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem
+                                        onClick={() => setOpenPdfPreview(true)}
+                                    >
+                                        PDF
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>
+                                        Generate
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            setOpenCoaPdfPreview(true)
+                                        }
+                                    >
+                                        PPMP by COA
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
-                        <Select
-                            onValueChange={handleFundingSourceChange}
-                            defaultValue={String(selectedFundingSourceId)}
-                        >
-                            <SelectTrigger className="w-full max-w-48 min-w-30">
-                                <SelectValue placeholder="Select funding source">
-                                    {selectedFundingSourceId && (
-                                        <span>
-                                            {
-                                                fundingSources.find(
-                                                    (fs) =>
-                                                        fs.id ===
-                                                        selectedFundingSourceId,
-                                                )?.code
-                                            }
-                                        </span>
-                                    )}
-                                </SelectValue>
-                            </SelectTrigger>
+                        <Button onClick={() => setOpenFormDialog(true)}>
+                            Add Price List
+                        </Button>
 
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Funding Sources</SelectLabel>
-                                    {activeFundingSources.map((fs) => (
-                                        <SelectItem
-                                            key={fs.id}
-                                            value={String(fs.id)}
-                                            className="gap-4"
-                                        >
-                                            <div className="flex gap-4">
-                                                <span className="bg-muted font-mono">
-                                                    {fs.code}
-                                                </span>
-                                                <div className="w-80">
-                                                    {fs.title}
-                                                </div>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-
+                        {isSaving ? (
+                            <Badge variant="secondary">
+                                <Spinner />
+                                Saving…
+                            </Badge>
+                        ) : (
+                            <Badge variant="ghost">
+                                <Check />
+                                Saved
+                            </Badge>
+                        )}
+                    </div>
+                    {/* <div className="flex items-center gap-1">
                         {can?.export && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -564,7 +803,7 @@ export default function PpmpPage({
                                                     ? exportToPrint({
                                                           filteredPpmpItems,
                                                           priceLists,
-                                                          ppmpCategories,
+                                                          categories,
                                                           chartOfAccounts,
                                                           aipEntry:
                                                               activeAipEntry ||
@@ -587,7 +826,7 @@ export default function PpmpPage({
                                                     ? exportToPDF({
                                                           filteredPpmpItems,
                                                           priceLists,
-                                                          ppmpCategories,
+                                                          categories,
                                                           chartOfAccounts,
                                                           aipEntry:
                                                               activeAipEntry ||
@@ -610,7 +849,7 @@ export default function PpmpPage({
                                                     ? exportToExcel({
                                                           filteredPpmpItems,
                                                           priceLists,
-                                                          ppmpCategories,
+                                                          categories,
                                                           chartOfAccounts,
                                                           aipEntry:
                                                               activeAipEntry ||
@@ -654,27 +893,129 @@ export default function PpmpPage({
                                 <Plus /> Add Item
                             </Button>
                         )}
-                    </div>
+                    </div> */}
                 </DataTable>
 
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
 
-            <PpmpFormDialog
-                open={open}
-                onOpenChange={setOpen}
-                chartOfAccounts={filteredChartOfAccounts}
-                ppmpCategories={ppmpCategories}
+            <FormDialog
+                open={openFormDialog}
+                onOpenChange={setOpenFormDialog}
+                chartOfAccounts={chartOfAccounts}
+                categories={categories}
                 priceLists={priceLists}
-                selectedEntry={activeAipEntry || aipEntry}
-                fundingSources={fundingSources}
-                selectedExpenseClass={selectedExpenseClass}
-                selectedFundingSourceId={selectedFundingSourceId}
-                ppaFundingSourceId={currentPpaFundingSourceId}
-                existingPpmps={ppmps}
+                ppaFundingSourceId={ppaFundingSource.id} // NEW
+                onSuccess={() => {
+                    // Optionally refetch PPMP items after creation
+                    router.reload({ only: ['ppmpItems'] });
+                }}
+
+                // selectedEntry={activeAipEntry || aipEntry}
+                // fundingSources={fundingSources}
+                // selectedFundingSourceId={selectedFundingSourceId}
+                // ppaFundingSourceId={currentPpaFundingSourceId}
+                // existingPpmps={ppmps}
             />
 
-            <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
+            <DeleteDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Remove from PPMP?"
+                description={
+                    <>
+                        Are you sure you want to remove{' '}
+                        <span className="text-foreground font-bold">
+                            "{selectedPpmp?.ppmp_price_list?.description}"
+                        </span>
+                        ?
+                    </>
+                }
+                loading={isDeleting}
+                handleDelete={handleDelete}
+            />
+
+            <Dialog open={openPdfPreview} onOpenChange={handlePpmpOpenChange}>
+                <DialogContent className="flex h-[100vh] flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
+                    <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b p-4">
+                        <DialogTitle>PPMP Preview</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="flex flex-1 overflow-hidden">
+                        <div className="flex w-[340px] shrink-0 flex-col gap-4 overflow-auto border-r p-4">
+                            <FieldGroup>
+                                <Field>
+                                    <FieldLabel htmlFor="ppmp-sig-dept-head">
+                                        Department Head — Name
+                                    </FieldLabel>
+                                    <Input
+                                        id="ppmp-sig-dept-head"
+                                        placeholder="Enter department head name"
+                                        value={deptHead}
+                                        onChange={(e) =>
+                                            setDeptHead(e.target.value)
+                                        }
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="ppmp-sig-dept-head-position">
+                                        Department Head — Position
+                                    </FieldLabel>
+                                    <Input
+                                        id="ppmp-sig-dept-head-position"
+                                        placeholder="Department Head"
+                                        value={deptHeadPosition}
+                                        onChange={(e) =>
+                                            setDeptHeadPosition(e.target.value)
+                                        }
+                                    />
+                                </Field>
+                            </FieldGroup>
+                        </div>
+
+                        <div className="relative flex-1 bg-[#3c3c3c]">
+                            <PdfPreviewPane
+                                url={ppmpPdfUrl}
+                                status={ppmpPdfStatus}
+                                busy={ppmpPdfStatus === 'generating'}
+                                title="PPMP Preview"
+                            />
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={openCoaPdfPreview}
+                onOpenChange={setOpenCoaPdfPreview}
+            >
+                <DialogContent className="fixed! inset-0! h-screen! w-screen! max-w-none! translate-x-0! translate-y-0! gap-0 rounded-none! p-0">
+                    <div className="p-4">
+                        <DialogHeader>
+                            <DialogTitle>PPMP by COA Preview</DialogTitle>
+                        </DialogHeader>
+                    </div>
+
+                    <div
+                        className="relative"
+                        style={{
+                            width: '100vw',
+                            height: '94vh',
+                            margin: 0,
+                            padding: 0,
+                        }}
+                    >
+                        <PdfPreviewPane
+                            url={coaPdfUrl}
+                            status={coaPdfStatus}
+                            busy={coaPdfStatus === 'generating'}
+                            title="PPMP by COA Preview"
+                        />
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
@@ -729,7 +1070,7 @@ export default function PpmpPage({
                     setSelectedSource(null);
                 }}
                 isLoading={isLoading}
-            />
+            />*/}
         </>
     );
 }

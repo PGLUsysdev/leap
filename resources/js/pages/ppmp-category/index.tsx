@@ -1,20 +1,16 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 // import { DataTable } from '@/components/data-table';
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+import DataTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
-import type { PpmpCategory, ChartOfAccount } from '@/types';
+import type { PpmpCategory } from '@/types';
 import columns from './columns/columns';
 import FormDialog from './form-dialog-base';
 
 interface PpmpCategoryPageProps {
     ppmpCategories: PpmpCategory[];
-    chartOfAccounts: ChartOfAccount[];
     can?: {
         add: boolean;
         edit: boolean;
@@ -24,22 +20,8 @@ interface PpmpCategoryPageProps {
 
 export default function PpmpCategoryPage({
     ppmpCategories,
-    chartOfAccounts,
     can,
 }: PpmpCategoryPageProps) {
-    // const categoriesWithAccounts = ppmpCategories.map((category) => ({
-    //     ...category,
-    //     chart_of_accounts:
-    //         category.chart_of_account_ppmp_categories
-    //             ?.map((pivot) =>
-    //                 chartOfAccounts.find(
-    //                     (coa) => coa.id === pivot.chart_of_account_id,
-    //                 ),
-    //             )
-    //             .filter((coa): coa is ChartOfAccount => coa !== undefined) ||
-    //         [],
-    // }));
-
     const [open, setOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] =
         useState<PpmpCategory | null>(null);
@@ -134,7 +116,6 @@ export default function PpmpCategoryPage({
                 open={open}
                 onOpenChange={handleDialogOpenChange}
                 initialData={selectedCategory}
-                chartOfAccounts={chartOfAccounts}
             />
 
             <DeleteDialog
@@ -144,7 +125,7 @@ export default function PpmpCategoryPage({
                 description={
                     <>
                         Are you sure you want to remove{' '}
-                        <span className="font-bold text-foreground">
+                        <span className="text-foreground font-bold">
                             "{selectedCategory?.name}"
                         </span>
                         ?

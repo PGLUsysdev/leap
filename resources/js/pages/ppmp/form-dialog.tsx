@@ -1,801 +1,511 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "@inertiajs/react";
-import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { CommandSelect } from "@/components/command-select";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
+import { useForm, Controller, useWatch } from 'react-hook-form';
+import { z } from 'zod';
+
+import {
+    TableSelect,
+    useTableSelect,
+    TableSelectButton,
+} from '@/components/table-select';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/base-ui-components/ui/dialog";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { Field, FieldError, FieldLabel } from "@/components/base-ui-components/ui/field";
-import { Input } from "@/components/base-ui-components/ui/input";
-import { ScrollArea } from "@/components/base-ui-components/ui/scroll-area";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import type { ChartOfAccount, FundingSource, AipEntry, Ppmp } from "@/types";
-import { formSchema  } from "./form-dialog-schema";
-import type {FormSchemaType} from "./form-dialog-schema";
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Field, FieldLabel, FieldError } from '@/components/ui/field';
+
+import type {
+    ChartOfAccount,
+    PaginatedResponse,
+    PpmpCategory,
+    PriceList,
+} from '@/types';
+
+import categoryColumns from './columns/category-columns';
+import coaColumns from './columns/coa-columns';
+import priceListColumns from './columns/price-list-columns';
+
+const ppmpFormSchema = z.object({
+    ppmp_price_list_id: z.number().nullable().optional(),
+    coa_id: z.number().nullable().optional(),
+    category_id: z.number().nullable().optional(),
+});
+
+type PpmpFormValues = z.infer<typeof ppmpFormSchema>;
 
 interface PpmpFormDialogProps {
+    categories: PaginatedResponse<PpmpCategory>;
+    chartOfAccounts: PaginatedResponse<ChartOfAccount>;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    chartOfAccounts: ChartOfAccount[];
-    priceLists: any[];
-    ppmpCategories: any[];
-    selectedEntry: AipEntry | null;
-    fundingSources: FundingSource[];
-    selectedExpenseClass: string;
-    selectedFundingSourceId: number;
-    // The ID of the bridge record linking the Activity and the Fund
-    ppaFundingSourceId: number | undefined;
-    // Quick-add mode: adds month selector and quantity field
-    mode?: "default" | "quick-add";
-    defaultMonth?: string;
-    defaultQuantity?: number;
-    onItemAdded?: () => void;
-    // Existing PPMP records for this funding source (for pre-filling in quick-add mode)
-    existingPpmps?: Ppmp[];
+    priceLists: PaginatedResponse<PriceList>;
+    ppaFundingSourceId: number;
+    onSuccess?: () => void;
+    onSubmit?: (values: PpmpFormValues) => void;
 }
+
+const formatPrice = (value: number | string | undefined) => {
+    const num = Number(value || 0);
+
+    return num.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+};
 
 export default function PpmpFormDialog({
     open,
     onOpenChange,
     chartOfAccounts,
+    categories,
     priceLists,
-    ppmpCategories,
-    selectedEntry = null,
-    fundingSources,
-    selectedExpenseClass,
-    selectedFundingSourceId,
     ppaFundingSourceId,
-    mode = "default",
-    defaultMonth,
-    defaultQuantity,
-    onItemAdded,
-    existingPpmps,
+    onSuccess,
 }: PpmpFormDialogProps) {
-    const [isLoading, setIsLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
-    const form = useForm<FormSchemaType>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<PpmpFormValues>({
+        resolver: zodResolver(ppmpFormSchema),
         defaultValues: {
-            ppa_funding_source_id: ppaFundingSourceId || null,
             ppmp_price_list_id: null,
-            expenseAccount: null,
-            category: null,
-            itemNo: null,
-            description: null,
-            unitOfMeasurement: null,
-            price: null,
-            fundingSource: selectedFundingSourceId || null,
-            month: defaultMonth || null,
-            quantity: defaultQuantity ?? null,
+            coa_id: null,
+            category_id: null,
         },
     });
 
-    const selectedExpenseAccount = form.watch("expenseAccount");
-    const selectedCategory = form.watch("category");
+    const { setValue, reset, handleSubmit, control } = form;
 
-    useEffect(() => {
-        if (open) {
-            form.setValue("ppa_funding_source_id", ppaFundingSourceId || null);
-            form.setValue("fundingSource", selectedFundingSourceId || null);
-        }
-    }, [open, ppaFundingSourceId, selectedFundingSourceId, form]);
+    // Use useWatch to subscribe to specific fields
+    const watchedPriceListId = useWatch({
+        control,
+        name: 'ppmp_price_list_id',
+    });
+    const watchedCoaId = useWatch({ control, name: 'coa_id' });
+    const watchedCategoryId = useWatch({ control, name: 'category_id' });
 
+    const isLocked =
+        watchedPriceListId !== null && watchedPriceListId !== undefined;
+
+    // ---- Selected objects (persist across pagination/filter changes) ----
+    const [selectedPriceListObj, setSelectedPriceListObj] =
+        useState<PriceList | null>(null);
+    const [selectedCoaObj, setSelectedCoaObj] = useState<ChartOfAccount | null>(
+        null,
+    );
+    const [selectedCategoryObj, setSelectedCategoryObj] =
+        useState<PpmpCategory | null>(null);
+
+    // ---- Trigger partial reload when a price list is selected ----
     useEffect(() => {
-        if (!open) {
-            form.reset({
-                ppa_funding_source_id: null,
-                ppmp_price_list_id: null,
-                expenseAccount: null,
-                category: null,
-                itemNo: null,
-                description: null,
-                unitOfMeasurement: null,
-                price: null,
-                fundingSource: null,
-                month: null,
-                quantity: null,
+        if (selectedPriceListObj) {
+            const coaId =
+                selectedPriceListObj.chart_of_account_ppmp_category
+                    ?.chart_of_account_id;
+            const catId =
+                selectedPriceListObj.chart_of_account_ppmp_category
+                    ?.ppmp_category_id;
+
+            router.reload({
+                only: ['priceLists', 'chartOfAccounts', 'categories'],
+                data: {
+                    coa_id: coaId ?? undefined,
+                    category_id: catId ?? undefined,
+                    price_list_page: 1,
+                    coa_page: 1,
+                    category_page: 1,
+                },
+                replace: true,
             });
         }
-    }, [open, form]);
+    }, [selectedPriceListObj]);
 
-    const selectedPriceListId = form.watch("ppmp_price_list_id");
+    // ---- Automatically set COA/Category form values and objects from selected price list ----
+    useEffect(() => {
+        if (selectedPriceListObj) {
+            const coa =
+                selectedPriceListObj.chart_of_account_ppmp_category
+                    ?.chart_of_account ?? null;
+            const cat =
+                selectedPriceListObj.chart_of_account_ppmp_category
+                    ?.ppmp_category ?? null;
 
-    const MONTHS = [
-        "jan",
-        "feb",
-        "mar",
-        "apr",
-        "may",
-        "jun",
-        "jul",
-        "aug",
-        "sep",
-        "oct",
-        "nov",
-        "dec",
-    ] as const;
+            if (coa) setSelectedCoaObj(coa);
+
+            if (cat) setSelectedCategoryObj(cat);
+
+            setValue('coa_id', coa?.id ?? null, { shouldValidate: false });
+            setValue('category_id', cat?.id ?? null, { shouldValidate: false });
+        }
+    }, [selectedPriceListObj, setValue]);
+
+    // ---- Trigger partial reload when manual filters change (and not locked) ----
+    const prevFilters = useRef<{
+        coaId: number | null | undefined;
+        categoryId: number | null | undefined;
+    }>({
+        coaId: watchedCoaId,
+        categoryId: watchedCategoryId,
+    });
 
     useEffect(() => {
-        if (mode !== "quick-add" || !selectedPriceListId || !existingPpmps?.length) {
-return;
-}
+        if (!open || isLocked) return;
 
-        const match = (existingPpmps as any[]).find(
-            (p) =>
-                Number(p.ppa_funding_source_id) === Number(ppaFundingSourceId) &&
-                Number(p.ppmp_price_list_id) === Number(selectedPriceListId),
-        );
+        const filtersChanged =
+            prevFilters.current.coaId !== watchedCoaId ||
+            prevFilters.current.categoryId !== watchedCategoryId;
 
-        if (!match) {
-return;
-}
+        if (!filtersChanged) return;
 
-        const firstMonth = MONTHS.find((m) => (Number(match[`${m}_qty`]) || 0) > 0);
-
-        if (firstMonth) {
-            form.setValue("month", firstMonth);
-            form.setValue("quantity", Number(match[`${firstMonth}_qty`]));
-        }
-    }, [selectedPriceListId, mode, existingPpmps, ppaFundingSourceId, form]);
-
-    const selectedCategoryData = ppmpCategories.find((cat) => cat.id === selectedCategory);
-    const categoryExpenseAccountIds =
-        selectedCategoryData?.chart_of_account_ppmp_categories
-            ?.map((cac: any) => cac.chart_of_account?.id)
-            .filter((id: any): id is number => id != null) || [];
-
-    const filteredChartOfAccounts = chartOfAccounts.filter((coa) => {
-        const matchesCategory = selectedCategory
-            ? categoryExpenseAccountIds.includes(coa.id)
-            : true;
-        const matchesExpenseClass = coa.expense_class === selectedExpenseClass;
-
-        return matchesCategory && matchesExpenseClass;
-    });
-
-    const filteredPpmpCategories = selectedExpenseAccount
-        ? ppmpCategories.filter((pc) =>
-              pc.chart_of_account_ppmp_categories?.some(
-                  (cac: any) => cac.chart_of_account?.id === selectedExpenseAccount,
-              ),
-          )
-        : ppmpCategories;
-
-    const allPriceLists = priceLists.map((priceList) => {
-        const pivot = priceList.chart_of_account_ppmp_category;
-
-        return {
-            ...priceList,
-            chart_of_account_id: pivot?.chart_of_account_id,
-            ppmp_category_id: pivot?.ppmp_category_id,
-            account_title: pivot?.chart_of_account?.account_title,
-            account_number: pivot?.chart_of_account?.account_number,
-            expense_class: pivot?.chart_of_account?.expense_class,
+        prevFilters.current = {
+            coaId: watchedCoaId,
+            categoryId: watchedCategoryId,
         };
+
+        router.reload({
+            only: ['priceLists', 'chartOfAccounts', 'categories'],
+            data: {
+                coa_id: watchedCoaId ?? undefined,
+                category_id: watchedCategoryId ?? undefined,
+                price_list_page: 1,
+                coa_page: 1,
+                category_page: 1,
+            },
+            replace: true,
+        });
+    }, [watchedCoaId, watchedCategoryId, open, isLocked]);
+
+    // ---- Reset form and selected objects when dialog closes ----
+    useEffect(() => {
+        if (!open) {
+            reset();
+            setSelectedPriceListObj(null);
+            setSelectedCoaObj(null);
+            setSelectedCategoryObj(null);
+
+            router.reload({
+                only: ['priceLists', 'chartOfAccounts', 'categories'],
+                data: {
+                    coa_id: undefined,
+                    category_id: undefined,
+                    price_list_page: 1,
+                    coa_page: 1,
+                    category_page: 1,
+                },
+                replace: true,
+            });
+        }
+    }, [open, reset]);
+
+    // ---- Extract data and pagination meta for each list ----
+    const { data: priceListData, ...priceListPagination } = priceLists;
+    const { data: coaData, ...coaPagination } = chartOfAccounts;
+    const { data: categoryData, ...categoryPagination } = categories;
+
+    // ---- Table select hooks ----
+    const priceListSelect = useTableSelect<PriceList>({
+        data: priceListData,
+        value: watchedPriceListId?.toString() ?? undefined,
+        valueKey: 'id',
     });
 
-    const filteredPriceLists = allPriceLists.filter((priceList) => {
-        // ✅ Only keep price lists with the correct expense class
-        if (priceList.expense_class !== selectedExpenseClass) {
-return false;
-}
-
-        const matchesAccount = selectedExpenseAccount
-            ? priceList.chart_of_account_id === selectedExpenseAccount
-            : true;
-        const matchesCategory = selectedCategory
-            ? priceList.ppmp_category_id === selectedCategory
-            : true;
-
-        return matchesAccount && matchesCategory;
+    const coaSelect = useTableSelect<ChartOfAccount>({
+        data: coaData,
+        value: watchedCoaId?.toString() ?? undefined,
+        valueKey: 'id',
     });
 
-    const handleReset = () => {
-        form.reset();
-        form.setValue("ppa_funding_source_id", ppaFundingSourceId || null);
-        form.setValue("fundingSource", selectedFundingSourceId);
+    const categorySelect = useTableSelect<PpmpCategory>({
+        data: categoryData,
+        value: watchedCategoryId?.toString() ?? undefined,
+        valueKey: 'id',
+    });
+
+    // ---- Handlers ----
+    const handlePriceListSelect = (row: PriceList) => {
+        setSelectedPriceListObj(row);
+        setValue('ppmp_price_list_id', row.id, { shouldValidate: true });
+        priceListSelect.setOpen(false);
     };
 
-    function onSubmit(data: FormSchemaType) {
-        // Build payload with the foreign keys required by the 'ppmps' table
-        const payload: Record<string, any> = {
-            ppa_funding_source_id: data.ppa_funding_source_id,
-            ppmp_price_list_id: data.ppmp_price_list_id,
-        };
+    const handleCoaSelect = (row: ChartOfAccount) => {
+        if (isLocked) return;
 
-        // Include month and quantity in quick-add mode
-        if (mode === "quick-add") {
-            payload.month = data.month;
-            payload.quantity = data.quantity;
+        setSelectedCoaObj(row);
+
+        if (watchedPriceListId) {
+            setSelectedPriceListObj(null);
+            setValue('ppmp_price_list_id', null);
         }
 
-        router.post("/ppmp", payload, {
-            onStart: () => setIsLoading(true),
-            onFinish: () => setIsLoading(false),
-            onSuccess: () => {
-                onOpenChange(false);
-                form.reset();
-                onItemAdded?.();
-            },
-            preserveState: true,
-        });
-    }
+        setValue('coa_id', row.id, { shouldValidate: true });
+        coaSelect.setOpen(false);
+    };
 
-    const clearDependencies = () => {
-        form.setValue("ppmp_price_list_id", null);
-        form.setValue("description", null);
-        form.setValue("itemNo", null);
-        form.setValue("price", null);
-        form.setValue("unitOfMeasurement", null);
+    const handleCategorySelect = (row: PpmpCategory) => {
+        if (isLocked) return;
+
+        setSelectedCategoryObj(row);
+
+        if (watchedPriceListId) {
+            setSelectedPriceListObj(null);
+            setValue('ppmp_price_list_id', null);
+        }
+
+        setValue('category_id', row.id, { shouldValidate: true });
+        categorySelect.setOpen(false);
+    };
+
+    const handleClearPriceList = () => {
+        setSelectedPriceListObj(null);
+        setValue('ppmp_price_list_id', null);
+    };
+
+    const handleClearCoa = () => {
+        if (!isLocked) {
+            setSelectedCoaObj(null);
+            setValue('coa_id', null);
+        }
+    };
+
+    const handleClearCategory = () => {
+        if (!isLocked) {
+            setSelectedCategoryObj(null);
+            setValue('category_id', null);
+        }
+    };
+
+    const handleReset = () => {
+        reset();
+        setSelectedPriceListObj(null);
+        setSelectedCoaObj(null);
+        setSelectedCategoryObj(null);
+
+        router.reload({
+            only: ['priceLists', 'chartOfAccounts', 'categories'],
+            data: {
+                coa_id: undefined,
+                category_id: undefined,
+                price_list_page: 1,
+                coa_page: 1,
+                category_page: 1,
+            },
+            replace: true,
+        });
+    };
+
+    const handleCancel = () => {
+        onOpenChange(false);
+    };
+
+    const handleFormSubmit = (data: PpmpFormValues) => {
+        setIsSubmitting(true);
+        setSubmitError(null);
+
+        router.post(
+            '/ppmp', // adjust to your store route
+            {
+                ppa_funding_source_id: ppaFundingSourceId,
+                ppmp_price_list_id: data.ppmp_price_list_id,
+                coa_id: data.coa_id,
+                category_id: data.category_id,
+            },
+            {
+                onSuccess: () => {
+                    setIsSubmitting(false);
+                    onOpenChange(false);
+                    onSuccess?.();
+                },
+                onError: (errors) => {
+                    setIsSubmitting(false);
+                    setSubmitError(errors?.message || 'Failed to add item.');
+                },
+                onFinish: () => setIsSubmitting(false),
+            },
+        );
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} modal={isLoading}>
-            <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>{mode === "quick-add" ? "Quick Add PPMP Item" : "Add PPMP Item"}</DialogTitle>
-                    <DialogDescription>
-                        {mode === "quick-add"
-                            ? "Select a procurement item and set the monthly quantity"
-                            : "Add a new item to the PPMP list"}
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Add PPMP Item</DialogTitle>
+                        <DialogDescription>
+                            Select a price list or manually choose a COA and
+                            category.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <div className="flex min-h-0 flex-1">
-                    <ScrollArea className="w-full pr-3">
-                        <form id="form-rhf-demo" onSubmit={form.handleSubmit(onSubmit)}>
-                            <div className="grid gap-6">
-                                <Controller
-                                    name="description"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            className="overflow-hidden"
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            
-                                                <FieldLabel htmlFor={field.name}>
-                                                    Procurement Item
-                                                </FieldLabel>
+                    <form
+                        onSubmit={handleSubmit(handleFormSubmit)}
+                        className="flex flex-col gap-4"
+                    >
+                        {/* Price List */}
+                        <Controller
+                            name="ppmp_price_list_id"
+                            control={control}
+                            render={({ fieldState }) => (
+                                <Field data-invalid={fieldState.invalid}>
+                                    <FieldLabel>Price List</FieldLabel>
+                                    <TableSelectButton
+                                        hook={priceListSelect}
+                                        displayValue={() =>
+                                            selectedPriceListObj?.description
+                                        }
+                                        placeholder="Select price list..."
+                                        onClear={handleClearPriceList}
+                                        wrapText={true}
+                                    />
 
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val, priceList) => {
-                                                        field.onChange(val);
-
-                                                        const pivot =
-                                                            priceList.chart_of_account_ppmp_category;
-
-                                                        form.setValue(
-                                                            "ppmp_price_list_id",
-                                                            priceList.id,
-                                                        );
-
-                                                        form.setValue(
-                                                            "expenseAccount",
-                                                            pivot?.chart_of_account_id,
-                                                            {
-                                                                // was priceList.chart_of_account_id
-                                                                shouldValidate: true,
-                                                            },
-                                                        );
-
-                                                        form.setValue(
-                                                            "category",
-                                                            pivot?.ppmp_category_id || null,
-                                                            {
-                                                                // was priceList.ppmp_category_id
-                                                                shouldValidate: true,
-                                                            },
-                                                        );
-
-                                                        form.setValue(
-                                                            "itemNo",
-                                                            priceList.item_number,
-                                                            {
-                                                                shouldValidate: true,
-                                                            },
-                                                        );
-
-                                                        form.setValue("price", priceList.price, {
-                                                            shouldValidate: true,
-                                                        });
-
-                                                        form.setValue(
-                                                            "unitOfMeasurement",
-                                                            priceList.unit_of_measurement,
-                                                            {
-                                                                shouldValidate: true,
-                                                            },
-                                                        );
-                                                    }}
-                                                    options={filteredPriceLists}
-                                                    getOptionValue={(pl) => pl.id}
-                                                    getOptionSearchText={(pl) =>
-                                                        `${pl.item_number} ${pl.description} ${pl.unit_of_measurement} ${pl.price}`
-                                                    }
-                                                    placeholder="Select procurement item"
-                                                    searchPlaceholder="Search procurement items..."
-                                                    heading="Procurement Items"
-                                                    dialogClassName="flex max-h-[90vh] flex-col sm:max-w-[600px]"
-                                                    onClear={() => {
-                                                        field.onChange(null);
-                                                        form.setValue("itemNo", null);
-                                                        form.setValue("price", null);
-                                                        form.setValue("unitOfMeasurement", null);
-                                                    }}
-                                                    renderTrigger={(pl) => (
-                                                        <span className="truncate">
-                                                            {pl.description}
-                                                        </span>
-                                                    )}
-                                                    renderOption={(pl) => (
-                                                        <div className="grid w-full grid-cols-10 items-start gap-6 py-1">
-                                                            <span>{pl.item_number}</span>
-                                                            <span className="col-span-6">
-                                                                {pl.description}
-                                                            </span>
-                                                            <span>{pl.unit_of_measurement}</span>
-                                                            <span>{pl.price}</span>
-                                                        </div>
-                                                    )}
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                    {selectedPriceListObj && (
+                                        <div className="text-muted-foreground mt-2 space-y-1 text-sm">
+                                            <div>
+                                                <span className="font-medium">
+                                                    Unit of Measurement:
+                                                </span>{' '}
+                                                {
+                                                    selectedPriceListObj.unit_of_measurement
+                                                }
+                                            </div>
+                                            <div>
+                                                <span className="font-medium">
+                                                    Price:
+                                                </span>{' '}
+                                                {formatPrice(
+                                                    selectedPriceListObj.price,
                                                 )}
-                                            
-                                        </Field>
+                                            </div>
+                                        </div>
                                     )}
-                                />
 
-                                <div className="grid grid-cols-7 gap-6">
-                                    <div className="col-span-1">
-                                        <Controller
-                                            name="itemNo"
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Item No.
-                                                        </FieldLabel>
-
-                                                        <Input
-                                                            {...field}
-                                                            id={field.name}
-                                                            aria-invalid={fieldState.invalid}
-                                                            type="number"
-                                                            min="1"
-                                                            value={field.value ?? ""}
-                                                            readOnly
-                                                            onChange={(e) =>
-                                                                field.onChange(
-                                                                    e.target.value === ""
-                                                                        ? null
-                                                                        : parseInt(
-                                                                              e.target.value,
-                                                                              10,
-                                                                          ),
-                                                                )
-                                                            }
-                                                        />
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
-                                                </Field>
-                                            )}
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
                                         />
-                                    </div>
-
-                                    <div className="col-span-4">
-                                        <Controller
-                                            name="price"
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Price
-                                                        </FieldLabel>
-
-                                                        <Input
-                                                            {...field}
-                                                            id={field.name}
-                                                            aria-invalid={fieldState.invalid}
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
-                                                            value={field.value ?? ""}
-                                                            readOnly
-                                                            onChange={(e) => {
-                                                                const val = e.target.value;
-
-                                                                if (val === "") {
-                                                                    field.onChange(null);
-                                                                } else {
-                                                                    const cleaned = val.replace(
-                                                                        /^0+(?=\d)/,
-                                                                        "",
-                                                                    );
-                                                                    field.onChange(cleaned);
-                                                                }
-                                                            }}
-                                                        />
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
-                                                </Field>
-                                            )}
-                                        />
-                                    </div>
-
-                                    <div className="col-span-2">
-                                        <Controller
-                                            name="unitOfMeasurement"
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Unit of Measurement
-                                                        </FieldLabel>
-
-                                                        <Input
-                                                            {...field}
-                                                            id={field.name}
-                                                            aria-invalid={fieldState.invalid}
-                                                            value={field.value ?? ""}
-                                                            readOnly
-                                                        />
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
-                                                </Field>
-                                            )}
-                                        />
-                                    </div>
-                                </div>
-
-                                <Controller
-                                    name="expenseAccount"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            // className="overflow-hidden"
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            
-                                                <FieldLabel htmlFor={field.name}>
-                                                    Expense Account{" "}
-                                                    {selectedExpenseClass === "MOOE"
-                                                        ? "(MOOE)"
-                                                        : "(CO)"}
-                                                </FieldLabel>
-
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val) => {
-                                                        if (field.value !== val) {
-                                                            field.onChange(val);
-                                                            clearDependencies();
-                                                        }
-                                                    }}
-                                                    options={filteredChartOfAccounts}
-                                                    getOptionValue={(acc) => acc.id}
-                                                    getOptionSearchText={(acc) =>
-                                                        `${acc.account_number} ${acc.account_title}`
-                                                    }
-                                                    placeholder="Select expense account"
-                                                    searchPlaceholder="Search account number or title..."
-                                                    heading="Chart of Accounts"
-                                                    onClear={() => {
-                                                        field.onChange(null);
-                                                        form.setValue("category", null);
-                                                        clearDependencies();
-                                                    }}
-                                                    renderTrigger={(acc) => (
-                                                        <span className="truncate">
-                                                            <code className="mr-2 rounded bg-muted p-0.5 text-xs">
-                                                                {acc.account_number}
-                                                            </code>
-                                                            {acc.account_title}
-                                                        </span>
-                                                    )}
-                                                    renderOption={(acc) => (
-                                                        <div>
-                                                            <code className="mr-2 rounded bg-muted p-1 text-xs">
-                                                                {acc.account_number}
-                                                            </code>
-                                                            {acc.account_title}
-                                                        </div>
-                                                    )}
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
-                                                )}
-                                            
-                                        </Field>
                                     )}
-                                />
+                                </Field>
+                            )}
+                        />
 
-                                <Controller
-                                    name="category"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            // className="overflow-hidden"
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            
-                                                <FieldLabel htmlFor={field.name}>
-                                                    Category
-                                                </FieldLabel>
-
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val) => {
-                                                        if (field.value !== val) {
-                                                            field.onChange(val);
-                                                            clearDependencies();
-                                                        }
-                                                    }}
-                                                    options={filteredPpmpCategories}
-                                                    getOptionValue={(cat) => cat.id}
-                                                    getOptionSearchText={(cat) => cat.name}
-                                                    placeholder="Select category"
-                                                    searchPlaceholder="Search category..."
-                                                    heading="Categories"
-                                                    onClear={() => {
-                                                        field.onChange(null);
-                                                        clearDependencies();
-                                                    }}
-                                                    renderTrigger={(cat) => (
-                                                        <span className="truncate">{cat.name}</span>
-                                                    )}
-                                                    renderOption={(cat) => cat.name}
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
-                                                )}
-                                            
-                                        </Field>
-                                    )}
-                                />
-
-                                {mode === "quick-add" && (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <Controller
-                                            name="month"
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Month
-                                                        </FieldLabel>
-
-                                                        <Select
-                                                            value={field.value ?? undefined}
-                                                            onValueChange={(val) =>
-                                                                field.onChange(val)
-                                                            }
-                                                        >
-                                                            <SelectTrigger
-                                                                id={field.name}
-                                                                className="h-9"
-                                                            >
-                                                                <SelectValue placeholder="Select month" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {[
-                                                                    {
-                                                                        value: "jan",
-                                                                        label: "January",
-                                                                    },
-                                                                    {
-                                                                        value: "feb",
-                                                                        label: "February",
-                                                                    },
-                                                                    {
-                                                                        value: "mar",
-                                                                        label: "March",
-                                                                    },
-                                                                    {
-                                                                        value: "apr",
-                                                                        label: "April",
-                                                                    },
-                                                                    {
-                                                                        value: "may",
-                                                                        label: "May",
-                                                                    },
-                                                                    {
-                                                                        value: "jun",
-                                                                        label: "June",
-                                                                    },
-                                                                    {
-                                                                        value: "jul",
-                                                                        label: "July",
-                                                                    },
-                                                                    {
-                                                                        value: "aug",
-                                                                        label: "August",
-                                                                    },
-                                                                    {
-                                                                        value: "sep",
-                                                                        label: "September",
-                                                                    },
-                                                                    {
-                                                                        value: "oct",
-                                                                        label: "October",
-                                                                    },
-                                                                    {
-                                                                        value: "nov",
-                                                                        label: "November",
-                                                                    },
-                                                                    {
-                                                                        value: "dec",
-                                                                        label: "December",
-                                                                    },
-                                                                ].map((m) => (
-                                                                    <SelectItem
-                                                                        key={m.value}
-                                                                        value={m.value}
-                                                                    >
-                                                                        {m.label}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
-                                                </Field>
-                                            )}
+                        {/* Category */}
+                        <Controller
+                            name="category_id"
+                            control={control}
+                            render={({ fieldState }) => (
+                                <Field data-invalid={fieldState.invalid}>
+                                    <FieldLabel>PPMP Category</FieldLabel>
+                                    <TableSelectButton
+                                        hook={categorySelect}
+                                        displayValue={() =>
+                                            selectedCategoryObj?.name
+                                        }
+                                        placeholder="Select category..."
+                                        disabled={isLocked}
+                                        onClear={handleClearCategory}
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
                                         />
-
-                                        <Controller
-                                            name="quantity"
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Quantity
-                                                        </FieldLabel>
-
-                                                        <Input
-                                                            id={field.name}
-                                                            type="number"
-                                                            step="1"
-                                                            min="0"
-                                                            className="h-9"
-                                                            value={field.value ?? ""}
-                                                            onChange={(e) => {
-                                                                const val = e.target.value;
-
-                                                                if (val === "") {
-                                                                    field.onChange(null);
-                                                                } else {
-                                                                    field.onChange(val);
-                                                                }
-                                                            }}
-                                                            placeholder="Enter quantity"
-                                                        />
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
-                                                </Field>
-                                            )}
-                                        />
-                                    </div>
-                                )}
-
-                                <Controller
-                                    name="fundingSource"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            // className="overflow-hidden"
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            
-                                                <FieldLabel htmlFor={field.name}>
-                                                    Funding Source
-                                                </FieldLabel>
-
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val) => field.onChange(val)}
-                                                    options={fundingSources}
-                                                    getOptionValue={(fs) => fs.id}
-                                                    getOptionSearchText={(fs) =>
-                                                        `${fs.fund_type} ${fs.code} ${fs.title}`
-                                                    }
-                                                    placeholder="Select funding source"
-                                                    searchPlaceholder="Search funding source..."
-                                                    heading="Funding Sources"
-                                                    disabled // Passed directly through
-                                                    showClear={false} // Disabled clear since original had it disabled
-                                                    onClear={() => field.onChange(null)}
-                                                    renderTrigger={(fs) => (
-                                                        <span className="truncate">
-                                                            <code className="mr-2 rounded bg-muted p-0.5 text-xs">
-                                                                {fs.code}
-                                                            </code>
-                                                            {fs.title}
-                                                        </span>
-                                                    )}
-                                                    renderOption={(fs) => (
-                                                        <div>
-                                                            {fs.fund_type}
-                                                            <code className="mr-2 rounded bg-muted p-1 text-xs">
-                                                                {fs.code}
-                                                            </code>
-                                                            {fs.title}
-                                                        </div>
-                                                    )}
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
-                                                )}
-                                            
-                                        </Field>
                                     )}
-                                />
-                            </div>
-                        </form>
-                    </ScrollArea>
-                </div>
+                                </Field>
+                            )}
+                        />
 
-                <DialogFooter>
-                    <Button type="button" variant="outline" onClick={handleReset} disabled={isLoading}>
-                        Reset
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-                        Cancel
-                    </Button>
-                    <Button type="submit" form="form-rhf-demo" disabled={isLoading}>
-                        {isLoading ? "Adding Item..." : mode === "quick-add" ? "Add & Set Quantity" : "Add Item"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                        {/* COA */}
+                        <Controller
+                            name="coa_id"
+                            control={control}
+                            render={({ fieldState }) => (
+                                <Field data-invalid={fieldState.invalid}>
+                                    <FieldLabel>Chart of Account</FieldLabel>
+                                    <TableSelectButton
+                                        hook={coaSelect}
+                                        displayValue={() =>
+                                            selectedCoaObj?.account_title
+                                        }
+                                        placeholder="Select COA..."
+                                        disabled={isLocked}
+                                        onClear={handleClearCoa}
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
+
+                        <DialogFooter>
+                            <Button
+                                variant="secondary"
+                                type="button"
+                                onClick={handleReset}
+                            >
+                                Reset
+                            </Button>
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={handleCancel}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit">Add Item</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* TableSelect dialogs */}
+            <TableSelect
+                data={priceListData}
+                columns={priceListColumns}
+                open={priceListSelect.open}
+                onOpenChange={priceListSelect.setOpen}
+                onRowSelect={handlePriceListSelect}
+                paginationData={priceListPagination}
+                pageParamName="price_list_page"
+                searchParamName="price_list_search"
+                title="Select Price List"
+                description="Choose an existing price list item."
+                className="sm:w-300 sm:max-w-[calc(90%)]"
+            />
+
+            <TableSelect
+                data={categoryData}
+                columns={categoryColumns}
+                open={categorySelect.open}
+                onOpenChange={categorySelect.setOpen}
+                onRowSelect={handleCategorySelect}
+                paginationData={categoryPagination}
+                pageParamName="category_page"
+                searchParamName="category_search"
+                title="Select Category"
+                description="Choose a PPMP category."
+            />
+
+            <TableSelect
+                data={coaData}
+                columns={coaColumns}
+                open={coaSelect.open}
+                onOpenChange={coaSelect.setOpen}
+                onRowSelect={handleCoaSelect}
+                paginationData={coaPagination}
+                pageParamName="coa_page"
+                searchParamName="coa_search"
+                title="Select Chart of Account"
+                description="Choose a COA (MOOE or CO)."
+                className="sm:w-200 sm:max-w-[calc(90%)]"
+            />
+        </>
     );
 }

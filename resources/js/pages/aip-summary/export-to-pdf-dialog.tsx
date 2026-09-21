@@ -1,817 +1,310 @@
-import { Page, Text, View, Document, StyleSheet, PDFViewer, Font } from "@react-pdf/renderer";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import type { FiscalYear, Ppa, AuthData } from "@/types";
+// resources\js\pages\aip-summary\export-to-pdf-dialog.tsx
+
+import { useEffect, useMemo, useState } from 'react';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { PdfPreviewPane } from '@/lib/pdf/pdf-preview-pane';
+import { usePdfPreview } from '@/lib/pdf/use-pdf-preview';
+import type { AipEntry, FiscalYear } from '@/types';
 
 interface ExportToPdfDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    aipEntries: Ppa[];
+    aipEntries: AipEntry[];
     fiscalYear: FiscalYear;
-    auth: AuthData;
-    currentScope?: any;
+    officeName: string;
+    currentScope?: { scope: string; supplemental_aip_id: number | null };
 }
-
-// Disable hyphenation globally
-Font.registerHyphenationCallback((word) => [word]);
 
 export default function ExportToPdfDialog({
     open,
     onOpenChange,
     aipEntries,
     fiscalYear,
-    auth,
+    officeName,
     currentScope,
 }: ExportToPdfDialogProps) {
-    const COLUMN_WIDTHS = [
-        7.14, 17.86, 7.14, 5.36, 5.36, 7.14, 5.36, 5.36, 7.14, 5.36, 5.36, 5.36, 5.36, 5.36, 5.34,
-    ];
+    const scopeKey = currentScope?.scope;
+    const scopeSupplementalId = currentScope?.supplemental_aip_id;
 
-    const office = auth.user.office?.name.toUpperCase() || "";
-    const officeLabel = (
-        auth.user.office?.acronym ||
-        auth.user.office?.name ||
-        "Requesting Office"
-    ).toUpperCase();
+    const defaultConformePosition = '-';
 
-    const styles = StyleSheet.create({
-        page: { padding: 36 },
-        tableHeaderCell: {
-            margin: 0,
-            padding: 2,
-            fontSize: 6,
-            textAlign: "center",
-            fontWeight: "bold",
-        },
-        tableCellContainer: {
-            margin: 0,
-            padding: 0,
-            borderRightWidth: 1,
-            borderColor: "black",
-            justifyContent: "center",
-            flexGrow: 1, // Crucial for connecting vertical lines
-        },
-        tableCellText: {
-            margin: 0,
-            fontSize: 7,
-            paddingVertical: 4,
-            paddingHorizontal: 2,
-            textAlign: "center",
-        },
-        headerGroup: { flexDirection: "column", padding: 0 },
-        footerContainer: {
-            marginTop: 20,
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-        },
-        footerBlock: {
-            width: "20%", // Slightly less than 25% to allow for gaps
-            flexDirection: "column",
-        },
-        footerLabel: {
-            fontSize: 7,
-            marginBottom: 20, // Space for the actual signature
-        },
-        footerNameLine: {
-            borderBottomWidth: 1,
-            borderColor: "black",
-            marginBottom: 2,
-        },
-        footerTitle: {
-            fontSize: 6.5,
-            fontWeight: "bold",
-            textAlign: "center",
-            textTransform: "uppercase",
-        },
+    const [preparedName, setPreparedName] = useState('');
+    const [preparedPosition, setPreparedPosition] = useState(
+        "Provincial Planning & Dev't Coordinator",
+    );
+    const [reviewedName, setReviewedName] = useState('');
+    const [reviewedPosition, setReviewedPosition] = useState(
+        'OIC-Provincial Budget Officer',
+    );
+    const [approvedName, setApprovedName] = useState('');
+    const [approvedPosition, setApprovedPosition] = useState(
+        'Provincial Governor',
+    );
+    const [conformeName, setConformeName] = useState('');
+    const [conformePosition, setConformePosition] = useState(
+        defaultConformePosition,
+    );
+
+    const [debouncedSignatories, setDebouncedSignatories] = useState({
+        preparedName: '',
+        preparedPosition: "Provincial Planning & Dev't Coordinator",
+        reviewedName: '',
+        reviewedPosition: 'OIC-Provincial Budget Officer',
+        approvedName: '',
+        approvedPosition: 'Provincial Governor',
+        conformeName: '',
+        conformePosition: defaultConformePosition,
     });
 
-    const formatNumber = (value: any) => {
-        const num = parseFloat(value);
-
-        if (!value || isNaN(num) || num === 0) {
-return "-";
-}
-
-        return new Intl.NumberFormat("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(num);
-    };
-
-    const formatDate = (value: string | null | undefined) => {
-        if (!value) {
-return "-";
-}
-
-        const parts = value.split("-");
-
-        if (parts.length === 3) {
-            const shortMonths = [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-            ];
-            const monthName = shortMonths[parseInt(parts[1]) - 1];
-            const day = parseInt(parts[2]);
-
-            return `${monthName}-${day}`;
-        }
-
-        return value;
-    };
-
-    const renderOrderedRows = (initialEntries: Ppa[]) => {
-        const result: React.ReactNode[] = [];
-        let rootCounter = 0;
-
-        const stack = [...initialEntries].toReversed().map((item) => ({
-            item,
-            level: 0,
-            path: [] as number[],
-        }));
-
-        while (stack.length > 0) {
-            const { item, level, path } = stack.pop()!;
-
-            let displayTitle = item.name;
-
-            if (level === 0) {
-                const letter = String.fromCharCode(65 + rootCounter);
-                displayTitle = `${letter}. ${displayTitle}`;
-                rootCounter++;
-            } else {
-                const outlineString = path.join(".");
-                const suffix = level === 1 ? "." : "";
-                displayTitle = `${outlineString}${suffix} ${displayTitle}`;
-            }
-
-            let aipEntry = item.aip_entries?.[0];
-            const activeAips = item.aip_entries || [];
-            let fundingSources = activeAips.flatMap((aip) => aip.ppa_funding_sources || []);
-
-            if (currentScope?.scope === "combined") {
-                const grouped = new Map<number, any>();
-                fundingSources.forEach((src) => {
-                    const id = src.funding_source_id;
-
-                    if (!id) {
-return;
-}
-
-                    if (!grouped.has(id)) {
-                        grouped.set(id, {
-                            ...src,
-                            ps_amount: 0,
-                            mooe_amount: 0,
-                            co_amount: 0,
-                            fe_amount: 0,
-                            ccet_adaptation: 0,
-                            ccet_mitigation: 0,
-                        });
-                    }
-
-                    const base = grouped.get(id);
-                    base.ps_amount += parseFloat(src.ps_amount || 0);
-                    base.mooe_amount += parseFloat(src.mooe_amount || 0);
-                    base.co_amount += parseFloat(src.co_amount || 0);
-                    base.fe_amount += parseFloat(src.fe_amount || 0);
-                    base.ccet_adaptation += parseFloat(src.ccet_adaptation || 0);
-                    base.ccet_mitigation += parseFloat(src.ccet_mitigation || 0);
-                });
-
-                fundingSources = Array.from(grouped.values()).map((src) => ({
-                    ...src,
-                    ps_amount: src.ps_amount > 0 ? src.ps_amount.toString() : "",
-                    mooe_amount: src.mooe_amount > 0 ? src.mooe_amount.toString() : "",
-                    co_amount: src.co_amount > 0 ? src.co_amount.toString() : "",
-                    fe_amount: src.fe_amount > 0 ? src.fe_amount.toString() : "",
-                    ccet_adaptation: src.ccet_adaptation > 0 ? src.ccet_adaptation.toString() : "",
-                    ccet_mitigation: src.ccet_mitigation > 0 ? src.ccet_mitigation.toString() : "",
-                }));
-
-                // Use the latest SAIP entry for non-numeric fields
-                const latestEntry = [...activeAips].sort(
-                    (a: any, b: any) =>
-                        (b.supplemental_aip_id ?? -1) - (a.supplemental_aip_id ?? -1),
-                )[0];
-
-                if (latestEntry) {
-                    aipEntry = latestEntry;
-                }
-            }
-
-            if (fundingSources.length === 0) {
-                fundingSources = [{}];
-            }
-
-            result.push(
-                <View key={`${item.id}-${level}`} style={{ flexDirection: "row" }} wrap={false}>
-                    {/* LEFT SIDE: Columns 0 to 5 (Static per PPA) */}
-                    {COLUMN_WIDTHS.slice(0, 6).map((width, colIndex) => (
-                        <View
-                            key={colIndex}
-                            style={[
-                                styles.tableCellContainer,
-                                {
-                                    width: `${width}%`,
-                                    borderLeftWidth: colIndex === 0 ? 1 : 0,
-                                    alignItems: [2, 3, 4].includes(colIndex) ? "center" : "stretch",
-                                },
-                            ]}
-                        >
-                            <Text
-                                style={[
-                                    styles.tableCellText,
-                                    colIndex === 0 ? { fontSize: 4.5 } : {},
-                                    [1, 5].includes(colIndex) ? { textAlign: "left" } : {},
-                                    colIndex === 1
-                                        ? {
-                                              fontWeight: level <= 1 ? "bold" : "normal",
-                                              paddingLeft: level * 6,
-                                          }
-                                        : {},
-                                ]}
-                            >
-                                {(() => {
-                                    if (colIndex === 0) {
-return item.full_code || "-";
-}
-
-                                    if (colIndex === 1) {
-return displayTitle || "-";
-}
-
-                                    if (colIndex === 2) {
-                                        const office = item.office;
-
-                                        if (office?.parent?.acronym && office?.acronym) {
-                                            return `${office.parent.acronym}/${office.acronym}`;
-                                        }
-
-                                        return office?.acronym || "-";
-                                    }
-
-                                    if (colIndex === 3) {
-return formatDate(aipEntry?.start_date);
-}
-
-                                    if (colIndex === 4) {
-return formatDate(aipEntry?.end_date);
-}
-
-                                    if (colIndex === 5) {
-return aipEntry?.expected_output || "-";
-}
-
-                                    return "-";
-                                })()}
-                            </Text>
-                        </View>
-                    ))}
-
-                    {/* RIGHT SIDE: Columns 6 to 14 (Iterating Funding Sources) */}
-                    <View
-                        style={{
-                            width: `${COLUMN_WIDTHS.slice(6, 15).reduce((a, b) => a + b, 0)}%`,
-                            flexDirection: "column",
-                        }}
-                    >
-                        {fundingSources.map((fs: any, fsIndex) => {
-                            const total = (
-                                parseFloat(fs.ps_amount || 0) +
-                                parseFloat(fs.mooe_amount || 0) +
-                                parseFloat(fs.fe_amount || 0) +
-                                parseFloat(fs.co_amount || 0)
-                            ).toString();
-
-                            return (
-                                <View
-                                    key={fsIndex}
-                                    style={{
-                                        flexDirection: "row",
-                                        flexGrow: 1,
-                                    }}
-                                >
-                                    {COLUMN_WIDTHS.slice(6, 15).map((width, subIndex) => {
-                                        const colIndex = subIndex + 6;
-                                        const containerWidth = COLUMN_WIDTHS.slice(6, 15).reduce(
-                                            (a, b) => a + b,
-                                            0,
-                                        );
-                                        const relativeWidth = (width / containerWidth) * 100;
-
-                                        return (
-                                            <View
-                                                key={colIndex}
-                                                style={[
-                                                    styles.tableCellContainer,
-                                                    {
-                                                        width: `${relativeWidth}%`,
-                                                        alignItems:
-                                                            colIndex >= 7 && colIndex <= 13
-                                                                ? "flex-end"
-                                                                : "stretch",
-                                                    },
-                                                ]}
-                                            >
-                                                <Text
-                                                    style={[
-                                                        styles.tableCellText,
-                                                        { width: "100%" },
-                                                    ]}
-                                                >
-                                                    {(() => {
-                                                        if (colIndex === 6) {
-return fs.funding_source?.code || "-";
-}
-
-                                                        if (colIndex === 7) {
-return formatNumber(fs.ps_amount);
-}
-
-                                                        if (colIndex === 8) {
-return formatNumber(fs.mooe_amount);
-}
-
-                                                        if (colIndex === 9) {
-return formatNumber(fs.fe_amount);
-}
-
-                                                        if (colIndex === 10) {
-return formatNumber(fs.co_amount);
-}
-
-                                                        if (colIndex === 11) {
-return formatNumber(total);
-}
-
-                                                        if (colIndex === 12) {
-return formatNumber(fs.ccet_adaptation);
-}
-
-                                                        if (colIndex === 13) {
-return formatNumber(fs.ccet_mitigation);
-}
-
-                                                        // Always return something for Col 14 to keep vertical line intact
-                                                        if (colIndex === 14) {
-return fs?.cc_typology?.code || "-";
-}
-
-                                                        return "-";
-                                                    })()}
-                                                </Text>
-                                            </View>
-                                        );
-                                    })}
-                                </View>
-                            );
-                        })}
-                    </View>
-                </View>,
-            );
-
-            if (item.children && item.children.length > 0) {
-                for (let i = item.children.length - 1; i >= 0; i--) {
-                    stack.push({
-                        item: item.children[i],
-                        level: level + 1,
-                        path: level === 0 ? [i + 1] : [...path, i + 1],
-                    });
-                }
-            }
-        }
-
-        return result;
-    };
-
-    const calculateTotals = (data: Ppa[]) => {
-        const totals = {
-            ps: 0,
-            mooe: 0,
-            fe: 0,
-            co: 0,
-            adaptation: 0,
-            mitigation: 0,
-        };
-
-        const traverse = (items: Ppa[]) => {
-            items.forEach((item) => {
-                const entry = item.aip_entries?.[0];
-                entry?.ppa_funding_sources?.forEach((fs) => {
-                    totals.ps += parseFloat(fs.ps_amount || "0");
-                    totals.mooe += parseFloat(fs.mooe_amount || "0");
-                    totals.fe += parseFloat(fs.fe_amount || "0");
-                    totals.co += parseFloat(fs.co_amount || "0");
-                    totals.adaptation += parseFloat(fs.ccet_adaptation || "0");
-                    totals.mitigation += parseFloat(fs.ccet_mitigation || "0");
-                });
-
-                if (item.children) {
-traverse(item.children);
-}
+    useEffect(() => {
+        const id = setTimeout(() => {
+            setDebouncedSignatories({
+                preparedName,
+                preparedPosition,
+                reviewedName,
+                reviewedPosition,
+                approvedName,
+                approvedPosition,
+                conformeName,
+                conformePosition,
             });
-        };
+        }, 300);
 
-        traverse(data);
-        const grandTotal = totals.ps + totals.mooe + totals.fe + totals.co;
+        return () => clearTimeout(id);
+    }, [
+        preparedName,
+        preparedPosition,
+        reviewedName,
+        reviewedPosition,
+        approvedName,
+        approvedPosition,
+        conformeName,
+        conformePosition,
+    ]);
 
-        return { ...totals, grandTotal };
-    };
+    function handleOpenChange(nextOpen: boolean) {
+        if (!nextOpen) {
+            setPreparedName('');
+            setPreparedPosition("Provincial Planning & Dev't Coordinator");
+            setReviewedName('');
+            setReviewedPosition('OIC-Provincial Budget Officer');
+            setApprovedName('');
+            setApprovedPosition('Provincial Governor');
+            setConformeName('');
+            setConformePosition(defaultConformePosition);
+            setDebouncedSignatories({
+                preparedName: '',
+                preparedPosition: "Provincial Planning & Dev't Coordinator",
+                reviewedName: '',
+                reviewedPosition: 'OIC-Provincial Budget Officer',
+                approvedName: '',
+                approvedPosition: 'Provincial Governor',
+                conformeName: '',
+                conformePosition: defaultConformePosition,
+            });
+        }
 
-    const RenderTotalRow = ({ totals }: { totals: ReturnType<typeof calculateTotals> }) => {
-        // Width for the label side (Cols 1-7)
-        const labelWidth = COLUMN_WIDTHS.slice(0, 7).reduce((a, b) => a + b, 0);
+        onOpenChange(nextOpen);
+    }
 
-        return (
-            <View
-                style={{
-                    flexDirection: "row",
-                    borderTopWidth: 1,
-                    borderBottomWidth: 1,
-                }}
-                wrap={false}
-            >
-                {/* Label Column */}
-                <View
-                    style={[
-                        styles.tableCellContainer,
-                        { width: `${labelWidth}%`, borderLeftWidth: 1 },
-                    ]}
-                >
-                    <Text
-                        style={[
-                            styles.tableCellText,
-                            {
-                                fontWeight: "bold",
-                                textAlign: "right",
-                                paddingRight: 10,
-                            },
-                        ]}
-                    >
-                        GRAND TOTAL
-                    </Text>
-                </View>
+    // Built from primitive-stable dependencies so an unstable parent-side
+    // object identity cannot trigger needless worker regenerations.
+    const payload = useMemo(
+        () =>
+            open
+                ? {
+                      aipEntries,
+                      fiscalYear,
+                      officeName,
+                      currentScope:
+                          scopeKey === undefined
+                              ? undefined
+                              : {
+                                    scope: scopeKey,
+                                    supplemental_aip_id:
+                                        scopeSupplementalId ?? null,
+                                },
+                      signatories: debouncedSignatories,
+                  }
+                : null,
+        [
+            open,
+            aipEntries,
+            fiscalYear,
+            officeName,
+            scopeKey,
+            scopeSupplementalId,
+            debouncedSignatories,
+        ],
+    );
+    const { url, status } = usePdfPreview('aip-summary', payload);
 
-                {/* Financial Columns */}
-                {[
-                    totals.ps,
-                    totals.mooe,
-                    totals.fe,
-                    totals.co,
-                    totals.grandTotal,
-                    totals.adaptation,
-                    totals.mitigation,
-                ].map((val, i) => (
-                    <View
-                        key={i}
-                        style={[
-                            styles.tableCellContainer,
-                            {
-                                width: `${COLUMN_WIDTHS[7 + i]}%`,
-                                alignItems: "flex-end",
-                            },
-                        ]}
-                    >
-                        <Text style={[styles.tableCellText, { fontWeight: "bold" }]}>
-                            {formatNumber(val)}
-                        </Text>
-                    </View>
-                ))}
+    if (!open) {
+        return null;
+    }
 
-                {/* Empty space for Typology Code col */}
-                <View style={[styles.tableCellContainer, { width: `${COLUMN_WIDTHS[14]}%` }]}>
-                    <Text style={styles.tableCellText}>-</Text>
-                </View>
-            </View>
-        );
-    };
-
-    const MyDocument = ({ data }: { data: Ppa[] }) => {
-        const totals = calculateTotals(data);
-
-        return (
-            <Document>
-                <Page size={[612, 936]} orientation="landscape" style={styles.page}>
-                    <View fixed>
-                        <View
-                            style={{
-                                marginBottom: 10,
-                                marginTop: 5,
-                                textAlign: "center",
-                            }}
-                        >
-                            <Text style={{ fontSize: 10, fontWeight: "bold" }}>
-                                {currentScope?.scope === "supplemental"
-                                    ? `CY ${fiscalYear.year} Supplemental Annual Investment Program (SAIP)`
-                                    : `CY ${fiscalYear.year} Annual Investment Program (AIP)`}
-                            </Text>
-
-                            <Text style={{ fontSize: 9, fontWeight: "bold" }}>
-                                By Program / Project / Activity - by Sector
-                            </Text>
-                        </View>
-
-                        <View style={{ marginBottom: 5, textAlign: "left" }}>
-                            <Text style={{ fontSize: 8, fontWeight: "bold" }}>
-                                {`OFFICE: `}
-                                <Text style={{ textDecoration: "underline" }}>{`${office}`}</Text>
-                            </Text>
-                        </View>
-
-                        {/* Table Headers */}
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                borderTopWidth: 1,
-                                borderBottomWidth: 1,
-                            }}
-                        >
-                            <View
-                                style={{
-                                    width: `${COLUMN_WIDTHS[0]}%`,
-                                    borderLeftWidth: 1,
-                                    borderRightWidth: 1,
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <Text style={styles.tableHeaderCell}>AIP REF. CODE</Text>
-                            </View>
-
-                            <View
-                                style={{
-                                    width: `${COLUMN_WIDTHS[1]}%`,
-                                    borderRightWidth: 1,
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <Text style={styles.tableHeaderCell}>
-                                    PROGRAM / PROJECT / ACTIVITY DESCRIPTION
-                                </Text>
-                            </View>
-
-                            <View
-                                style={{
-                                    width: `${COLUMN_WIDTHS[2]}%`,
-                                    borderRightWidth: 1,
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <Text style={styles.tableHeaderCell}>
-                                    IMPLEMENTING OFFICE / DEPARTMENT / LOCATION
-                                </Text>
-                            </View>
-
-                            <View
-                                style={{
-                                    width: `${COLUMN_WIDTHS[3] + COLUMN_WIDTHS[4]}%`,
-                                    flexDirection: "column",
-                                }}
-                            >
-                                <View
-                                    style={{
-                                        borderBottomWidth: 1,
-                                        borderRightWidth: 1,
-                                        flex: 1,
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <Text style={styles.tableHeaderCell}>
-                                        SCHEDULE OF IMPLEMENTATION
-                                    </Text>
-                                </View>
-
-                                <View style={{ flexDirection: "row", flex: 1 }}>
-                                    <View
-                                        style={{
-                                            width: "50%",
-                                            borderRightWidth: 1,
-                                        }}
-                                    >
-                                        <Text style={styles.tableHeaderCell}>STARTING DATE</Text>
-                                    </View>
-
-                                    <View
-                                        style={{
-                                            width: "50%",
-                                            borderRightWidth: 1,
-                                        }}
-                                    >
-                                        <Text style={styles.tableHeaderCell}>COMPLETION DATE</Text>
-                                    </View>
-                                </View>
-                            </View>
-
-                            <View
-                                style={{
-                                    width: `${COLUMN_WIDTHS[5]}%`,
-                                    borderRightWidth: 1,
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <Text style={styles.tableHeaderCell}>EXPECTED OUTPUTS</Text>
-                            </View>
-
-                            <View
-                                style={{
-                                    width: `${COLUMN_WIDTHS[6]}%`,
-                                    borderRightWidth: 1,
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <Text style={styles.tableHeaderCell}>FUNDING SOURCE</Text>
-                            </View>
-
-                            <View
-                                style={{
-                                    width: `${COLUMN_WIDTHS.slice(7, 12).reduce((a, b) => a + b, 0)}%`,
-                                    flexDirection: "column",
-                                }}
-                            >
-                                <View
-                                    style={{
-                                        borderRightWidth: 1,
-                                        borderBottomWidth: 1,
-                                        justifyContent: "center",
-                                        flex: 1,
-                                    }}
-                                >
-                                    <Text style={styles.tableHeaderCell}>
-                                        AMOUNT (In thousand pesos)
-                                    </Text>
-                                </View>
-
-                                <View style={{ flexDirection: "row" }}>
-                                    {[
-                                        "PERSONAL SERVICES (PS)",
-                                        "MAINTENANCE & OTHER OPERATING EXPENSES (MOOE)",
-                                        "FINANCIAL EPENCES (FE)",
-                                        "CAPITAL OUTALY (CO)",
-                                        "TOTAL",
-                                    ].map((label, i) => (
-                                        <View
-                                            key={label}
-                                            style={{
-                                                width: `${(COLUMN_WIDTHS[7 + i] / COLUMN_WIDTHS.slice(7, 12).reduce((a, b) => a + b, 0)) * 100}%`,
-                                                borderRightWidth: 1,
-                                            }}
-                                        >
-                                            <Text style={styles.tableHeaderCell}>{label}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-
-                            <View
-                                style={{
-                                    width: `${COLUMN_WIDTHS.slice(12, 14).reduce((a, b) => a + b, 0)}%`,
-                                    flexDirection: "column",
-                                }}
-                            >
-                                <View
-                                    style={{
-                                        borderRightWidth: 1,
-                                        borderBottomWidth: 1,
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <Text style={styles.tableHeaderCell}>
-                                        AMOUNT of Climate Change Expenditure (in thousand pesos)
-                                    </Text>
-                                </View>
-
-                                <View style={{ flexDirection: "row" }}>
-                                    {["Climate Change Adaptation", "Climate Change Mitigation"].map(
-                                        (label, i) => (
-                                            <View
-                                                key={label}
-                                                style={{
-                                                    width: `${(COLUMN_WIDTHS[12 + i] / COLUMN_WIDTHS.slice(12, 14).reduce((a, b) => a + b, 0)) * 100}%`,
-                                                    borderRightWidth: 1,
-                                                }}
-                                            >
-                                                <Text style={styles.tableHeaderCell}>{label}</Text>
-                                            </View>
-                                        ),
-                                    )}
-                                </View>
-                            </View>
-
-                            <View
-                                style={{
-                                    width: `${COLUMN_WIDTHS[14]}%`,
-                                    borderRightWidth: 1,
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <Text style={styles.tableHeaderCell}>CC Typology Code</Text>
-                            </View>
-                        </View>
-
-                        {/* Column Numbers */}
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                borderBottomWidth: 1,
-                            }}
-                        >
-                            {COLUMN_WIDTHS.map((width, index) => (
-                                <View
-                                    key={index}
-                                    style={{
-                                        width: `${width}%`,
-                                        borderRightWidth: 1,
-                                        borderLeftWidth: index === 0 ? 1 : 0,
-                                    }}
-                                >
-                                    <Text style={styles.tableHeaderCell}>{index + 1}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-
-                    {/* Data Rows */}
-                    {renderOrderedRows(data)}
-
-                    <RenderTotalRow totals={totals} />
-
-                    {/* Closing Border */}
-                    <View
-                        fixed
-                        style={{
-                            borderTopWidth: 1,
-                            borderColor: "black",
-                            width: "100%",
-                            marginTop: -1, // Pulls it up to touch the vertical lines perfectly
-                        }}
-                    />
-
-                    <View style={styles.footerContainer} wrap={false}>
-                        {/* 1. Prepared By */}
-                        <View style={styles.footerBlock}>
-                            <Text style={styles.footerLabel}>Prepared by:</Text>
-                            <View style={styles.footerNameLine} />
-                            <Text style={styles.footerTitle}>
-                                Provincial Planning and Development Coordinator
-                            </Text>
-                        </View>
-
-                        {/* 2. Reviewed By */}
-                        <View style={styles.footerBlock}>
-                            <Text style={styles.footerLabel}>Reviewed by:</Text>
-                            <View style={styles.footerNameLine} />
-                            <Text style={styles.footerTitle}>Provincial Budget Officer</Text>
-                        </View>
-
-                        {/* 3. Approved By */}
-                        <View style={styles.footerBlock}>
-                            <Text style={styles.footerLabel}>Approved by:</Text>
-                            <View style={styles.footerNameLine} />
-                            <Text style={styles.footerTitle}>Provincial Governor</Text>
-                        </View>
-
-                        {/* 4. Conforme */}
-                        <View style={styles.footerBlock}>
-                            <Text style={styles.footerLabel}>Conforme:</Text>
-                            <View style={styles.footerNameLine} />
-                            <Text style={styles.footerTitle}>Unit Head, {officeLabel}</Text>
-                        </View>
-                    </View>
-
-                    <Text
-                        fixed
-                        style={{
-                            fontSize: 10,
-                            textAlign: "center",
-                            paddingTop: 10,
-                        }}
-                        render={({ pageNumber }) => `${pageNumber}`}
-                    />
-                </Page>
-            </Document>
-        );
-    };
+    const busy = status === 'generating';
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="m-0 flex h-full flex-col gap-0 rounded-none bg-[#3c3c3c] p-0 text-white sm:max-w-full">
-                <div className="p-4 pb-0">
-                    <DialogTitle>PDF Preview</DialogTitle>
-                    <DialogDescription className="sr-only">AIP Report Preview</DialogDescription>
-                </div>
-                <div className="h-full bg-white">
-                    <PDFViewer width="100%" height="100%" showToolbar={true}>
-                        <MyDocument data={aipEntries} />
-                    </PDFViewer>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogContent className="flex h-[100vh] flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
+                <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b p-4">
+                    <DialogTitle>
+                        PDF Preview - AIP Summary {fiscalYear.year}
+                    </DialogTitle>
+                    <DialogDescription className="sr-only">
+                        AIP Summary Report Preview
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex flex-1 overflow-hidden">
+                    <div className="bg-background flex w-[360px] shrink-0 flex-col gap-4 overflow-auto border-r p-4">
+                        <FieldGroup>
+                            <div className="text-sm font-semibold">
+                                Prepared by
+                            </div>
+                            <Field>
+                                <FieldLabel htmlFor="sig-prepared-name">
+                                    Name
+                                </FieldLabel>
+                                <Input
+                                    id="sig-prepared-name"
+                                    placeholder="Enter name"
+                                    value={preparedName}
+                                    onChange={(e) =>
+                                        setPreparedName(e.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="sig-prepared-position">
+                                    Position
+                                </FieldLabel>
+                                <Input
+                                    id="sig-prepared-position"
+                                    placeholder="Provincial Planning & Dev't Coordinator"
+                                    value={preparedPosition}
+                                    onChange={(e) =>
+                                        setPreparedPosition(e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Separator className="my-1" />
+
+                            <div className="text-sm font-semibold">
+                                Reviewed by
+                            </div>
+                            <Field>
+                                <FieldLabel htmlFor="sig-reviewed-name">
+                                    Name
+                                </FieldLabel>
+                                <Input
+                                    id="sig-reviewed-name"
+                                    placeholder="Enter name"
+                                    value={reviewedName}
+                                    onChange={(e) =>
+                                        setReviewedName(e.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="sig-reviewed-position">
+                                    Position
+                                </FieldLabel>
+                                <Input
+                                    id="sig-reviewed-position"
+                                    placeholder="OIC-Provincial Budget Officer"
+                                    value={reviewedPosition}
+                                    onChange={(e) =>
+                                        setReviewedPosition(e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Separator className="my-1" />
+
+                            <div className="text-sm font-semibold">
+                                Approved by
+                            </div>
+                            <Field>
+                                <FieldLabel htmlFor="sig-approved-name">
+                                    Name
+                                </FieldLabel>
+                                <Input
+                                    id="sig-approved-name"
+                                    placeholder="Enter name"
+                                    value={approvedName}
+                                    onChange={(e) =>
+                                        setApprovedName(e.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="sig-approved-position">
+                                    Position
+                                </FieldLabel>
+                                <Input
+                                    id="sig-approved-position"
+                                    placeholder="Provincial Governor"
+                                    value={approvedPosition}
+                                    onChange={(e) =>
+                                        setApprovedPosition(e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Separator className="my-1" />
+
+                            <div className="text-sm font-semibold">
+                                Conforme
+                            </div>
+                            <Field>
+                                <FieldLabel htmlFor="sig-conforme-name">
+                                    Name
+                                </FieldLabel>
+                                <Input
+                                    id="sig-conforme-name"
+                                    placeholder="Enter name"
+                                    value={conformeName}
+                                    onChange={(e) =>
+                                        setConformeName(e.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="sig-conforme-position">
+                                    Position
+                                </FieldLabel>
+                                <Input
+                                    id="sig-conforme-position"
+                                    placeholder="-"
+                                    value={conformePosition}
+                                    onChange={(e) =>
+                                        setConformePosition(e.target.value)
+                                    }
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </div>
+
+                    <div className="relative flex-1 bg-[#3c3c3c]">
+                        <PdfPreviewPane
+                            url={url}
+                            status={status}
+                            busy={busy}
+                            title="AIP Summary Report"
+                        />
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

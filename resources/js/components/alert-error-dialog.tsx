@@ -24,7 +24,7 @@ export function AlertErrorDialog({
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent className="border-destructive">
                 <AlertDialogHeader>
-                    <div className="flex items-center gap-2 text-destructive">
+                    <div className="text-destructive flex items-center gap-2">
                         <AlertCircle className="h-6 w-6" />
                         <AlertDialogTitle className="text-destructive">
                             Error

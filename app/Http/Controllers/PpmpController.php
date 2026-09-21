@@ -7,7 +7,6 @@ use App\Http\Requests\UpdatePpmpRequest;
 use App\Models\AipEntry;
 use App\Models\ChartOfAccount;
 use App\Models\FiscalYear;
-use App\Models\FundingSource;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
 use App\Models\PpmpCategory;
@@ -25,157 +24,194 @@ class PpmpController extends Controller
         Request $request,
         FiscalYear $fiscalYear,
         AipEntry $aipEntry,
+        PpaFundingSource $ppaFundingSource,
     ) {
         Gate::authorize('viewAny', [Ppmp::class, $aipEntry]);
 
-        $selectedAipEntry = AipEntry::with(['ppa', 'ppaFundingSources'])->find(
-            $aipEntry->id,
-        );
-
-        $tab = $request->query('tab');
-
-        $isSupplemental = ! is_null($selectedAipEntry->supplemental_aip_id);
-
-        // Fetch all AIP entries for this PPA to find all SAIPs and the original AIP
-        $allAipEntries = AipEntry::where('ppa_id', $selectedAipEntry->ppa_id)
-            ->with(['supplementalAip', 'ppaFundingSources', 'ppa'])
-            ->get();
-
-        // Check viewSupplemental whenever supplemental entries exist
-        $hasSupplementalAipEntries = $allAipEntries->contains(
-            fn ($entry) => ! is_null($entry->supplemental_aip_id),
-        );
-
-        $canViewSupplemental = request()
-            ->user()
-            ->can('viewSupplemental', Ppmp::class);
-
-        if (
-            $tab &&
-            str_starts_with($tab, 'supplemental_') &&
-            ! $canViewSupplemental
-        ) {
-            $tab = 'original';
+        if ($ppaFundingSource->aipOutput?->aip_entry_id !== $aipEntry->id) {
+            abort(404);
         }
 
-        $aipEntryIds = $allAipEntries->pluck('id');
+        // === Filter parameters ===
+        $coaFilter = $request->input('coa_id');
+        $categoryFilter = $request->input('category_id');
 
-        $ppmps = Ppmp::whereHas('ppaFundingSource', function ($query) use (
-            $aipEntryIds,
-        ) {
-            $query->whereIn('aip_entry_id', $aipEntryIds);
-        })
-            ->with([
-                'ppaFundingSource' => function ($query) {
-                    $query->select(
+        // === Price Lists (filtered by COA and/or Category) ===
+        $priceListsQuery = PpmpPriceList::select([
+            'id',
+            'item_number',
+            'description',
+            'unit_of_measurement',
+            'price',
+            'chart_of_account_ppmp_category_id',
+        ])->with([
+            'chartOfAccountPpmpCategory' => function ($q) {
+                $q->select([
+                    'id',
+                    'chart_of_account_id',
+                    'ppmp_category_id',
+                ])->with([
+                    'chartOfAccount' => fn ($q) => $q->select([
                         'id',
-                        'funding_source_id',
-                        'supplemental_aip_id',
-                        'aip_entry_id',
-                    );
-                },
-                'ppaFundingSource.fundingSource' => function ($query) {
-                    $query->select('id', 'code', 'title'); // only 'code' is needed for display
-                },
-                'ppmpPriceList' => function ($query) {
-                    $query->select(
-                        'id',
-                        'item_number',
-                        'description',
-                        'unit_of_measurement',
-                        'price',
-                        'chart_of_account_ppmp_category_id',
-                    );
-                },
-                'ppmpPriceList.chartOfAccountPpmpCategory' => function (
-                    $query,
-                ) {
-                    $query->select(
-                        'id',
-                        'chart_of_account_id',
-                        'ppmp_category_id',
-                    );
-                },
-                'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount' => function (
-                    $query,
-                ) {
-                    $query->select(
-                        'id',
-                        'account_number',
                         'account_title',
-                        'expense_class',
-                    );
-                },
-                'ppmpPriceList.chartOfAccountPpmpCategory.ppmpCategory' => function (
-                    $query,
-                ) {
-                    $query->select('id', 'name', 'is_non_procurement');
-                },
-            ])
-            ->get();
-
-        $priceLists = PpmpPriceList::with(
-            'chartOfAccountPpmpCategory.chartOfAccount',
-            'chartOfAccountPpmpCategory.ppmpCategory',
-        )->get();
-
-        $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
-            'MOOE',
-            'CO',
-        ])->get();
-
-        $ppmpCategories = PpmpCategory::with(
-            'chartOfAccountPpmpCategories.chartOfAccount',
-        )->get();
-
-        $fundingSources = FundingSource::whereHas(
-            'ppaFundingSources',
-            function ($query) use ($aipEntryIds) {
-                $query->whereIn('aip_entry_id', $aipEntryIds);
+                    ]),
+                    'ppmpCategory' => fn ($q) => $q->select(['id', 'name']),
+                ]);
             },
-        )->get();
+        ]);
 
-        $ppmps->each(function ($ppmp) use ($request) {
-            $ppmp->can = [
-                'edit' => $request->user()->can('editPriceListQuantity', $ppmp),
-                'delete' => $request->user()->can('deletePriceList', $ppmp),
-            ];
-        });
+        if ($coaFilter) {
+            $priceListsQuery->whereHas('chartOfAccountPpmpCategory', function (
+                $q,
+            ) use ($coaFilter) {
+                $q->where('chart_of_account_id', $coaFilter);
+            });
+        }
+        if ($categoryFilter) {
+            $priceListsQuery->whereHas('chartOfAccountPpmpCategory', function (
+                $q,
+            ) use ($categoryFilter) {
+                $q->where('ppmp_category_id', $categoryFilter);
+            });
+        }
+        if ($search = $request->input('price_list_search')) {
+            $priceListsQuery->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")->orWhere(
+                    'item_number',
+                    'like',
+                    "%{$search}%",
+                );
+            });
+        }
 
-        $selectedOfficeId = $request->query('selected_office_id');
+        $usedPriceListIds = Ppmp::where(
+            'ppa_funding_source_id',
+            $ppaFundingSource->id,
+        )
+            ->whereNotNull('ppmp_price_list_id')
+            ->pluck('ppmp_price_list_id');
+
+        $priceListsQuery->whereNotIn('id', $usedPriceListIds);
+
+        $priceLists = $priceListsQuery->paginate(100, ['*'], 'price_list_page');
+
+        // === Chart of Accounts (filtered by Category) ===
+        $coaQuery = ChartOfAccount::select([
+            'id',
+            'account_number',
+            'account_title',
+            'expense_class',
+        ])->whereIn('expense_class', ['MOOE', 'CO']);
+
+        if ($categoryFilter) {
+            $coaQuery->whereHas('chartOfAccountPpmpCategories', function (
+                $q,
+            ) use ($categoryFilter) {
+                $q->where('ppmp_category_id', $categoryFilter);
+            });
+        }
+
+        if ($search = $request->input('coa_search')) {
+            $coaQuery->where(function ($q) use ($search) {
+                $q->where('account_number', 'like', "%{$search}%")->orWhere(
+                    'account_title',
+                    'like',
+                    "%{$search}%",
+                );
+            });
+        }
+        $chartOfAccounts = $coaQuery->paginate(100, ['*'], 'coa_page');
+
+        // === Categories (filtered by COA) ===
+        $categoryQuery = PpmpCategory::query()->select(['id', 'name']);
+
+        if ($coaFilter) {
+            $categoryQuery->whereHas('chartOfAccountPpmpCategories', function (
+                $q,
+            ) use ($coaFilter) {
+                $q->where('chart_of_account_id', $coaFilter);
+            });
+        }
+
+        if ($search = $request->input('category_search')) {
+            $categoryQuery->where('name', 'like', "%{$search}%");
+        }
+
+        $categories = $categoryQuery->paginate(100, ['*'], 'category_page');
 
         return Inertia::render('ppmp/index', [
-            'can' => [
-                'addPriceList' => request()
-                    ->user()
-                    ->can('addPriceList', Ppmp::class),
-                'viewSupplemental' => $canViewSupplemental,
-                'export' => request()->user()->can('export', Ppmp::class),
-                'generateSummary' => request()
-                    ->user()
-                    ->can('generateSummary', Ppmp::class),
-                'showSummaryAll' => $request
-                    ->user()
-                    ->can('showSummaryAll', AipEntry::class),
-            ],
-            'fiscalYear' => $fiscalYear,
-            'aipEntry' => $selectedAipEntry,
-            'allAipEntries' => $allAipEntries,
-            'ppmps' => $ppmps,
-            'isSupplemental' => $isSupplemental,
-            'priceLists' => $priceLists,
+            'aipEntry' => $aipEntry->load('ppa.office'),
+            'categories' => $categories,
             'chartOfAccounts' => $chartOfAccounts,
-            'ppmpCategories' => $ppmpCategories,
-            'fundingSources' => $fundingSources,
-            'currentTab' => $tab ?:
-                ($selectedAipEntry->supplemental_aip_id
-                    ? "supplemental_{$selectedAipEntry->id}"
-                    : 'original'),
-            'initialChoice' => $request->query('choice', 'MOOE'),
-            'initialPpaFundingSourceId' => $request->query(
+            'fiscalYear' => $fiscalYear,
+            'ppaFundingSource' => $ppaFundingSource->load('fundingSource'),
+            'ppmpItems' => Ppmp::select([
+                'id',
                 'ppa_funding_source_id',
-            ),
-            'selectedOfficeId' => $selectedOfficeId,
+                'ppmp_price_list_id',
+                'jan_qty',
+                'feb_qty',
+                'mar_qty',
+                'apr_qty',
+                'may_qty',
+                'jun_qty',
+                'jul_qty',
+                'aug_qty',
+                'sep_qty',
+                'oct_qty',
+                'nov_qty',
+                'dec_qty',
+                'jan_amount',
+                'feb_amount',
+                'mar_amount',
+                'apr_amount',
+                'may_amount',
+                'jun_amount',
+                'jul_amount',
+                'aug_amount',
+                'sep_amount',
+                'oct_amount',
+                'nov_amount',
+                'dec_amount',
+            ])
+                ->with([
+                    'ppmpPriceList' => function ($q) {
+                        $q->select([
+                            'id',
+                            'item_number',
+                            'description',
+                            'unit_of_measurement',
+                            'price',
+                            'chart_of_account_ppmp_category_id',
+                        ])->with([
+                            'chartOfAccountPpmpCategory' => function ($q) {
+                                $q->select([
+                                    'id',
+                                    'chart_of_account_id',
+                                    'ppmp_category_id',
+                                ])->with([
+                                    'chartOfAccount' => fn ($q) => $q->select([
+                                        'id',
+                                        'account_number',
+                                        'account_title',
+                                        'expense_class',
+                                    ]),
+                                    'ppmpCategory' => fn ($q) => $q->select([
+                                        'id',
+                                        'name',
+                                        'is_non_procurement',
+                                    ]),
+                                ]);
+                            },
+                        ]);
+                    },
+                ])
+                ->where('ppa_funding_source_id', $ppaFundingSource->id)
+                // ->limit(20)
+                ->get()
+                ->sortBy('ppmpPriceList.item_number')
+                ->values(),
+            'priceLists' => $priceLists,
         ]);
     }
 
@@ -196,14 +232,11 @@ class PpmpController extends Controller
 
         $validated = $request->validated();
 
-        // Save using the normalized bridge ID
         $ppmp = Ppmp::firstOrCreate([
             'ppa_funding_source_id' => $validated['ppa_funding_source_id'],
             'ppmp_price_list_id' => $validated['ppmp_price_list_id'],
-            // quantities default to 0 via DB schema
         ]);
 
-        // If month and quantity are provided, set the monthly quantity
         if ($request->filled('month') && $request->filled('quantity')) {
             $monthQty = $validated['month'].'_qty';
             $monthAmount = $validated['month'].'_amount';
@@ -215,15 +248,6 @@ class PpmpController extends Controller
                 $monthAmount => $newQty * $unitPrice,
             ]);
         }
-
-        // Sync the total back to the ppa_funding_sources table
-        $this->updatePpaFundingSourceTotals(
-            $ppmp->ppaFundingSource,
-            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-                ->expense_class,
-        );
-
-        return back();
     }
 
     public function updateMonthlyQuantity(Request $request, Ppmp $ppmp)
@@ -245,14 +269,6 @@ class PpmpController extends Controller
             $monthQty => $roundedQuantity,
             $monthAmount => $roundedQuantity * $unitPrice,
         ]);
-
-        $this->updatePpaFundingSourceTotals(
-            $ppmp->ppaFundingSource,
-            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-                ->expense_class,
-        );
-
-        return back();
     }
 
     /**
@@ -278,52 +294,6 @@ class PpmpController extends Controller
     {
         Gate::authorize('deletePriceList', $ppmp);
 
-        $bridge = $ppmp->ppaFundingSource;
-        $expenseClass =
-            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-                ->expense_class;
-
         $ppmp->delete();
-
-        // Recalculate totals after deletion
-        $this->updatePpaFundingSourceTotals($bridge, $expenseClass);
-    }
-
-    private function updatePpaFundingSourceTotals(
-        PpaFundingSource $bridge,
-        $expenseClass,
-    ) {
-        $columnMap = [
-            'MOOE' => 'mooe_amount',
-            'CO' => 'co_amount',
-            'PS' => 'ps_amount',
-            'FE' => 'fe_amount',
-        ];
-
-        $targetColumn = $columnMap[$expenseClass] ?? null;
-
-        if (! $targetColumn) {
-            return;
-        }
-
-        // Sum every month for this specific Bridge Record
-        $totalAmount =
-            Ppmp::where('ppa_funding_source_id', $bridge->id)
-                ->whereHas(
-                    'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount',
-                    function ($query) use ($expenseClass) {
-                        $query->where('expense_class', $expenseClass);
-                    },
-                )
-                ->selectRaw(
-                    'SUM(jan_amount + feb_amount + mar_amount + apr_amount + may_amount + jun_amount + jul_amount + aug_amount + sep_amount + oct_amount + nov_amount + dec_amount) as total',
-                )
-                ->value('total') ?? 0;
-
-        // Update the bridge record directly
-        $bridge->update([
-            $targetColumn => $totalAmount,
-            'updated_at' => now(),
-        ]);
     }
 }

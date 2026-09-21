@@ -25,7 +25,8 @@ class AipEntrySeeder extends Seeder
             'Dec' => '12',
         ];
         [$m, $y] = explode('-', $monthYear);
-        return '20' . $y . '-' . $months[$m] . '-01';
+
+        return '20'.$y.'-'.$months[$m].'-01';
     }
 
     /**
@@ -60,8 +61,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 4,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Forty-Seven (47) existing information systems maintained',
+                'expected_output' => 'Forty-Seven (47) existing information systems maintained',
             ],
             [
                 'id' => 5,
@@ -75,8 +75,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 6,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Four (4) information system developed and deployed',
+                'expected_output' => 'Four (4) information system developed and deployed',
             ],
             [
                 'id' => 7,
@@ -118,64 +117,56 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 12,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'One (1) Subscription of Online Services (SSL) for secured PGLU ICT Web services (https://) and well-maintained Network Infrastructure',
+                'expected_output' => 'One (1) Subscription of Online Services (SSL) for secured PGLU ICT Web services (https://) and well-maintained Network Infrastructure',
             ],
             [
                 'id' => 13,
                 'ppa_id' => 13,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'One (1) subscription of Provincial Text Blast system',
+                'expected_output' => 'One (1) subscription of Provincial Text Blast system',
             ],
             [
                 'id' => 14,
                 'ppa_id' => 14,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'One (1) Subscription of Email Services for secured information repository and communication',
+                'expected_output' => 'One (1) Subscription of Email Services for secured information repository and communication',
             ],
             [
                 'id' => 15,
                 'ppa_id' => 15,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'One (1) Subscription to application software',
+                'expected_output' => 'One (1) Subscription to application software',
             ],
             [
                 'id' => 16,
                 'ppa_id' => 16,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Three (3) Productivity and Collaboration Tools subscribed',
+                'expected_output' => 'Three (3) Productivity and Collaboration Tools subscribed',
             ],
             [
                 'id' => 17,
                 'ppa_id' => 17,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'One (1) Subscription of Web Conference Tool for online meetings, webinars, etc…',
+                'expected_output' => 'One (1) Subscription of Web Conference Tool for online meetings, webinars, etc…',
             ],
             [
                 'id' => 18,
                 'ppa_id' => 18,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '100% increase scalability and flexibility of resources',
+                'expected_output' => '100% increase scalability and flexibility of resources',
             ],
             [
                 'id' => 19,
                 'ppa_id' => 19,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Three (3) Subscription of Internet Service Providers (ISP) for PGLU departments, hospitals, work units and offices',
+                'expected_output' => 'Three (3) Subscription of Internet Service Providers (ISP) for PGLU departments, hospitals, work units and offices',
             ],
             [
                 'id' => 20,
@@ -196,16 +187,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 22,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'One (1) Data Protection Officer registered',
+                'expected_output' => 'One (1) Data Protection Officer registered',
             ],
             [
                 'id' => 23,
                 'ppa_id' => 23,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Comprehensive PIA Report and Risk Registry for all departments',
+                'expected_output' => 'Comprehensive PIA Report and Risk Registry for all departments',
             ],
             [
                 'id' => 24,
@@ -221,8 +210,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 25,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Security Audit Report (Physical, Technical, and Organizational measures)',
+                'expected_output' => 'Security Audit Report (Physical, Technical, and Organizational measures)',
             ],
             [
                 'id' => 26,
@@ -251,8 +239,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 29,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '100% data repository managed and maintained',
+                'expected_output' => '100% data repository managed and maintained',
             ],
             [
                 'id' => 30,
@@ -266,16 +253,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 31,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '99% uptime of PGLU Web Services and well-maintained network infrastructure',
+                'expected_output' => '99% uptime of PGLU Web Services and well-maintained network infrastructure',
             ],
             [
                 'id' => 32,
                 'ppa_id' => 32,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '100% up-to-date and well-maintained PGLU ICT resources through the Annual Preventive Maintenance (APM) and Annual ICT Inventory (AII)',
+                'expected_output' => '100% up-to-date and well-maintained PGLU ICT resources through the Annual Preventive Maintenance (APM) and Annual ICT Inventory (AII)',
             ],
             [
                 'id' => 33,
@@ -289,8 +274,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 34,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Thirty (30) offices with Upgraded Hardware Resources',
+                'expected_output' => 'Thirty (30) offices with Upgraded Hardware Resources',
             ],
             [
                 'id' => 35,
@@ -311,16 +295,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 37,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Twenty (20) component LGUs of La Union connected',
+                'expected_output' => 'Twenty (20) component LGUs of La Union connected',
             ],
             [
                 'id' => 38,
                 'ppa_id' => 38,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '100% electrical lines/posts maintained for nine (9) tower relays',
+                'expected_output' => '100% electrical lines/posts maintained for nine (9) tower relays',
             ],
             [
                 'id' => 39,
@@ -362,16 +344,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 44,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '1 Functional GAD Corner-WebPage established and updated monthly by June 2027',
+                'expected_output' => '1 Functional GAD Corner-WebPage established and updated monthly by June 2027',
             ],
             [
                 'id' => 45,
                 'ppa_id' => 45,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '1 Live GAD Dashboard operational by the end of Q3 2027',
+                'expected_output' => '1 Live GAD Dashboard operational by the end of Q3 2027',
             ],
             [
                 'id' => 46,
@@ -399,8 +379,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 49,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'One (1) La Union ICT Roadmap created, implemented and monitored.',
+                'expected_output' => 'One (1) La Union ICT Roadmap created, implemented and monitored.',
             ],
             [
                 'id' => 50,
@@ -512,16 +491,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 65,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'One (1) Information System developed and deployed',
+                'expected_output' => 'One (1) Information System developed and deployed',
             ],
             [
                 'id' => 66,
                 'ppa_id' => 66,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'One (1) La Union Constituent Database created',
+                'expected_output' => 'One (1) La Union Constituent Database created',
             ],
             [
                 'id' => 67,
@@ -550,16 +527,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 70,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Twenty (20) Permanent personnel capacitated',
+                'expected_output' => 'Twenty (20) Permanent personnel capacitated',
             ],
             [
                 'id' => 71,
                 'ppa_id' => 71,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Five (5) summits/conferences/ceremonies attended for ICT events and activities',
+                'expected_output' => 'Five (5) summits/conferences/ceremonies attended for ICT events and activities',
             ],
             [
                 'id' => 72,
@@ -573,16 +548,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 73,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    'Sixty (60) ICT Focal Person and Alternates capacitated and trained',
+                'expected_output' => 'Sixty (60) ICT Focal Person and Alternates capacitated and trained',
             ],
             [
                 'id' => 74,
                 'ppa_id' => 74,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Thirty (30) PGLU employees capacitated on online applications',
+                'expected_output' => 'Thirty (30) PGLU employees capacitated on online applications',
             ],
             [
                 'id' => 75,
@@ -596,16 +569,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 76,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Three Hundred Twenty (320) participants attended',
+                'expected_output' => 'Three Hundred Twenty (320) participants attended',
             ],
             [
                 'id' => 77,
                 'ppa_id' => 77,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Twenty (20) component LGUs\' employees capacitated for website creation and management',
+                'expected_output' => 'Twenty (20) component LGUs\' employees capacitated for website creation and management',
             ],
             [
                 'id' => 78,
@@ -661,32 +632,28 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 85,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Digital payment gateways integrated into local revenue systems',
+                'expected_output' => 'Digital payment gateways integrated into local revenue systems',
             ],
             [
                 'id' => 86,
                 'ppa_id' => 86,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Standardized use of digital signatures in official documents',
+                'expected_output' => 'Standardized use of digital signatures in official documents',
             ],
             [
                 'id' => 87,
                 'ppa_id' => 87,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Fully operational automated payroll and financial management system',
+                'expected_output' => 'Fully operational automated payroll and financial management system',
             ],
             [
                 'id' => 88,
                 'ppa_id' => 88,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Established feedback and grievance mechanism',
+                'expected_output' => 'Established feedback and grievance mechanism',
             ],
             [
                 'id' => 89,
@@ -700,16 +667,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 90,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Approved Provincial Cybersecurity Policy and Privacy Management Program',
+                'expected_output' => 'Approved Provincial Cybersecurity Policy and Privacy Management Program',
             ],
             [
                 'id' => 91,
                 'ppa_id' => 91,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    'Formal designation/appointment of CIO across all LGUs',
+                'expected_output' => 'Formal designation/appointment of CIO across all LGUs',
             ],
             [
                 'id' => 92,
@@ -723,8 +688,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 93,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '1 Office Yearend Assessment and Planning conducted',
+                'expected_output' => '1 Office Yearend Assessment and Planning conducted',
             ],
             [
                 'id' => 94,
@@ -745,8 +709,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 96,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '100% of required Quarterly, semestral and annual reports prepared',
+                'expected_output' => '100% of required Quarterly, semestral and annual reports prepared',
             ],
             [
                 'id' => 97,
@@ -774,8 +737,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 100,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '12 monthly meeting cum staff development session conducted',
+                'expected_output' => '12 monthly meeting cum staff development session conducted',
             ],
             [
                 'id' => 101,
@@ -789,8 +751,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 102,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '100% of needed ISO requirements implemented and sustained',
+                'expected_output' => '100% of needed ISO requirements implemented and sustained',
             ],
             [
                 'id' => 103,
@@ -811,16 +772,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 105,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '100% of all communications reviewed and acted upon',
+                'expected_output' => '100% of all communications reviewed and acted upon',
             ],
             [
                 'id' => 106,
                 'ppa_id' => 106,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '100% of all required HR documents filed/ processed/submitted',
+                'expected_output' => '100% of all required HR documents filed/ processed/submitted',
             ],
             [
                 'id' => 107,
@@ -897,8 +856,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 117,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '12 monthly personnel discipline report prepared',
+                'expected_output' => '12 monthly personnel discipline report prepared',
             ],
             [
                 'id' => 118,
@@ -912,16 +870,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 119,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '100% needed equipment/fixtures for records management provided',
+                'expected_output' => '100% needed equipment/fixtures for records management provided',
             ],
             [
                 'id' => 120,
                 'ppa_id' => 120,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '100% of all incoming and outgoing  communications recorded, processed and filed',
+                'expected_output' => '100% of all incoming and outgoing  communications recorded, processed and filed',
             ],
             [
                 'id' => 121,
@@ -935,16 +891,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 122,
                 'start_date' => null,
                 'end_date' => null,
-                'expected_output' =>
-                    '100% of all required Financial documents filed/processed/ submitted',
+                'expected_output' => '100% of all required Financial documents filed/processed/ submitted',
             ],
             [
                 'id' => 123,
                 'ppa_id' => 123,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '100% office area and operation maintained',
+                'expected_output' => '100% office area and operation maintained',
             ],
             [
                 'id' => 124,
@@ -958,8 +912,7 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 125,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '100% ICT and office equipment repaired and maintained',
+                'expected_output' => '100% ICT and office equipment repaired and maintained',
             ],
             [
                 'id' => 126,
@@ -988,16 +941,14 @@ class AipEntrySeeder extends Seeder
                 'ppa_id' => 129,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '100% of ICT Resources maintained for Provincial Wireless Mesh',
+                'expected_output' => '100% of ICT Resources maintained for Provincial Wireless Mesh',
             ],
             [
                 'id' => 130,
                 'ppa_id' => 130,
                 'start_date' => 'Jan-27',
                 'end_date' => 'Dec-27',
-                'expected_output' =>
-                    '100% of ICT Resources maintained for Emergency Operation Centers (EOCs)',
+                'expected_output' => '100% of ICT Resources maintained for Emergency Operation Centers (EOCs)',
             ],
         ];
 

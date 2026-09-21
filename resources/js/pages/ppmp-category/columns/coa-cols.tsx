@@ -4,12 +4,12 @@ import type { ChartOfAccount } from '@/types';
 const columnHelper = createColumnHelper<ChartOfAccount>();
 
 const columns = [
-    columnHelper.accessor('account_number', {
+    columnHelper.accessor('path', {
         header: () => <div className="px-1">Account Number</div>,
-        size: 100,
+        size: 140,
         cell: (info) => (
             <div className="px-1 text-wrap slashed-zero tabular-nums">
-                {info.getValue()}
+                {info.getValue() ?? '-'}
             </div>
         ),
     }),

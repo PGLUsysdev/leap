@@ -1,13 +1,19 @@
+// resources\js\pages\aip-summary\columns\new-columns.tsx
+
 import { createColumnHelper } from '@tanstack/react-table';
 import { Decimal } from 'decimal.js';
-import { Button } from '@/components/base-ui-components/ui/button';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import type { AipEntry, PpaFundingSource } from '@/types';
 import { Pencil, Plus, ShieldCheck, Trash } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import type { NumberedAipEntry } from '@/lib/aip-summary/sort-tree';
+import type { AipEntry, AipOutput, PpaFundingSource } from '@/types';
 
-type FundingSourceRow = AipEntry & {
-    number: string;
+type FundingSourceRow = NumberedAipEntry & {
     current_fs: PpaFundingSource | null;
+    output: AipOutput | null;
+    // Flat grouping keys used by DataTable column meta.spanKey:
+    entryId: number;
+    outputId: number | null;
 };
 
 const columnHelper = createColumnHelper<FundingSourceRow>();
@@ -87,7 +93,7 @@ const columns = [
             <div className="text-wrap">{formatText(info.getValue())}</div>
         ),
         // footer: () => <div className="font-bold">Total</div>,
-        meta: { rowSpan: true },
+        meta: { rowSpan: true, spanKey: 'entryId' },
     }),
     columnHelper.accessor('ppa.name', {
         size: 600,
@@ -121,22 +127,26 @@ const columns = [
                 </div>
             );
         },
-        meta: { rowSpan: true },
+        meta: { rowSpan: true, spanKey: 'entryId' },
     }),
-    columnHelper.accessor('ppa.office.acronym', {
-        size: 400,
-        header: () => (
-            <div className="text-center text-wrap">
-                Implementing Office / Department / Location
-            </div>
-        ),
-        cell: (info) => (
-            <div className="text-center text-wrap">
-                {formatText(info.getValue())}
-            </div>
-        ),
-        meta: { rowSpan: true },
-    }),
+    columnHelper.accessor(
+        (row) => row.output?.offices?.map((o) => o.acronym).join(' / '),
+        {
+            id: 'office',
+            size: 400,
+            header: () => (
+                <div className="text-center text-wrap">
+                    Implementing Office / Department / Location
+                </div>
+            ),
+            cell: (info) => (
+                <div className="text-center text-wrap">
+                    {formatText(info.getValue())}
+                </div>
+            ),
+            meta: { rowSpan: true, spanKey: 'outputId' },
+        },
+    ),
     columnHelper.group({
         id: 'schedule',
         size: 500,
@@ -146,7 +156,7 @@ const columns = [
             </div>
         ),
         columns: [
-            columnHelper.accessor('start_date', {
+            columnHelper.accessor('output.start_date', {
                 size: 100,
                 header: () => (
                     <div className="text-center text-wrap">Starting Date</div>
@@ -156,9 +166,9 @@ const columns = [
                         {formatDateCell(info.getValue())}
                     </div>
                 ),
-                meta: { rowSpan: true },
+                meta: { rowSpan: true, spanKey: 'outputId' },
             }),
-            columnHelper.accessor('end_date', {
+            columnHelper.accessor('output.end_date', {
                 size: 100,
                 header: () => (
                     <div className="text-center text-wrap">Completion Date</div>
@@ -168,11 +178,11 @@ const columns = [
                         {formatDateCell(info.getValue())}
                     </div>
                 ),
-                meta: { rowSpan: true },
+                meta: { rowSpan: true, spanKey: 'outputId' },
             }),
         ],
     }),
-    columnHelper.accessor('expected_output', {
+    columnHelper.accessor('output.expected_output', {
         size: 600,
         header: () => (
             <div className="text-center text-wrap">Expected Outputs</div>
@@ -180,7 +190,7 @@ const columns = [
         cell: (info) => (
             <div className="text-wrap">{formatText(info.getValue())}</div>
         ),
-        meta: { rowSpan: true },
+        meta: { rowSpan: true, spanKey: 'outputId' },
     }),
     columnHelper.accessor('ppa_funding_sources', {
         id: 'fs',
@@ -459,7 +469,10 @@ const columns = [
         id: 'actions',
         size: 154,
         cell: ({ row, table }) => {
-            const meta = table.options.meta as any;
+            const meta = table.options.meta;
+
+            // console.log(row.original);
+
             // const isReadOnly = meta?.readOnly;
             // const canSetPsPool = meta?.canSetPsPool;
             // const can = row.original.can;
@@ -490,7 +503,7 @@ const columns = [
                     <Button
                         size="icon"
                         variant="outline"
-                        onClick={() => meta?.onEdit?.(row.original)}
+                        onClick={() => meta?.onEdit?.(row.original.id)}
                         // disabled={
                         //     !canEdit &&
                         //     !canEditFundingSources &&
@@ -505,24 +518,27 @@ const columns = [
                         size="icon"
                         variant="outline"
                         className={
-                            row.original.ppa?.type === 'Program' &&
+                            (row.original.ppa?.type === 'Program' ||
+                                row.original.ppa?.parent_id == null) &&
                             !row.original.ppa?.is_ps_pool
                                 ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
                                 : 'border-gray-300 text-gray-300'
                         }
                         onClick={() => meta?.onSetAsPsPool?.(row.original)}
                         disabled={
-                            row.original.ppa?.type !== 'Program' ||
+                            (row.original.ppa?.type !== 'Program' &&
+                                row.original.ppa?.parent_id != null) ||
                             row.original.ppa?.is_ps_pool ||
                             !meta?.canSetPsPool
                         }
                         title={
                             !meta?.canSetPsPool
                                 ? "You don't have permission to set the PS pool"
-                                : row.original.ppa?.type !== 'Program'
-                                  ? 'Only Programs can be designated as the PS pool'
-                                  : row.original.ppa?.is_ps_pool
-                                    ? 'This Program is already the PS pool'
+                                : row.original.ppa?.is_ps_pool
+                                  ? 'This Program is already the PS pool'
+                                  : row.original.ppa?.type !== 'Program' &&
+                                      row.original.ppa?.parent_id != null
+                                    ? 'Only Programs or root PPAs can be designated as the PS pool'
                                     : 'Designate this Program as the PS pool'
                         }
                     >
@@ -540,7 +556,7 @@ const columns = [
                 </div>
             );
         },
-        meta: { rowSpan: true },
+        meta: { rowSpan: true, spanKey: 'entryId' },
     }),
 ];
 

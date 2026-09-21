@@ -1,6 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, Trash } from 'lucide-react';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { OfficeType } from '@/types';
 
 const columnHelper = createColumnHelper<OfficeType>();
@@ -11,7 +11,7 @@ const columns = [
         header: () => <div className="px-1">Code</div>,
         cell: (value) => (
             <div className="px-1 text-wrap slashed-zero tabular-nums">
-                {value.getValue()}
+                {value.getValue().padStart(2, '0')}
             </div>
         ),
     }),

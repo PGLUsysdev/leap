@@ -20,9 +20,9 @@ return new class extends Migration
         }
 
         // 1. Force drop the current messy table
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('ppmps');
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        Schema::enableForeignKeyConstraints();
 
         // 2. Create the clean, normalized table
         Schema::create('ppmps', function (Blueprint $table) {

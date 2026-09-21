@@ -83,6 +83,9 @@ class PermissionSeeder extends Seeder
             'ppmp-category.delete',
             'ppmp-category.edit',
             'ppmp-category.view',
+            'ppmp-category-mapping.view',
+            'ppmp-category-mapping.add',
+            'ppmp-category-mapping.delete',
             'ppmp-summary.view',
             'ppmp.add.price-list',
             'ppmp.delete.price-list',
@@ -127,6 +130,10 @@ class PermissionSeeder extends Seeder
             'aip-summary.set.ps-pool',
             'ps-breakdown.edit',
             'ps-breakdown.view',
+            'dashboard.view',
+            'expense-class-code.view',
+            'expense-class-code.add',
+            'expense-class-code.delete',
         ];
 
         foreach ($names as $name) {

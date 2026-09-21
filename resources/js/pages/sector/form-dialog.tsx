@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -12,18 +12,15 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     Field,
     FieldError,
     FieldLabel,
     FieldContent,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import type { Sector } from '@/types';
 
 interface FormDialogProps {
@@ -36,9 +33,8 @@ const formSchema = z.object({
     code: z
         .string()
         .trim()
-        .min(1, { message: 'Code is required' })
-        .max(4, { message: 'Code must be at most 4 characters' })
-        .regex(/^\d+$/, { message: 'Code must contain only numbers' }),
+        .length(4, { message: 'Code must be exactly 4 digits' })
+        .regex(/^\d{4}$/, { message: 'Code must contain only 4 numbers' }),
     name: z
         .string()
         .trim()
