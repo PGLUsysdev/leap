@@ -21,6 +21,7 @@ export interface NavItem {
 }
 
 export interface SharedData {
+    version: string;
     name: string;
     auth: Auth;
     sidebarOpen: boolean;
