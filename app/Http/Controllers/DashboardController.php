@@ -25,10 +25,16 @@ class DashboardController extends Controller
         $isSuperAdmin = $user->role?->name === 'super admin';
         $officeId = $user?->office_id;
 
-        // Super admin sees consolidated data across all offices.
+        // Super admin defaults to consolidated data across all offices and
+        // may narrow to one office via ?selected_office_id=.
         // All other roles are scoped to their own office hierarchy.
+        $selectedOfficeId = $isSuperAdmin
+            ? $request->query('selected_office_id') ?: null
+            : null;
         $officeIds = [];
-        if (! $isSuperAdmin && $officeId) {
+        if ($isSuperAdmin && $selectedOfficeId) {
+            $officeIds = $this->getOfficeHierarchyIds($selectedOfficeId);
+        } elseif (! $isSuperAdmin && $officeId) {
             $officeIds = $this->getOfficeHierarchyIds($officeId);
         }
 
@@ -263,6 +269,9 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard', [
             'draftYear' => $draftYear,
+            'canScopeOffices' => $isSuperAdmin,
+            'selectedOfficeId' => $selectedOfficeId ? (int) $selectedOfficeId : null,
+            'offices' => $isSuperAdmin ? Office::whereNull('parent_id')->get() : [],
             'stats' => [
                 'totalBudget' => (float) $totalBudget,
                 'totalPpas' => (int) $totalPpas,

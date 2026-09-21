@@ -1,4 +1,5 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { createColumnHelper } from '@tanstack/react-table';
 import {
     Bar,
     BarChart,
@@ -26,6 +27,18 @@ import {
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import {
+    TableSelect,
+    TableSelectButton,
+    useTableSelect,
+} from '@/components/table-select';
+import type { Office } from '@/types';
 import { dashboard } from '@/routes';
 
 const PALETTE = [
@@ -38,6 +51,9 @@ const PALETTE = [
 
 type DashboardProps = {
     draftYear: { id: number; year: number; status: string } | null;
+    canScopeOffices?: boolean;
+    selectedOfficeId?: number | null;
+    offices?: Office[];
     stats: {
         totalBudget: number;
         totalPpas: number;
@@ -134,8 +150,27 @@ function FundingSourceLegend({ payload }: { payload?: LegendPayloadItem[] }) {
     );
 }
 
+const officeColumnHelper = createColumnHelper<Office>();
+
+const officeColumns = [
+    officeColumnHelper.accessor('acronym', {
+        size: 80,
+        header: () => <div className="px-1">Acronym</div>,
+        cell: (info) => (
+            <div className="px-1 font-medium">{info.getValue() ?? '—'}</div>
+        ),
+    }),
+    officeColumnHelper.accessor('name', {
+        header: () => <div className="px-1">Office Name</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+];
+
 export default function Dashboard({
     draftYear,
+    canScopeOffices = false,
+    selectedOfficeId = null,
+    offices = [],
     stats,
     expenseClassBudget,
     fundingSourceBudget,
@@ -143,6 +178,22 @@ export default function Dashboard({
     ccExpenditure,
     coaBudget,
 }: DashboardProps) {
+    const officeSelect = useTableSelect<Office>({
+        data: offices,
+        value: selectedOfficeId?.toString() ?? '',
+    });
+
+    function handleOfficeChange(officeId: string | number | null) {
+        router.visit(
+            dashboard({
+                query: {
+                    selected_office_id: officeId?.toString() ?? '',
+                },
+            }).url,
+            {},
+        );
+    }
+
     const expenseData = expenseClassBudget
         ? (
               [
@@ -202,13 +253,44 @@ export default function Dashboard({
                         </Card>
                     ) : (
                         <>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <h1 className="text-lg font-semibold">
                                     FY {draftYear.year} Budget Overview
                                 </h1>
                                 <Badge variant="outline" className="capitalize">
                                     {draftYear.status}
                                 </Badge>
+                                {canScopeOffices ? (
+                                    officeSelect.selectedItem ? (
+                                        <Badge variant="secondary">
+                                            {officeSelect.selectedItem
+                                                .acronym ||
+                                                officeSelect.selectedItem
+                                                    .name}
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="secondary">
+                                            Whole PGLU · Consolidated
+                                        </Badge>
+                                    )
+                                ) : null}
+                                {canScopeOffices && offices.length > 0 && (
+                                    <div className="ms-auto w-[220px]">
+                                        <TableSelectButton<Office>
+                                            hook={officeSelect}
+                                            valueKey="id"
+                                            placeholder="Whole PGLU (Consolidated)"
+                                            displayValue={(office) =>
+                                                office
+                                                    ? `${office.acronym || office.name}`
+                                                    : undefined
+                                            }
+                                            onClear={() =>
+                                                handleOfficeChange(null)
+                                            }
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             {/* Stats */}
@@ -251,6 +333,7 @@ export default function Dashboard({
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent>
+                                        {expenseData.length > 0 ? (
                                         <ChartContainer
                                             config={expenseConfig}
                                             className="min-h-[240px] w-full"
@@ -299,24 +382,38 @@ export default function Dashboard({
                                                 </Pie>
                                             </PieChart>
                                         </ChartContainer>
+                                        ) : (
+                                            <Empty>
+                                                <EmptyHeader>
+                                                    <EmptyTitle>
+                                                        No data to display
+                                                    </EmptyTitle>
+                                                    <EmptyDescription>
+                                                        No budget recorded for
+                                                        FY {draftYear.year} in
+                                                        this scope yet.
+                                                    </EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        )}
                                     </CardContent>
                                 </Card>
 
-                                {fundingData.length > 0 && (
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>
-                                                Budget by Funding Source
-                                            </CardTitle>
-                                            <CardDescription>
-                                                FY {draftYear.year}
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <ChartContainer
-                                                config={fundingConfig}
-                                                className="min-h-[240px] w-full"
-                                            >
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>
+                                            Budget by Funding Source
+                                        </CardTitle>
+                                        <CardDescription>
+                                            FY {draftYear.year}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {fundingData.length > 0 ? (
+                                        <ChartContainer
+                                            config={fundingConfig}
+                                            className="min-h-[240px] w-full"
+                                        >
                                                 <PieChart>
                                                     <ChartTooltip
                                                         content={
@@ -362,23 +459,40 @@ export default function Dashboard({
                                                             ),
                                                         )}
                                                     </Pie>
-                                                </PieChart>
-                                            </ChartContainer>
-                                        </CardContent>
-                                    </Card>
-                                )}
+                                            </PieChart>
+                                        </ChartContainer>
+                                        ) : (
+                                            <Empty>
+                                                <EmptyHeader>
+                                                    <EmptyTitle>
+                                                        No data to display
+                                                    </EmptyTitle>
+                                                    <EmptyDescription>
+                                                        No funding source
+                                                        budgets for FY{' '}
+                                                        {draftYear.year} in
+                                                        this scope yet.
+                                                    </EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        )}
+                                    </CardContent>
+                                </Card>
                             </div>
 
                             {/* PPA types */}
-                            {ppaTypeDistribution.length > 0 && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>
-                                            PPA Type Distribution
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <ChartContainer
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>
+                                        PPA Type Distribution
+                                    </CardTitle>
+                                    <CardDescription>
+                                        FY {draftYear.year}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {ppaTypeDistribution.length > 0 ? (
+                                    <ChartContainer
                                             config={{
                                                 count: { label: 'PPAs' },
                                             }}
@@ -411,42 +525,53 @@ export default function Dashboard({
                                                 />
                                             </BarChart>
                                         </ChartContainer>
+                                    ) : (
+                                        <Empty>
+                                            <EmptyHeader>
+                                                <EmptyTitle>
+                                                    No data to display
+                                                </EmptyTitle>
+                                                <EmptyDescription>
+                                                    No PPAs recorded for FY{' '}
+                                                    {draftYear.year} in this
+                                                    scope yet.
+                                                </EmptyDescription>
+                                            </EmptyHeader>
+                                        </Empty>
+                                    )}
                                     </CardContent>
                                 </Card>
-                            )}
 
                             {/* Climate change expenditure */}
-                            {ccExpenditure && (
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <StatCard
-                                        title="CC Expenditure — Adaptation"
-                                        value={pesoFull(
-                                            ccExpenditure.adaptation,
-                                        )}
-                                    />
-                                    <StatCard
-                                        title="CC Expenditure — Mitigation"
-                                        value={pesoFull(
-                                            ccExpenditure.mitigation,
-                                        )}
-                                    />
-                                </div>
-                            )}
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <StatCard
+                                    title="CC Expenditure — Adaptation"
+                                    value={pesoFull(
+                                        ccExpenditure?.adaptation ?? 0,
+                                    )}
+                                />
+                                <StatCard
+                                    title="CC Expenditure — Mitigation"
+                                    value={pesoFull(
+                                        ccExpenditure?.mitigation ?? 0,
+                                    )}
+                                />
+                            </div>
 
                             {/* COA budget */}
-                            {coaTop.length > 0 && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>
-                                            Budget by Account (Top 10)
-                                        </CardTitle>
-                                        <CardDescription>
-                                            PS from funding sources; MOOE/FE/CO
-                                            from procurement
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <ChartContainer
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>
+                                        Budget by Account (Top 10)
+                                    </CardTitle>
+                                    <CardDescription>
+                                        PS from funding sources; MOOE/FE/CO
+                                        from procurement
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {coaTop.length > 0 ? (
+                                    <ChartContainer
                                             config={{
                                                 value: { label: 'Amount' },
                                             }}
@@ -513,14 +638,41 @@ export default function Dashboard({
                                                 </Bar>
                                             </BarChart>
                                         </ChartContainer>
+                                    ) : (
+                                        <Empty>
+                                            <EmptyHeader>
+                                                <EmptyTitle>
+                                                    No data to display
+                                                </EmptyTitle>
+                                                <EmptyDescription>
+                                                    No account-level budgets
+                                                    for FY {draftYear.year} in
+                                                    this scope yet.
+                                                </EmptyDescription>
+                                            </EmptyHeader>
+                                        </Empty>
+                                    )}
                                     </CardContent>
                                 </Card>
-                            )}
                         </>
                     )}
                 </div>
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
+
+            {canScopeOffices && (
+                <TableSelect<Office>
+                    data={offices}
+                    columns={officeColumns}
+                    open={officeSelect.open}
+                    onOpenChange={officeSelect.setOpen}
+                    onRowSelect={(office) => handleOfficeChange(office.id)}
+                    value={selectedOfficeId?.toString() ?? ''}
+                    valueKey="id"
+                    title="Select Office"
+                    description="View consolidated figures or narrow to one office."
+                />
+            )}
         </>
     );
 }
