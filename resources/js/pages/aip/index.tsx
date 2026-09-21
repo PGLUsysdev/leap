@@ -1,9 +1,11 @@
 import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
+import { ChevronsUpDown } from 'lucide-react';
 import DataTable from '@/components/data-table';
+import { TableSelect, useTableSelect } from '@/components/table-select';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CommandSelect } from '@/components/command-select';
 import FormDialog from '@/pages/aip/form-dialog';
 import { index } from '@/routes/ppmp-summaries';
 import type {
@@ -15,6 +17,22 @@ import type {
 } from '@/types';
 import columns from './columns/columns';
 import PdfPreviewDialog from './pdf-render/pdf-preview-dialog';
+
+const officeColumnHelper = createColumnHelper<Office>();
+
+const officeColumns = [
+    officeColumnHelper.accessor('acronym', {
+        size: 80,
+        header: () => <div className="px-1">Acronym</div>,
+        cell: (info) => (
+            <div className="px-1 font-medium">{info.getValue() ?? '—'}</div>
+        ),
+    }),
+    officeColumnHelper.accessor('name', {
+        header: () => <div className="px-1">Office Name</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+];
 
 interface AipProps {
     fiscalYears: FiscalYear[];
@@ -32,14 +50,11 @@ interface AipProps {
 }
 
 export default function AipPage({
-    mockdb,
     fiscalYears,
     app,
     offices = [],
     can,
 }: AipProps) {
-    console.log(mockdb);
-
     const { auth } = usePage<SharedData>().props;
 
     const [openFormDialog, setOpenFormDialog] = useState(false);
@@ -55,6 +70,11 @@ export default function AipPage({
 
     const canOpenAip = can?.showSummaryOwn || can?.showSummaryAll;
     const isOpenAipDisabled = can?.showSummaryAll && !selectedOfficeId;
+
+    const officeSelect = useTableSelect<Office>({
+        data: offices,
+        value: selectedOfficeId,
+    });
 
     function onUpdateStatus(data: FiscalYear, status: FiscalYearStatus) {
         router.patch(
@@ -155,36 +175,21 @@ export default function AipPage({
                     <div className="flex gap-2">
                         {can?.showSummaryAll && offices.length > 0 && (
                             <div className="w-[220px]">
-                                <CommandSelect<Office>
-                                    value={selectedOfficeId}
-                                    onChange={handleOfficeChange}
-                                    options={offices}
-                                    getOptionValue={(office) =>
-                                        office.id.toString()
-                                    }
-                                    getOptionSearchText={(office) =>
-                                        `${office.acronym ?? ''} ${office.name}`
-                                    }
-                                    renderTrigger={(office) => (
-                                        <span className="truncate">
-                                            {office.acronym || office.name}
-                                        </span>
-                                    )}
-                                    renderOption={(office) => (
-                                        <div className="grid w-full grid-cols-4 gap-4">
-                                            <span className="col-span-1">
-                                                {office.acronym ?? '-'}
-                                            </span>
-                                            <span className="col-span-3 whitespace-normal">
-                                                {office.name}
-                                            </span>
-                                        </div>
-                                    )}
-                                    placeholder="Select office..."
-                                    searchPlaceholder="Search office name..."
-                                    heading="Offices"
-                                    showClear={false}
-                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="flex h-8 w-full items-center justify-between font-normal"
+                                    onClick={officeSelect.openDialog}
+                                >
+                                    <span className="min-w-0 flex-1 truncate pr-2 text-left">
+                                        {officeSelect.selectedItem
+                                            ? officeSelect.selectedItem
+                                                  .acronym ||
+                                              officeSelect.selectedItem.name
+                                            : 'Select office...'}
+                                    </span>
+                                    <ChevronsUpDown className="shrink-0" />
+                                </Button>
                             </div>
                         )}
 
@@ -200,6 +205,18 @@ export default function AipPage({
             <FormDialog
                 open={openFormDialog}
                 onOpenChange={setOpenFormDialog}
+            />
+
+            <TableSelect<Office>
+                data={offices}
+                columns={officeColumns}
+                open={officeSelect.open}
+                onOpenChange={officeSelect.setOpen}
+                onRowSelect={(office) => handleOfficeChange(office.id)}
+                value={selectedOfficeId}
+                valueKey="id"
+                title="Select Office"
+                description="Choose an office to open its AIP summary."
             />
 
             <PdfPreviewDialog
