@@ -11,7 +11,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
-    const { isCurrentUrl } = useCurrentUrl();
+    const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
     return (
         // 1. Allow this group to grow and shrink properly
@@ -41,7 +41,10 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                             >
                                 <SidebarMenuButton
                                     render={<Link href={item.href} prefetch />}
-                                    isActive={isCurrentUrl(item.href)}
+                                    isActive={
+                                        isCurrentUrl(item.href) ||
+                                        isCurrentOrParentUrl(item.href)
+                                    }
                                     tooltip={{ children: item.title }}
                                 >
                                     {item.icon && <item.icon />}

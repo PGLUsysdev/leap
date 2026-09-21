@@ -83,7 +83,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
     const { auth } = page.props;
     const getInitials = useInitials();
-    const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
     const { visibleHead, hidden, tail, showEllipsis } = collapseBreadcrumbs(
         breadcrumbs,
         4,
@@ -201,10 +201,12 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             href={item.href}
                                             className={cn(
                                                 navigationMenuTriggerStyle(),
-                                                whenCurrentUrl(
-                                                    item.href,
-                                                    activeItemStyles,
-                                                ),
+                                                isCurrentUrl(item.href) ||
+                                                    isCurrentOrParentUrl(
+                                                        item.href,
+                                                    )
+                                                    ? activeItemStyles
+                                                    : null,
                                                 'h-9 cursor-pointer px-3',
                                             )}
                                         >
@@ -213,7 +215,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             )}
                                             {item.title}
                                         </Link>
-                                        {isCurrentUrl(item.href) && (
+                                        {(isCurrentUrl(item.href) ||
+                                            isCurrentOrParentUrl(
+                                                item.href,
+                                            )) && (
                                             <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
                                         )}
                                     </NavigationMenuItem>

@@ -13,15 +13,18 @@ export default function AuthSimpleLayout({
             <div className="w-full max-w-sm">
                 <div className="flex flex-col gap-8">
                     <div className="flex flex-col items-center gap-4">
-                        {/*<Link
-                            href={home()}
-                            className="flex flex-col items-center gap-2 font-medium"
-                        >
-                            <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
-                                <AppLogoIcon className="size-9 fill-current text-[var(--foreground)] dark:text-white" />
-                            </div>
-                            <span className="sr-only">{title}</span>
-                        </Link>*/}
+                        <div className="flex items-center">
+                            <img
+                                src="/images/pglu-logo.png"
+                                alt="Province of La Union official seal"
+                                className="aspect-square size-14 rounded-full object-cover"
+                            />
+                            <img
+                                src="/images/leap-temp-logo.png"
+                                alt="LEAP - Local Expenditure Administration Program"
+                                className="-ml-4 aspect-square size-14 rounded-full object-cover ring-2 ring-background"
+                            />
+                        </div>
 
                         <div className="space-y-2 text-center">
                             <h1 className="text-xl font-medium">{title}</h1>
