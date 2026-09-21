@@ -20,18 +20,16 @@ class DashboardController extends Controller
         Gate::authorize('viewAny', 'dashboard');
 
         $draftYear = FiscalYear::where('status', 'draft')->first();
-        $officeId = $request->user()?->office_id;
+        $user = $request->user();
+        $user->loadMissing('role');
+        $isSuperAdmin = $user->role?->name === 'super admin';
+        $officeId = $user?->office_id;
 
-        // Include sub-offices (children)
+        // Super admin sees consolidated data across all offices.
+        // All other roles are scoped to their own office hierarchy.
         $officeIds = [];
-        if ($officeId) {
-            $office = Office::with('children')->find($officeId);
-            $officeIds = [$officeId];
-            if ($office && $office->children->isNotEmpty()) {
-                foreach ($office->children as $child) {
-                    $officeIds[] = $child->id;
-                }
-            }
+        if (! $isSuperAdmin && $officeId) {
+            $officeIds = $this->getOfficeHierarchyIds($officeId);
         }
 
         $totalBudget = 0;
@@ -153,7 +151,7 @@ class DashboardController extends Controller
 
             // MOOE/CO/FE COA amounts from PPMP procurement data
             $coaBudget = collect();
-            if ($draftYear && ! empty($officeIds)) {
+            if ($draftYear) {
                 $ppmpTotals = Ppmp::whereHas(
                     'ppaFundingSource.aipEntry.ppa',
                     function ($q) use ($draftYear, $officeIds) {
@@ -223,36 +221,39 @@ class DashboardController extends Controller
 
         $totalPriceListItems = PpmpPriceList::count();
 
-        $totalProcurement = Ppmp::query()
-            ->whereHas('ppaFundingSource.aipEntry.ppa', function ($q) use (
-                $draftYear,
-                $officeIds,
-            ) {
-                $q->when(
+        $totalProcurement = 0;
+        if ($draftYear) {
+            $totalProcurement = Ppmp::query()
+                ->whereHas('ppaFundingSource.aipEntry.ppa', function ($q) use (
                     $draftYear,
-                    fn ($q) => $q->where('fiscal_year_id', $draftYear->id),
-                )->when(
-                    ! empty($officeIds),
-                    fn ($q) => $q->whereIn('office_id', $officeIds),
-                );
-            })
-            ->selectRaw(
-                '
-                COALESCE(SUM(jan_amount), 0) +
-                COALESCE(SUM(feb_amount), 0) +
-                COALESCE(SUM(mar_amount), 0) +
-                COALESCE(SUM(apr_amount), 0) +
-                COALESCE(SUM(may_amount), 0) +
-                COALESCE(SUM(jun_amount), 0) +
-                COALESCE(SUM(jul_amount), 0) +
-                COALESCE(SUM(aug_amount), 0) +
-                COALESCE(SUM(sep_amount), 0) +
-                COALESCE(SUM(oct_amount), 0) +
-                COALESCE(SUM(nov_amount), 0) +
-                COALESCE(SUM(dec_amount), 0) as total
-            ',
-            )
-            ->value('total');
+                    $officeIds,
+                ) {
+                    $q->when(
+                        $draftYear,
+                        fn ($q) => $q->where('fiscal_year_id', $draftYear->id),
+                    )->when(
+                        ! empty($officeIds),
+                        fn ($q) => $q->whereIn('office_id', $officeIds),
+                    );
+                })
+                ->selectRaw(
+                    '
+                    COALESCE(SUM(jan_amount), 0) +
+                    COALESCE(SUM(feb_amount), 0) +
+                    COALESCE(SUM(mar_amount), 0) +
+                    COALESCE(SUM(apr_amount), 0) +
+                    COALESCE(SUM(may_amount), 0) +
+                    COALESCE(SUM(jun_amount), 0) +
+                    COALESCE(SUM(jul_amount), 0) +
+                    COALESCE(SUM(aug_amount), 0) +
+                    COALESCE(SUM(sep_amount), 0) +
+                    COALESCE(SUM(oct_amount), 0) +
+                    COALESCE(SUM(nov_amount), 0) +
+                    COALESCE(SUM(dec_amount), 0) as total
+                ',
+                )
+                ->value('total');
+        }
 
         $totalOffices = Office::count();
         $totalUsers = User::when(
@@ -308,5 +309,31 @@ class DashboardController extends Controller
                 ],
             ),
         ]);
+    }
+
+    /**
+     * Get all office IDs in the hierarchy (office + all descendants).
+     */
+    private function getOfficeHierarchyIds($officeId): array
+    {
+        if (! $officeId) {
+            return [];
+        }
+
+        return array_merge([(int) $officeId], $this->getChildOfficeIds((int) $officeId));
+    }
+
+    /**
+     * Recursively get child office IDs.
+     */
+    private function getChildOfficeIds($parentId): array
+    {
+        $children = Office::where('parent_id', $parentId)->pluck('id')->toArray();
+        $descendants = $children;
+        foreach ($children as $childId) {
+            $descendants = array_merge($descendants, $this->getChildOfficeIds($childId));
+        }
+
+        return $descendants;
     }
 }
