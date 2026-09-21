@@ -5,10 +5,20 @@ import { useMemo, useState } from 'react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
 import DataTable from '@/components/data-table';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { CommandSelect } from '@/components/command-select';
+import { createColumnHelper } from '@tanstack/react-table';
+import { Building2, ChevronsUpDown } from 'lucide-react';
+import { TableSelect, useTableSelect } from '@/components/table-select';
 // import { DataTable } from '@/components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
 
 // Page-Specific Components
 import PpaFormDialog from '@/pages/ppa/form-dialog';
@@ -29,6 +39,22 @@ import type {
     Filter,
 } from '@/types';
 import columns from './columns/columns';
+
+const officeColumnHelper = createColumnHelper<Office>();
+
+const officeColumns = [
+    officeColumnHelper.accessor('acronym', {
+        size: 80,
+        header: () => <div className="px-1">Acronym</div>,
+        cell: (info) => (
+            <div className="px-1 font-medium">{info.getValue() ?? '—'}</div>
+        ),
+    }),
+    officeColumnHelper.accessor('name', {
+        header: () => <div className="px-1">Office Name</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+];
 
 interface PpaPageProps {
     offices: Office[];
@@ -69,6 +95,14 @@ export default function PpaPage({
     const activeFiscalYear = (page.props as any).activeFiscalYear;
 
     const rootType = ppaTypes[0] || 'Program';
+
+    const officeSelect = useTableSelect<Office>({
+        data: parentOffices ?? [],
+        value: selectedOfficeId?.toString() ?? '',
+    });
+    const selectedParentOffice = officeSelect.selectedItem;
+
+    const needsOfficeSelection = showAllOffices && !selectedOfficeId;
 
     // Form Dialog States
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -274,7 +308,7 @@ export default function PpaPage({
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
                     columns={columns}
-                    data={data}
+                    data={needsOfficeSelection ? [] : data}
                     paginationData={paginationData}
                     meta={{
                         onAdd: handleAddChild,
@@ -289,38 +323,24 @@ export default function PpaPage({
                     <div className="flex items-center gap-2">
                         {showAllOffices && parentOffices && (
                             <div className="w-[220px]">
-                                <CommandSelect<Office>
-                                    value={selectedOfficeId ?? null}
-                                    onChange={handleOfficeChange}
-                                    options={parentOffices}
-                                    getOptionValue={(office) => office.id}
-                                    getOptionSearchText={(office) =>
-                                        `${office.acronym ?? ''} ${office.name}`
-                                    }
-                                    renderTrigger={(office) => (
-                                        <span className="truncate">
-                                            {office.acronym || office.name}
-                                        </span>
-                                    )}
-                                    renderOption={(office) => (
-                                        <div className="grid w-full grid-cols-12 gap-2 text-sm">
-                                            <span className="col-span-3 font-medium">
-                                                {office.acronym ?? '-'}
-                                            </span>
-                                            <span className="text-muted-foreground col-span-9 whitespace-normal">
-                                                {office.name}
-                                            </span>
-                                        </div>
-                                    )}
-                                    placeholder="Select LGU Office..."
-                                    searchPlaceholder="Search office..."
-                                    heading="Parent Offices"
-                                    showClear={false}
-                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="flex h-8 w-full items-center justify-between font-normal"
+                                    onClick={officeSelect.openDialog}
+                                >
+                                    <span className="min-w-0 flex-1 truncate pr-2 text-left">
+                                        {selectedParentOffice
+                                            ? selectedParentOffice.acronym ||
+                                              selectedParentOffice.name
+                                            : 'Select LGU Office...'}
+                                    </span>
+                                    <ChevronsUpDown className="shrink-0" />
+                                </Button>
                             </div>
                         )}
 
-                        {can?.import && (
+                        {can?.import && !needsOfficeSelection && (
                             <Button
                                 variant="outline"
                                 onClick={() => handleImportOpen()}
@@ -328,7 +348,7 @@ export default function PpaPage({
                                 Import from Last Year
                             </Button>
                         )}
-                        {can?.add && canAddNext && (
+                        {can?.add && canAddNext && !needsOfficeSelection && (
                             <Button onClick={handleAddNew}>
                                 New {nextType}
                             </Button>
@@ -336,13 +356,50 @@ export default function PpaPage({
                     </div>
                 </DataTable>
 
+                {needsOfficeSelection && (
+                    <div className="p-4">
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Building2 />
+                                </EmptyMedia>
+                                <EmptyTitle>No office selected</EmptyTitle>
+                                <EmptyDescription>
+                                    Select an LGU office above to view its
+                                    PPA library.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                            <EmptyContent>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={officeSelect.openDialog}
+                                >
+                                    Select office
+                                </Button>
+                            </EmptyContent>
+                        </Empty>
+                    </div>
+                )}
+
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
 
+            <TableSelect<Office>
+                data={parentOffices ?? []}
+                columns={officeColumns}
+                open={officeSelect.open}
+                onOpenChange={officeSelect.setOpen}
+                onRowSelect={(office) => handleOfficeChange(office.id)}
+                value={selectedOfficeId?.toString() ?? ''}
+                valueKey="id"
+                title="Select Office"
+                description="Choose a parent office to view its PPAs."
+            />
+
             <PpaFormDialog
                 isOpen={isFormOpen}
-                onOpenChange={handleDialogOpenChange}
-                mode={formMode}
+                onOpenChange={handleDialogOpenChange}                mode={formMode}
                 targetType={targetType}
                 parentPpa={parentPpa}
                 editPpa={editPpa}

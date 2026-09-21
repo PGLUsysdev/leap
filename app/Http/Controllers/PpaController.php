@@ -56,10 +56,15 @@ class PpaController extends Controller
         $showAll = $permissions->contains('ppa.show.all');
         $userOfficeId = $showAll ? $request->query('selected_office_id') : $user->office_id;
 
+        // Super admins must pick an office first — otherwise show nothing.
+        $needsOfficeSelection = $showAll && empty($userOfficeId);
+
         // Build office ID list (including sub‑offices) if a base office is selected
-        $officeIds = $userOfficeId ? $this->getOfficeHierarchyIds($userOfficeId) : null;
+        $officeIds = $userOfficeId ? $this->getOfficeHierarchyIds($userOfficeId) : ($needsOfficeSelection ? [] : null);
 
         $mode = $request->query('dialog_mode');
+
+        $emptyTree = fn () => Ppa::query()->whereRaw('1 = 0')->paginate(100)->withQueryString();
 
         return Inertia::render('ppa/index', [
             'can' => [
@@ -69,22 +74,24 @@ class PpaController extends Controller
             'showAllOffices' => $showAll,
             'selectedOfficeId' => $userOfficeId ? (int) $userOfficeId : null,
             'parentOffices' => Office::whereNull('parent_id')->get(),
-            'ppaTree' => $this->getPpaQuery($request, $officeIds, 'id', 'search')
-                ->paginate(100)
-                ->withQueryString()
-                ->through(function ($ppa) use ($user) {
-                    $ppa->can = [
-                        'edit' => $user->can('update', $ppa),
-                        'delete' => $user->can('delete', $ppa),
-                        'move' => $user->can('move', $ppa),
-                    ];
+            'ppaTree' => $needsOfficeSelection
+                ? $emptyTree()
+                : $this->getPpaQuery($request, $officeIds, 'id', 'search')
+                    ->paginate(100)
+                    ->withQueryString()
+                    ->through(function ($ppa) use ($user) {
+                        $ppa->can = [
+                            'edit' => $user->can('update', $ppa),
+                            'delete' => $user->can('delete', $ppa),
+                            'move' => $user->can('move', $ppa),
+                        ];
 
-                    return $ppa;
-                }),
+                        return $ppa;
+                    }),
 
-            'current' => $request->query('id')
-                ? $this->flattenAncestors(Ppa::with('parent.parent')->find($request->query('id')))
-                : [],
+            'current' => $needsOfficeSelection || ! $request->query('id')
+                ? []
+                : $this->flattenAncestors(Ppa::with('parent.parent')->find($request->query('id'))),
 
             'offices' => Office::with(['sector', 'lguLevel', 'officeType'])->get(),
 
@@ -104,7 +111,13 @@ class PpaController extends Controller
                 $officeIds,
                 $user,
                 $mode,
+                $needsOfficeSelection,
+                $emptyTree,
             ) {
+                if ($needsOfficeSelection) {
+                    return $emptyTree();
+                }
+
                 if ($mode === 'import') {
                     return $this->getPreviousYearPpas($request, $officeIds);
                 }
@@ -149,7 +162,7 @@ class PpaController extends Controller
         $search = $request->query($searchKey);
 
         return Ppa::when(
-            $officeIds,
+            ! is_null($officeIds),
             fn ($q) => $q->whereIn('office_id', $officeIds),
             fn ($q) => $q, // no office filter if null (show all)
         )
@@ -195,7 +208,7 @@ class PpaController extends Controller
         $id = $request->query('dialog_id');
         $search = $request->query('dialog_search');
 
-        return Ppa::when($officeIds, fn ($q) => $q->whereIn('office_id', $officeIds), fn ($q) => $q)
+        return Ppa::when(! is_null($officeIds), fn ($q) => $q->whereIn('office_id', $officeIds), fn ($q) => $q)
             ->where('fiscal_year_id', $prevYearId)
             ->when(
                 $id,

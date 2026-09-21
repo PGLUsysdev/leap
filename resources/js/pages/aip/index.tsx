@@ -1,11 +1,19 @@
 import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { ChevronsUpDown } from 'lucide-react';
+import { Building2, ChevronsUpDown } from 'lucide-react';
 import DataTable from '@/components/data-table';
 import { TableSelect, useTableSelect } from '@/components/table-select';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import FormDialog from '@/pages/aip/form-dialog';
 import { index } from '@/routes/ppmp-summaries';
 import type {
@@ -70,6 +78,7 @@ export default function AipPage({
 
     const canOpenAip = can?.showSummaryOwn || can?.showSummaryAll;
     const isOpenAipDisabled = can?.showSummaryAll && !selectedOfficeId;
+    const needsOfficeSelection = can?.showSummaryAll && !selectedOfficeId;
 
     const officeSelect = useTableSelect<Office>({
         data: offices,
@@ -157,7 +166,7 @@ export default function AipPage({
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
                     columns={columns}
-                    data={fiscalYears}
+                    data={needsOfficeSelection ? [] : fiscalYears}
                     meta={{
                         canUpdateStatus: can?.updateStatus ?? false,
                         canOpenAip: canOpenAip ?? false,
@@ -193,13 +202,41 @@ export default function AipPage({
                             </div>
                         )}
 
-                        {can?.add && (
+                        {can?.add && !needsOfficeSelection && (
                             <Button onClick={handleOpenFormDialog}>
                                 Initialize AIP
                             </Button>
                         )}
                     </div>
                 </DataTable>
+
+                {needsOfficeSelection && (
+                    <div className="p-4">
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Building2 />
+                                </EmptyMedia>
+                                <EmptyTitle>No office selected</EmptyTitle>
+                                <EmptyDescription>
+                                    Select an office above to view its
+                                    annual investment programs.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                            <EmptyContent>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={officeSelect.openDialog}
+                                >
+                                    Select office
+                                </Button>
+                            </EmptyContent>
+                        </Empty>
+                    </div>
+                )}
+
+                <ScrollBar orientation="vertical" />
             </ScrollArea>
 
             <FormDialog
