@@ -71,6 +71,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/aip/{fiscal_year}/status', [FiscalYearController::class, 'updateStatus'])->name(
         'aip.update-status',
     );
+    Route::post('/aip/{fiscalYear}/initialize-aip', [FiscalYearController::class, 'initializeAip'])->name(
+        'aip.initialize-aip',
+    );
 
     // --- AIP Summary & Entries ---
     Route::get('aip-entries', [AipEntryController::class, 'index']);

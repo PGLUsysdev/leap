@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreFiscalYearRequest;
 use App\Http\Requests\UpdateFiscalYearRequest;
+use App\Models\AipDocument;
 use App\Models\AipEntry;
 use App\Models\FiscalYear;
 use App\Models\Office;
 use App\Models\Ppmp;
 use App\Models\PpmpSummary;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -29,11 +31,27 @@ class FiscalYearController extends Controller
         $canShowSummaryOwn = $user->can('showSummaryOwn', AipEntry::class);
         $showOffices = $canGenerateAppAll || $canShowSummaryAll;
 
+        // Office context for per-year flags: the selected office for
+        // all-scope users, otherwise the user's own office.
+        $contextOfficeId = $showOffices
+            ? $request->query('selected_office_id') ?: $user->office_id
+            : $user->office_id;
+
         return Inertia::render('aip/index', [
-            'fiscalYears' => FiscalYear::orderBy('year', 'asc')->get(),
+            'fiscalYears' => FiscalYear::orderBy('year', 'asc')
+                ->get()
+                ->each(function ($fiscalYear) use ($contextOfficeId) {
+                    $fiscalYear->has_regular_aip = $contextOfficeId
+                        ? AipDocument::regular()
+                            ->where('fiscal_year_id', $fiscalYear->id)
+                            ->where('office_id', $contextOfficeId)
+                            ->exists()
+                        : false;
+                }),
             'offices' => $showOffices ? Office::get() : [],
             'can' => [
                 'add' => request()->user()->can('create', FiscalYear::class),
+                'initializeAip' => request()->user()->can('create', FiscalYear::class),
                 'updateStatus' => request()->user()->can('updateStatus', new FiscalYear),
                 'showSummaryAll' => $canShowSummaryAll,
                 'showSummaryOwn' => $canShowSummaryOwn,
@@ -162,6 +180,22 @@ class FiscalYearController extends Controller
         Gate::authorize('create', FiscalYear::class);
 
         FiscalYear::create($request->validated());
+    }
+
+    /**
+     * Seed the regular AIP document for every office under this fiscal year.
+     */
+    public function initializeAip(FiscalYear $fiscalYear)
+    {
+        Gate::authorize('create', FiscalYear::class);
+
+        DB::transaction(function () use ($fiscalYear) {
+            Office::pluck('id')->each(function ($officeId) use ($fiscalYear) {
+                AipDocument::regularFor($officeId, $fiscalYear->id);
+            });
+        });
+
+        return back()->with('success', 'Regular AIP initialized successfully.');
     }
 
     /**

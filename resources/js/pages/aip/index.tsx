@@ -48,6 +48,7 @@ interface AipProps {
     offices: Office[];
     can?: {
         add: boolean;
+        initializeAip: boolean;
         updateStatus: boolean;
         showSummaryAll: boolean;
         showSummaryOwn: boolean;
@@ -117,6 +118,14 @@ export default function AipPage({
         setOpenFormDialog(true);
     }
 
+    function handleInitializeAip(data: FiscalYear) {
+        router.post(
+            `/aip/${data.id}/initialize-aip`,
+            {},
+            { preserveScroll: true },
+        );
+    }
+
     function handleGeneratePdf(year: FiscalYear) {
         setSelectedYear(year);
 
@@ -169,6 +178,8 @@ export default function AipPage({
                     data={needsOfficeSelection ? [] : fiscalYears}
                     meta={{
                         canUpdateStatus: can?.updateStatus ?? false,
+                        canInitializeAip: can?.initializeAip ?? false,
+                        onInitializeAip: handleInitializeAip,
                         canOpenAip: canOpenAip ?? false,
                         disableOpenAip: isOpenAipDisabled,
                         canGenerateApp:
@@ -204,7 +215,7 @@ export default function AipPage({
 
                         {can?.add && !needsOfficeSelection && (
                             <Button onClick={handleOpenFormDialog}>
-                                Initialize AIP
+                                Initialize Fiscal Year
                             </Button>
                         )}
                     </div>

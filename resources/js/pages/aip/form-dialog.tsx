@@ -82,12 +82,10 @@ export default function FormDialog({ open, onOpenChange }: FormDialogProps) {
         <Dialog open={open} onOpenChange={handleDialogOpenChange}>
             <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-sm">
                 <DialogHeader className="flex-none">
-                    <DialogTitle>
-                        Initialize Annual Investment Program
-                    </DialogTitle>
-                    <DialogDescription>
-                        Select a fiscal year to initialize the AIP with.
-                    </DialogDescription>
+                        <DialogTitle>Initialize Fiscal Year</DialogTitle>
+                        <DialogDescription>
+                            Select a fiscal year to initialize.
+                        </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex min-h-0 flex-1">

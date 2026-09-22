@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, ExternalLink, FileText, List } from 'lucide-react';
+import { Pencil, ExternalLink, FileText, FilePlus2, List } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,6 +8,7 @@ import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { FiscalYear } from '@/types';
@@ -162,13 +163,31 @@ const columns = [
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    title="Reports & Summaries"
+                                    title="More actions"
                                 >
                                     <List />
                                 </Button>
                             }
                         ></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-45">
+                            <DropdownMenuGroup>
+                                <DropdownMenuLabel>Setup</DropdownMenuLabel>
+                                <DropdownMenuItem
+                                    disabled={
+                                        !table.options.meta?.canInitializeAip ||
+                                        row.original.has_regular_aip
+                                    }
+                                    onClick={() => {
+                                        table.options.meta?.onInitializeAip?.(
+                                            row.original,
+                                        );
+                                    }}
+                                >
+                                    <FilePlus2 />
+                                    Initialize AIP
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
                             <DropdownMenuGroup>
                                 <DropdownMenuLabel>
                                     Reports & Summaries
@@ -209,7 +228,8 @@ const columns = [
                         title="Open AIP"
                         disabled={
                             !table.options.meta?.canOpenAip ||
-                            table.options.meta?.disableOpenAip
+                            table.options.meta?.disableOpenAip ||
+                            !row.original.has_regular_aip
                         }
                         onClick={() =>
                             table.options.meta?.onOpen?.(row.original)
