@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAipEntryRequest;
+use App\Models\AipDocument;
 use App\Models\AipEntry;
 use App\Models\CcTypology;
 use App\Models\ChartOfAccount;
@@ -44,6 +45,37 @@ class AipEntryController extends Controller
         $scope = $request->query('scope', 'original');
         $saipId = $request->query('supplemental_aip_id');
 
+        $aipDocuments = AipDocument::where('fiscal_year_id', $fiscalYear->id)
+            ->whereIn('office_id', $officeIds)
+            ->orderByRaw("kind = 'regular' desc")
+            ->orderBy('id')
+            ->get(['id', 'fiscal_year_id', 'office_id', 'kind', 'name']);
+
+        $currentDocument =
+            $aipDocuments->firstWhere(
+                'id',
+                (int) $request->query('aip_document_id'),
+            ) ?:
+            $aipDocuments->firstWhere('kind', 'regular') ?:
+            AipDocument::regularFor($officeId, $fiscalYear->id);
+
+        // Only the latest supplemental per office is deletable; newer
+        // documents build on top of the earlier ones.
+        $latestIds = $aipDocuments
+            ->where('kind', 'supplemental')
+            ->groupBy('office_id')
+            ->map->max('id');
+
+        $aipDocuments->each(function ($doc) use ($latestIds) {
+            $doc->is_latest =
+                $doc->kind === 'supplemental' &&
+                ($latestIds[$doc->office_id] ?? null) === $doc->id;
+        });
+
+        if (! isset($currentDocument->is_latest)) {
+            $currentDocument->is_latest = false;
+        }
+
         $newAipEntries = AipEntry::whereHas('ppa', function ($query) use (
             $fiscalYear,
             $officeIds,
@@ -52,6 +84,7 @@ class AipEntryController extends Controller
                 ->where('fiscal_year_id', $fiscalYear->id)
                 ->whereIn('office_id', $officeIds);
         })
+            ->where('aip_document_id', $currentDocument->id)
             ->select([
                 'id',
                 'ppa_id',
@@ -92,6 +125,7 @@ class AipEntryController extends Controller
                 },
                 'outputs.fundingSources.fundingSource:id,code,title',
                 'outputs.fundingSources.ccTypology:id,code',
+                'aipDocument:id,fiscal_year_id,office_id,kind,name',
             ])
             // ->limit(100)
             ->get();
@@ -132,6 +166,15 @@ class AipEntryController extends Controller
             // 'psPoolPpaId' => $psPoolPpa?->id,
             // 'aipEntries' => $aipEntries,
             'newAipEntries' => $newAipEntries,
+            'aipDocuments' => $aipDocuments,
+            'currentDocument' => $currentDocument->only([
+                'id',
+                'fiscal_year_id',
+                'office_id',
+                'kind',
+                'name',
+                'is_latest',
+            ]),
             // 'ppmpCoaTotals' => $ppmpCoaTotals,
             // 'psCoaAutoTotals' => $officeId
             //     ? PsBreakdownController::computePsCoaTotalsForOffice(
@@ -214,6 +257,9 @@ class AipEntryController extends Controller
                     ->user()
                     ->can('setPsPool', AipEntry::class),
                 'delete' => $permissions->contains('aip-summary.delete'),
+                'deleteSaip' => $permissions->contains(
+                    'aip-summary.delete.supplemental',
+                ),
             ],
             'dialogPpaTree' => Inertia::optional(function () use (
                 $request,

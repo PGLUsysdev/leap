@@ -20,6 +20,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     Dialog,
     DialogContent,
@@ -55,6 +56,7 @@ import type {
     AipEntry,
     AipOutput,
     PpaFundingSource,
+    AipDocument,
 } from '@/types';
 import type { NumberedAipEntry } from '@/lib/aip-summary/sort-tree';
 import { sortFlatLikeTree } from '@/lib/aip-summary/sort-tree';
@@ -71,6 +73,7 @@ interface AipSummaryProps {
         createSaip: boolean;
         setPsPool: boolean;
         delete: boolean;
+        deleteSaip: boolean;
         showSummaryAll?: boolean;
     };
     fundingSources?: FundingSource[];
@@ -99,6 +102,8 @@ interface AipSummaryProps {
     psCoaAutoTotals: Record<string, number>;
     psPoolPpaId?: number | null;
     newAipEntries: AipEntry[];
+    aipDocuments: AipDocument[];
+    currentDocument: AipDocument | null;
     ppaTypes: string[];
     ppaTypePadding: Record<string, number>;
 }
@@ -172,6 +177,8 @@ export default function AipSummary({
     dialogCurrent,
     psPoolPpaId,
     newAipEntries,
+    aipDocuments = [],
+    currentDocument = null,
     offices,
     fundingSources,
     ppaTypes,
@@ -240,9 +247,78 @@ export default function AipSummary({
     );
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
     const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('indicative');
     const [isSaipDialogOpen, setIsSaipDialogOpen] = useState(false);
     const [isSettingsAlertOpen, setIsSettingsAlertOpen] = useState(false);
+    const [saipName, setSaipName] = useState('');
+    const [isSavingSaip, setIsSavingSaip] = useState(false);
+
+    const currentDocId = currentDocument ? String(currentDocument.id) : '';
+    const isDeletableDoc = currentDocument?.is_latest === true;
+
+    const nextSaipName = useMemo(() => {
+        const count = aipDocuments.filter(
+            (doc) => doc.kind === 'supplemental',
+        ).length;
+
+        return `Supplemental AIP No. ${count + 1}`;
+    }, [aipDocuments]);
+
+    const handleTabChange = useCallback(
+        (value: string) => {
+            router.get(
+                window.location.pathname,
+                {
+                    ...filters,
+                    aip_document_id: value,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    only: [
+                        'newAipEntries',
+                        'aipDocuments',
+                        'currentDocument',
+                        'filters',
+                    ],
+                },
+            );
+        },
+        [filters],
+    );
+
+    const handleSaipDialogOpen = useCallback(() => {
+        setSaipName(nextSaipName);
+        setIsSaipDialogOpen(true);
+    }, [nextSaipName]);
+
+    const handleCreateSaip = useCallback(() => {
+        setIsSavingSaip(true);
+
+        router.post(
+            '/aip-documents',
+            {
+                fiscal_year_id: fiscalYear.id,
+                name: saipName.trim() || nextSaipName,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => setIsSaipDialogOpen(false),
+                onFinish: () => setIsSavingSaip(false),
+            },
+        );
+    }, [fiscalYear.id, saipName, nextSaipName]);
+
+    const handleDeleteSaip = useCallback(() => {
+        if (!currentDocument) {
+            return;
+        }
+
+        router.delete(`/aip-documents/${currentDocument.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setIsSettingsAlertOpen(false),
+        });
+    }, [currentDocument]);
 
     function handleEdit(id: number) {
         setSelectedItemId(id);
@@ -328,33 +404,45 @@ export default function AipSummary({
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <div className="px-4 pt-4">
-                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <Tabs value={currentDocId} onValueChange={handleTabChange}>
                         <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 <TabsList>
-                                    <TabsTrigger value="indicative">
-                                        Indicative AIP
-                                    </TabsTrigger>
-                                    <TabsTrigger value="saip">SAIP</TabsTrigger>
+                                    {aipDocuments.map((doc) => (
+                                        <TabsTrigger
+                                            key={doc.id}
+                                            value={String(doc.id)}
+                                        >
+                                            {doc.name}
+                                        </TabsTrigger>
+                                    ))}
                                 </TabsList>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    type="button"
-                                    onClick={() => setIsSaipDialogOpen(true)}
-                                >
-                                    <Plus />
-                                </Button>
+                                {can.createSaip && (
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        type="button"
+                                        title="New supplemental AIP"
+                                        onClick={handleSaipDialogOpen}
+                                    >
+                                        <Plus />
+                                    </Button>
+                                )}
                             </div>
 
-                            <Button
-                                variant="destructive"
-                                size="icon"
-                                type="button"
-                                onClick={() => setIsSettingsAlertOpen(true)}
-                            >
-                                <Settings />
-                            </Button>
+                            {isDeletableDoc && can.deleteSaip && (
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    type="button"
+                                    title={`Delete ${currentDocument?.name}`}
+                                    onClick={() =>
+                                        setIsSettingsAlertOpen(true)
+                                    }
+                                >
+                                    <Settings />
+                                </Button>
+                            )}
                         </div>
                     </Tabs>
                 </div>
@@ -575,20 +663,40 @@ export default function AipSummary({
             <Dialog open={isSaipDialogOpen} onOpenChange={setIsSaipDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>New SAIP</DialogTitle>
+                        <DialogTitle>New Supplemental AIP</DialogTitle>
                         <DialogDescription>
-                            Create a new Supplemental AIP.
+                            Create a new supplemental document under FY{' '}
+                            {fiscalYear.year}.
                         </DialogDescription>
                     </DialogHeader>
+                    <div className="flex flex-col gap-2">
+                        <label
+                            htmlFor="saip-name"
+                            className="text-sm font-medium"
+                        >
+                            Name
+                        </label>
+                        <Input
+                            id="saip-name"
+                            value={saipName}
+                            onChange={(e) => setSaipName(e.target.value)}
+                            placeholder={nextSaipName}
+                            disabled={isSavingSaip}
+                        />
+                    </div>
                     <DialogFooter>
                         <Button
                             variant="outline"
                             onClick={() => setIsSaipDialogOpen(false)}
+                            disabled={isSavingSaip}
                         >
                             Cancel
                         </Button>
-                        <Button onClick={() => setIsSaipDialogOpen(false)}>
-                            Create
+                        <Button
+                            onClick={handleCreateSaip}
+                            disabled={isSavingSaip}
+                        >
+                            {isSavingSaip ? 'Creating...' : 'Create'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -600,9 +708,13 @@ export default function AipSummary({
             >
                 <AlertDialogContent size="default">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Settings</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            Delete "{currentDocument?.name}"?
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to continue with this action?
+                            This will permanently remove this supplemental
+                            document along with all of its entries, outputs,
+                            funding sources, and PPMPs. This cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -613,9 +725,9 @@ export default function AipSummary({
                         </AlertDialogCancel>
                         <AlertDialogAction
                             variant="destructive"
-                            onClick={() => setIsSettingsAlertOpen(false)}
+                            onClick={handleDeleteSaip}
                         >
-                            Continue
+                            Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

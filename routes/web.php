@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AipDocumentController;
 use App\Http\Controllers\AipEntryController;
 use App\Http\Controllers\AipOutputController;
 use App\Http\Controllers\AipSummaryImportController;
@@ -109,6 +110,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         PpaFundingSourceController::class,
         'update',
     ])->name('ppa-funding-sources.update');
+
+    // --- AIP Documents (regular + supplemental) ---
+    Route::post('/aip-documents', [AipDocumentController::class, 'store'])->name(
+        'aip-documents.store',
+    );
+    Route::delete('/aip-documents/{aipDocument}', [
+        AipDocumentController::class,
+        'destroy',
+    ])->name('aip-documents.destroy');
 
     // --- Supplemental AIPs ---
     Route::post('/supplemental-aips', [SupplementalAipController::class, 'store'])->name(

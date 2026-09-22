@@ -14,7 +14,7 @@ class AipEntry extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['ppa_id', 'supplemental_aip_id'];
+    protected $fillable = ['ppa_id', 'aip_document_id'];
 
     // belongsTo
     public function ppa(): BelongsTo
@@ -22,9 +22,9 @@ class AipEntry extends Model
         return $this->belongsTo(Ppa::class, 'ppa_id');
     }
 
-    public function supplementalAip(): BelongsTo
+    public function aipDocument(): BelongsTo
     {
-        return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
+        return $this->belongsTo(AipDocument::class, 'aip_document_id');
     }
 
     // hasMany

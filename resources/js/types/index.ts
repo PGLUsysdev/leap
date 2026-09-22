@@ -108,6 +108,17 @@ export interface SupplementalAip {
     updated_at: string | null;
 }
 
+export interface AipDocument {
+    id: number;
+    fiscal_year_id: number;
+    office_id: number | null;
+    kind: 'regular' | 'supplemental';
+    name: string;
+    is_latest?: boolean;
+    created_at?: string | null;
+    updated_at?: string | null;
+}
+
 export interface AipEntry {
     id: number;
     /** @deprecated Column dropped; use `supplemental_aip_id !== null` instead. */
@@ -115,9 +126,11 @@ export interface AipEntry {
 
     ppa_id: number;
     supplemental_aip_id: number | null;
+    aip_document_id?: number | null;
 
     ppa?: Ppa;
     supplemental_aip?: SupplementalAip;
+    aip_document?: AipDocument;
 
     outputs?: AipOutput[];
 
