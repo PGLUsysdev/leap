@@ -14,7 +14,7 @@ class AipEntry extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['ppa_id', 'supplemental_aip_id', 'is_supplemental'];
+    protected $fillable = ['ppa_id', 'supplemental_aip_id'];
 
     // belongsTo
     public function ppa(): BelongsTo

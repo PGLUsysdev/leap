@@ -24,7 +24,6 @@ class Ppa extends Model
         'sort_order',
         'fiscal_year_id',
         'supplemental_aip_id',
-        'is_supplemental',
         'is_ps_pool',
     ];
 

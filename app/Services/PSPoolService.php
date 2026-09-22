@@ -27,7 +27,7 @@ class PSPoolService
                 );
             }
 
-            if ($ppa->is_supplemental) {
+            if ($ppa->supplemental_aip_id !== null) {
                 throw new \Exception('Supplemental PPAs cannot be the PS pool.');
             }
 

@@ -47,7 +47,7 @@ class DashboardController extends Controller
         $coaBudget = collect();
 
         if ($draftYear) {
-            $totalBudget = PpaFundingSource::where('is_supplemental', false)
+            $totalBudget = PpaFundingSource::whereNull('supplemental_aip_id')
                 ->whereHas('aipEntry.ppa', function ($q) use (
                     $draftYear,
                     $officeIds,
@@ -70,9 +70,8 @@ class DashboardController extends Controller
                 ->count();
 
             // Compute PS total from declared PS amounts on funding sources
-            $computedPsTotal = (float) PpaFundingSource::where(
-                'is_supplemental',
-                false,
+            $computedPsTotal = (float) PpaFundingSource::whereNull(
+                'supplemental_aip_id',
             )
                 ->whereHas('aipEntry.ppa', function ($q) use (
                     $draftYear,
@@ -86,9 +85,8 @@ class DashboardController extends Controller
                 ->selectRaw('COALESCE(SUM(ps_amount), 0) as total')
                 ->value('total');
 
-            $expenseClassBudget = PpaFundingSource::where(
-                'is_supplemental',
-                false,
+            $expenseClassBudget = PpaFundingSource::whereNull(
+                'supplemental_aip_id',
             )
                 ->whereHas('aipEntry.ppa', function ($q) use (
                     $draftYear,
@@ -108,9 +106,8 @@ class DashboardController extends Controller
                 )
                 ->first();
 
-            $fundingSourceBudget = PpaFundingSource::where(
-                'is_supplemental',
-                false,
+            $fundingSourceBudget = PpaFundingSource::whereNull(
+                'supplemental_aip_id',
             )
                 ->whereHas('aipEntry.ppa', function ($q) use (
                     $draftYear,
@@ -137,7 +134,7 @@ class DashboardController extends Controller
                 ->groupBy('type')
                 ->get();
 
-            $ccExpenditure = PpaFundingSource::where('is_supplemental', false)
+            $ccExpenditure = PpaFundingSource::whereNull('supplemental_aip_id')
                 ->whereHas('aipEntry.ppa', function ($q) use (
                     $draftYear,
                     $officeIds,

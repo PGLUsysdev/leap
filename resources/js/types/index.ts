@@ -109,7 +109,8 @@ export interface SupplementalAip {
 
 export interface AipEntry {
     id: number;
-    is_supplemental: boolean;
+    /** @deprecated Column dropped; use `supplemental_aip_id !== null` instead. */
+    is_supplemental?: boolean;
 
     ppa_id: number;
     supplemental_aip_id: number | null;

@@ -1,5 +1,12 @@
 import { router, usePage } from '@inertiajs/react';
-import { FileUp, Library, Sheet, ShieldCheck } from 'lucide-react';
+import {
+    FileUp,
+    Library,
+    Plus,
+    Settings,
+    Sheet,
+    ShieldCheck,
+} from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
 import DataTable from '@/components/data-table';
 import {
@@ -14,6 +21,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
@@ -22,6 +37,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DeleteDialog } from '@/components/delete-dialog';
 import FormDialog from '@/pages/aip-summary/form-dialog';
 import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
@@ -224,6 +240,9 @@ export default function AipSummary({
     );
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
     const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('indicative');
+    const [isSaipDialogOpen, setIsSaipDialogOpen] = useState(false);
+    const [isSettingsAlertOpen, setIsSettingsAlertOpen] = useState(false);
 
     function handleEdit(id: number) {
         setSelectedItemId(id);
@@ -308,7 +327,40 @@ export default function AipSummary({
     return (
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
+                <div className="px-4 pt-4">
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                <TabsList>
+                                    <TabsTrigger value="indicative">
+                                        Indicative AIP
+                                    </TabsTrigger>
+                                    <TabsTrigger value="saip">SAIP</TabsTrigger>
+                                </TabsList>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    type="button"
+                                    onClick={() => setIsSaipDialogOpen(true)}
+                                >
+                                    <Plus />
+                                </Button>
+                            </div>
+
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                type="button"
+                                onClick={() => setIsSettingsAlertOpen(true)}
+                            >
+                                <Settings />
+                            </Button>
+                        </div>
+                    </Tabs>
+                </div>
+
                 <DataTable
+                    className="pr-3"
                     columns={newColumns}
                     data={expandByFundingSource(
                         sortFlatLikeTree(newAipEntries),
@@ -519,6 +571,55 @@ export default function AipSummary({
                 officeName={auth.user.office?.name || ''}
                 currentScope={currentScope}
             />
+
+            <Dialog open={isSaipDialogOpen} onOpenChange={setIsSaipDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>New SAIP</DialogTitle>
+                        <DialogDescription>
+                            Create a new Supplemental AIP.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsSaipDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button onClick={() => setIsSaipDialogOpen(false)}>
+                            Create
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog
+                open={isSettingsAlertOpen}
+                onOpenChange={setIsSettingsAlertOpen}
+            >
+                <AlertDialogContent size="default">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Settings</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to continue with this action?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel
+                            onClick={() => setIsSettingsAlertOpen(false)}
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={() => setIsSettingsAlertOpen(false)}
+                        >
+                            Continue
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

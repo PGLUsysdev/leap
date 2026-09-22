@@ -42,7 +42,6 @@ class PpaFundingSource extends Model
         'ccet_adaptation',
         'ccet_mitigation',
         'supplemental_aip_id',
-        'is_supplemental',
         'cc_typology_id',
     ];
 

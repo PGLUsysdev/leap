@@ -55,11 +55,10 @@ class AipEntryController extends Controller
             ->select([
                 'id',
                 'ppa_id',
-                'supplemental_aip_id',
-                'is_supplemental',
+                'aip_document_id',
             ])
             ->with([
-                'ppa:id,office_id,parent_id,name,type,code_suffix,is_active,sort_order,fiscal_year_id,supplemental_aip_id,is_supplemental,is_ps_pool',
+                'ppa:id,office_id,parent_id,name,type,code_suffix,is_active,sort_order,fiscal_year_id,is_ps_pool',
                 'ppa.office:id,sector_id,lgu_level_id,office_type_id,parent_id,code,name,acronym,is_lee',
                 'ppa.office.sector:id,code',
                 'ppa.office.lguLevel:id,code',
@@ -88,8 +87,6 @@ class AipEntryController extends Controller
                         'co_amount',
                         'ccet_adaptation',
                         'ccet_mitigation',
-                        'supplemental_aip_id',
-                        'is_supplemental',
                         'cc_typology_id',
                     ]);
                 },
@@ -233,16 +230,6 @@ class AipEntryController extends Controller
                 return Ppa::whereIn('office_id', $officeIds)
                     ->where('fiscal_year_id', $yearId)
                     ->where('parent_id', $targetParentId)
-                    ->where(function ($q) use ($scope, $saipId) {
-                        if ($scope === 'original') {
-                            $q->whereNull('supplemental_aip_id');
-                        } elseif ($scope === 'supplemental' && $saipId) {
-                            $q->whereNull('supplemental_aip_id')->orWhere(
-                                'supplemental_aip_id',
-                                $saipId,
-                            );
-                        }
-                    })
                     ->when($search, function ($query, $search) {
                         $query->where(function ($inner) use ($search) {
                             $inner
@@ -346,7 +333,6 @@ class AipEntryController extends Controller
                         'start_date' => $fiscalYear->year.'-01-01',
                         'end_date' => $fiscalYear->year.'-12-31',
                         'expected_output' => '-',
-                        'is_supplemental' => (bool) $saipId,
                     ],
                 );
             }
