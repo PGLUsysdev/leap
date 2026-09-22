@@ -40,9 +40,11 @@ const formSchema = z.object({
             message: 'Account type is required',
         },
     ),
-    expense_class: z.enum(['PS', 'MOOE', 'FE', 'CO'], {
-        message: 'Expense class is required',
-    }),
+    expense_class: z
+        .enum(['PS', 'MOOE', 'FE', 'CO'])
+        .nullable()
+        .optional()
+        .or(z.literal('')),
     account_series: z.string().trim().nullable().or(z.literal('')),
     is_postable: z.boolean(),
     is_active: z.boolean(),
@@ -70,7 +72,7 @@ export default function FormDialog({
             account_number: '',
             account_title: '',
             account_type: 'ASSET',
-            expense_class: 'MOOE',
+            expense_class: '',
             account_series: '',
             is_postable: true,
             is_active: true,
@@ -85,7 +87,7 @@ export default function FormDialog({
                 account_number: initialData?.account_number ?? '',
                 account_title: initialData?.account_title ?? '',
                 account_type: (initialData?.account_type as any) ?? 'ASSET',
-                expense_class: (initialData?.expense_class as any) ?? 'MOOE',
+                expense_class: (initialData?.expense_class as any) ?? '',
                 account_series: initialData?.account_series ?? '',
                 is_postable: initialData?.is_postable ?? true,
                 is_active: initialData?.is_active ?? true,
@@ -98,6 +100,10 @@ export default function FormDialog({
     function onSubmit(values: z.infer<typeof formSchema>) {
         const data = {
             ...values,
+            expense_class:
+                !values.expense_class || values.expense_class === ''
+                    ? null
+                    : values.expense_class,
             account_series:
                 values.account_series === '' ? null : values.account_series,
             description: values.description === '' ? null : values.description,
@@ -346,19 +352,16 @@ export default function FormDialog({
                                                     className="gap-1"
                                                 >
                                                     Expense Class
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
                                                 </FieldLabel>
 
                                                 <Select
-                                                    value={field.value}
+                                                    value={field.value ?? ''}
                                                     onValueChange={
                                                         field.onChange
                                                     }
                                                 >
                                                     <SelectTrigger className="w-full">
-                                                        <SelectValue />
+                                                        <SelectValue placeholder="Unassigned" />
                                                     </SelectTrigger>
 
                                                     <SelectContent>

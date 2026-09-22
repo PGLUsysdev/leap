@@ -296,6 +296,7 @@ class ChartOfAccountSeeder extends Seeder
             ['full_code' => '1 04 03 010', 'account_title' => 'Raw Materials Inventory'],
             ['full_code' => '1 04 03 020', 'account_title' => 'Work-in-Process Inventory'],
             ['full_code' => '1 04 03 030', 'account_title' => 'Finished Goods Inventory'],
+
             ['full_code' => '1 04 04', 'account_title' => 'Inventory Held for Consumption'],
             ['full_code' => '1 04 04 010', 'account_title' => 'Office Supplies Inventory'],
             [
@@ -334,6 +335,84 @@ class ChartOfAccountSeeder extends Seeder
             [
                 'full_code' => '1 04 04 990',
                 'account_title' => 'Other Supplies and Materials Inventory',
+            ],
+
+            [
+                'full_code' => '1 04 05',
+                'account_title' => 'Semi-Expendable Machinery and Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 010',
+                'account_title' => 'Semi-Expendable Machinery',
+            ],
+            [
+                'full_code' => '1 04 05 020',
+                'account_title' => 'Semi-Expendable Office Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 030',
+                'account_title' => 'Semi-Expendable Information and Communications Technology Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 040',
+                'account_title' => 'Semi-Expendable Agricultural and Forestry Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 050',
+                'account_title' => 'Semi-Expendable Marine and Fishery Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 060',
+                'account_title' => 'Semi-Expendable Airport Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 070',
+                'account_title' => 'Semi-Expendable Communications Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 080',
+                'account_title' => 'Semi-Expendable Disaster Response and Rescue Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 090',
+                'account_title' => 'Semi-Expendable Military, Police and Security Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 100',
+                'account_title' => 'Semi-Expendable Medical, Dental and Laboratory Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 110',
+                'account_title' => 'Semi-Expendable Printing Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 120',
+                'account_title' => 'Semi-Expendable Sports Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 130',
+                'account_title' => 'Semi-Expendable Technical and Scientific Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 140',
+                'account_title' => 'Semi-Expendable Construction Equipment',
+            ],
+            [
+                'full_code' => '1 04 05 990',
+                'account_title' => 'Semi-Expendable Other Machinery and Equipment',
+            ],
+
+            [
+                'full_code' => '1 04 06',
+                'account_title' => 'Semi-Expendable Furniture, Fixtures and Books',
+            ],
+            [
+                'full_code' => '1 04 06 010',
+                'account_title' => 'Semi-Expendable Furniture and Fixtures',
+            ],
+            [
+                'full_code' => '1 04 06 020',
+                'account_title' => 'Semi-Expendable Books',
             ],
 
             ['full_code' => '1 05', 'account_title' => 'Prepayments'],
@@ -1406,6 +1485,7 @@ class ChartOfAccountSeeder extends Seeder
             ['full_code' => '5 02 02', 'account_title' => 'Training and Scholarship Expenses'],
             ['full_code' => '5 02 02 010', 'account_title' => 'Training Expenses', 'expense_class' => 'MOOE'],
             ['full_code' => '5 02 02 020', 'account_title' => 'Scholarship Grants/Expenses', 'expense_class' => 'MOOE'],
+
             ['full_code' => '5 02 03', 'account_title' => 'Supplies and Materials Expenses'],
             ['full_code' => '5 02 03 010', 'account_title' => 'Office Supplies Expenses', 'expense_class' => 'MOOE'],
             ['full_code' => '5 02 03 020', 'account_title' => 'Accountable Forms Expenses', 'expense_class' => 'MOOE'],
@@ -1442,6 +1522,16 @@ class ChartOfAccountSeeder extends Seeder
             [
                 'full_code' => '5 02 03 130',
                 'account_title' => 'Chemical and Filtering Supplies Expenses',
+                'expense_class' => 'MOOE',
+            ],
+            [
+                'full_code' => '5 02 03 210',
+                'account_title' => 'Semi-Expendable Machinery and Equipment Expenses',
+                'expense_class' => 'MOOE',
+            ],
+            [
+                'full_code' => '5 02 03 220',
+                'account_title' => 'Semi-Expendable Furniture, Fixtures and Books Expenses',
                 'expense_class' => 'MOOE',
             ],
             [
@@ -1555,6 +1645,14 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '5 02 13 090',
                 'account_title' => 'Repairs and Maintenance - Leased Assets Improvements',
                 'expense_class' => 'MOOE',
+            ],
+            [
+                'full_code' => '5 02 13 210',
+                'account_title' => 'Repairs and Maintenance-Semi-Expendable Machinery and Equipment',
+            ],
+            [
+                'full_code' => '5 02 13 220',
+                'account_title' => 'Repairs and Maintenance-Semi-Expendable Furniture, Fixtures and Books',
             ],
             [
                 'full_code' => '5 02 13 990',
