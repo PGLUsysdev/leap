@@ -66,6 +66,10 @@ const coaColumns = [
     }),
 ];
 
+/** Fixed height applied to every class card so all cards align and
+ *  their content areas are identical in size. */
+const CARD_HEIGHT = 'h-[34rem]';
+
 function LinkPicker({
     accounts,
     expenseClass,
@@ -199,7 +203,10 @@ export default function ExpenseClassCodes({
                             );
 
                             return (
-                                <Card key={info.class}>
+                                <Card
+                                    key={info.class}
+                                    className={`flex flex-col ${CARD_HEIGHT}`}
+                                >
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
                                             <Badge variant="default">
@@ -215,63 +222,71 @@ export default function ExpenseClassCodes({
                                             linked
                                         </CardDescription>
                                     </CardHeader>
-                                    <CardContent className="flex flex-col gap-3">
+                                    <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
                                         {can?.add && (
                                             <LinkPicker
                                                 accounts={linkable}
                                                 expenseClass={info.class}
-                                                className="w-full"
+                                                className="w-full shrink-0"
                                             />
                                         )}
-                                        {linked.length === 0 ? (
-                                            <p className="text-muted-foreground text-sm">
-                                                No accounts linked yet.
-                                            </p>
-                                        ) : (
-                                            <ul className="flex flex-col gap-1">
-                                                {linked.map((coa) => (
-                                                    <li
-                                                        key={coa.id}
-                                                        className="flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-sm"
-                                                    >
-                                                        <span className="min-w-0 truncate">
-                                                            <span className="font-mono">
-                                                                {coa.path}
-                                                            </span>{' '}
-                                                            <span className="text-muted-foreground">
-                                                                —{' '}
-                                                                {
-                                                                    coa.account_title
-                                                                }
-                                                            </span>
-                                                        </span>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            disabled={
-                                                                !can?.delete ||
-                                                                unlinkingId ===
-                                                                    coa.id
-                                                            }
-                                                            onClick={() =>
-                                                                handleUnlink(
-                                                                    coa,
-                                                                )
-                                                            }
-                                                        >
-                                                            Unlink
-                                                        </Button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
+
+                                        <div className="min-h-0 flex-1">
+                                            {linked.length === 0 ? (
+                                                <p className="text-muted-foreground text-sm">
+                                                    No accounts linked yet.
+                                                </p>
+                                            ) : (
+                                                <ScrollArea className="h-full">
+                                                    <ul className="flex flex-col gap-1 pr-4">
+                                                        {linked.map((coa) => (
+                                                            <li
+                                                                key={coa.id}
+                                                                className="flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-sm"
+                                                            >
+                                                                <span className="min-w-0 truncate">
+                                                                    <span className="font-mono">
+                                                                        {
+                                                                            coa.path
+                                                                        }
+                                                                    </span>{' '}
+                                                                    <span className="text-muted-foreground">
+                                                                        —{' '}
+                                                                        {
+                                                                            coa.account_title
+                                                                        }
+                                                                    </span>
+                                                                </span>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    disabled={
+                                                                        !can?.delete ||
+                                                                        unlinkingId ===
+                                                                            coa.id
+                                                                    }
+                                                                    onClick={() =>
+                                                                        handleUnlink(
+                                                                            coa,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Unlink
+                                                                </Button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                    <ScrollBar orientation="vertical" />
+                                                </ScrollArea>
+                                            )}
+                                        </div>
                                     </CardContent>
                                 </Card>
                             );
                         })}
                     </div>
 
-                    <Card>
+                    <Card className={`flex flex-col ${CARD_HEIGHT}`}>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 Unassigned
@@ -284,34 +299,37 @@ export default function ExpenseClassCodes({
                                 are ignored by the funding source totals sync.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="min-h-0 flex-1">
                             {unassigned.length === 0 ? (
                                 <p className="text-sm text-emerald-600">
                                     Every postable account is linked.
                                 </p>
                             ) : (
-                                <ul className="flex flex-col gap-1">
-                                    {unassigned.map((coa) => (
-                                        <li
-                                            key={coa.id}
-                                            className="flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-sm"
-                                        >
-                                            <span className="min-w-0 truncate">
-                                                <span className="font-mono">
-                                                    {coa.path}
-                                                </span>{' '}
-                                                <span className="text-muted-foreground">
-                                                    — {coa.account_title}
+                                <ScrollArea className="h-full">
+                                    <ul className="flex flex-col gap-1 pr-4">
+                                        {unassigned.map((coa) => (
+                                            <li
+                                                key={coa.id}
+                                                className="flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-sm"
+                                            >
+                                                <span className="min-w-0 truncate">
+                                                    <span className="font-mono">
+                                                        {coa.path}
+                                                    </span>{' '}
+                                                    <span className="text-muted-foreground">
+                                                        — {coa.account_title}
+                                                    </span>
                                                 </span>
-                                            </span>
-                                            {coa.expense_class && (
-                                                <Badge variant="outline">
-                                                    {coa.expense_class}
-                                                </Badge>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
+                                                {coa.expense_class && (
+                                                    <Badge variant="outline">
+                                                        {coa.expense_class}
+                                                    </Badge>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <ScrollBar orientation="vertical" />
+                                </ScrollArea>
                             )}
                         </CardContent>
                     </Card>
