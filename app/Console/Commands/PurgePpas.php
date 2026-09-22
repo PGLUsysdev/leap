@@ -1,4 +1,5 @@
 <?php
+
 // app/Console/Commands/PurgePpas.php
 
 namespace App\Console\Commands;
@@ -16,31 +17,33 @@ class PurgePpas extends Command
 
     public function handle(): int
     {
-        $ppaCount     = DB::table('ppas')->count();
-        $entryCount   = DB::table('aip_entries')->count();
-        $outputCount  = DB::table('aip_outputs')->count();
-        $pivotCount   = DB::table('aip_output_office')->count();
-        $pfsCount     = DB::table('ppa_funding_sources')->count();
-        $psCount      = DB::table('ps_breakdown_items')->count();
-        $ppmpCount    = DB::table('ppmps')->count();
+        $ppaCount = DB::table('ppas')->count();
+        $entryCount = DB::table('aip_entries')->count();
+        $outputCount = DB::table('aip_outputs')->count();
+        $pivotCount = DB::table('aip_output_office')->count();
+        $pfsCount = DB::table('ppa_funding_sources')->count();
+        $psCount = DB::table('ps_breakdown_items')->count();
+        $ppmpCount = DB::table('ppmps')->count();
 
         $this->table(['Table', 'Rows affected'], [
-            ['ppmps',                  $ppmpCount  . ' (deleted)'],
-            ['ps_breakdown_items',     $psCount    . ' (deleted)'],
-            ['ppa_funding_sources',    $pfsCount   . ' (deleted)'],
-            ['aip_output_office',      $pivotCount . ' (deleted)'],
-            ['aip_outputs',            $outputCount . ' (deleted)'],
-            ['aip_entries',            $entryCount . ' (deleted)'],
-            ['ppas',                   $ppaCount   . ' (deleted)'],
+            ['ppmps',                  $ppmpCount.' (deleted)'],
+            ['ps_breakdown_items',     $psCount.' (deleted)'],
+            ['ppa_funding_sources',    $pfsCount.' (deleted)'],
+            ['aip_output_office',      $pivotCount.' (deleted)'],
+            ['aip_outputs',            $outputCount.' (deleted)'],
+            ['aip_entries',            $entryCount.' (deleted)'],
+            ['ppas',                   $ppaCount.' (deleted)'],
         ]);
 
         if ($this->option('dry-run')) {
             $this->warn('Dry run — nothing deleted.');
+
             return self::SUCCESS;
         }
 
         if (! $this->option('force') && ! $this->confirm('Proceed with deletion?', false)) {
             $this->info('Aborted.');
+
             return self::SUCCESS;
         }
 
@@ -79,6 +82,7 @@ class PurgePpas extends Command
         });
 
         $this->info('All PPAs purged.');
+
         return self::SUCCESS;
     }
 }

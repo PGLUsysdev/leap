@@ -1,4 +1,5 @@
 <?php
+
 // app/Console/Commands/PurgePpmpPriceLists.php
 
 namespace App\Console\Commands;
@@ -20,17 +21,19 @@ class PurgePpmpPriceLists extends Command
         $listCount = DB::table('ppmp_price_lists')->count();
 
         $this->table(['Table', 'Rows affected'], [
-            ['ppmps',            $ppmpCount . ' (deleted)'],
-            ['ppmp_price_lists', $listCount . ' (deleted)'],
+            ['ppmps',            $ppmpCount.' (deleted)'],
+            ['ppmp_price_lists', $listCount.' (deleted)'],
         ]);
 
         if ($this->option('dry-run')) {
             $this->warn('Dry run — nothing deleted.');
+
             return self::SUCCESS;
         }
 
         if (! $this->option('force') && ! $this->confirm('Proceed with deletion?', false)) {
             $this->info('Aborted.');
+
             return self::SUCCESS;
         }
 
@@ -42,6 +45,7 @@ class PurgePpmpPriceLists extends Command
         });
 
         $this->info('All PPMP price lists and ppmps purged.');
+
         return self::SUCCESS;
     }
 }

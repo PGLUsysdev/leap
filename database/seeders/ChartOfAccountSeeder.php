@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\ChartOfAccount;
-use App\Services\ChartOfAccountClassifier;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -121,6 +120,8 @@ class ChartOfAccountSeeder extends Seeder
             ],
             ['full_code' => '1 02 07', 'account_title' => 'Sinking Fund'],
             ['full_code' => '1 02 07 010', 'account_title' => 'Sinking Fund'],
+
+            // ---
 
             ['full_code' => '1 03', 'account_title' => 'Receivables'],
             ['full_code' => '1 03 01', 'account_title' => 'Loans and Receivable Accounts'],
@@ -367,7 +368,7 @@ class ChartOfAccountSeeder extends Seeder
 
             ['full_code' => '1 07', 'account_title' => 'Property, Plant and Equipment'],
             ['full_code' => '1 07 01', 'account_title' => 'Land'],
-            ['full_code' => '1 07 01 010', 'account_title' => 'Land'],
+            ['full_code' => '1 07 01 010', 'account_title' => 'Land', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 01 011',
                 'account_title' => 'Accumulated Impairment Losses - Land',
@@ -385,7 +386,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 02 012',
                 'account_title' => 'Accumulated Impairment Losses - Land Improvements, Aquaculture Structures',
             ],
-            ['full_code' => '1 07 02 990', 'account_title' => 'Other Land Improvements'],
+            ['full_code' => '1 07 02 990', 'account_title' => 'Other Land Improvements', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 02 991',
                 'account_title' => 'Accumulated Depreciation - Other Land Improvements',
@@ -395,7 +396,7 @@ class ChartOfAccountSeeder extends Seeder
                 'account_title' => 'Accumulated Impairment Losses - Other Land Improvements',
             ],
             ['full_code' => '1 07 03', 'account_title' => 'Infrastructure Assets'],
-            ['full_code' => '1 07 03 010', 'account_title' => 'Road Networks'],
+            ['full_code' => '1 07 03 010', 'account_title' => 'Road Networks', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 011',
                 'account_title' => 'Accumulated Depreciation - Road Networks',
@@ -404,7 +405,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 03 012',
                 'account_title' => 'Accumulated Impairment Losses - Road Networks',
             ],
-            ['full_code' => '1 07 03 020', 'account_title' => 'Flood Control Systems'],
+            ['full_code' => '1 07 03 020', 'account_title' => 'Flood Control Systems', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 021',
                 'account_title' => 'Accumulated Depreciation - Flood Control Systems',
@@ -413,7 +414,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 03 022',
                 'account_title' => 'Accumulated Impairment Losses - Flood Control Systems',
             ],
-            ['full_code' => '1 07 03 030', 'account_title' => 'Sewer Systems'],
+            ['full_code' => '1 07 03 030', 'account_title' => 'Sewer Systems', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 031',
                 'account_title' => 'Accumulated Depreciation - Sewer Systems',
@@ -422,7 +423,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 03 032',
                 'account_title' => 'Accumulated Impairment Losses - Sewer Systems',
             ],
-            ['full_code' => '1 07 03 040', 'account_title' => 'Water Supply Systems'],
+            ['full_code' => '1 07 03 040', 'account_title' => 'Water Supply Systems', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 041',
                 'account_title' => 'Accumulated Depreciation - Water Supply Systems',
@@ -431,7 +432,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 03 042',
                 'account_title' => 'Accumulated Impairment Losses - Water Supply Systems',
             ],
-            ['full_code' => '1 07 03 050', 'account_title' => 'Power Supply Systems'],
+            ['full_code' => '1 07 03 050', 'account_title' => 'Power Supply Systems', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 051',
                 'account_title' => 'Accumulated Depreciation - Power Supply Systems',
@@ -440,7 +441,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 03 052',
                 'account_title' => 'Accumulated Impairment Losses - Power Supply Systems',
             ],
-            ['full_code' => '1 07 03 060', 'account_title' => 'Communication Networks'],
+            ['full_code' => '1 07 03 060', 'account_title' => 'Communication Networks', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 061',
                 'account_title' => 'Accumulated Depreciation - Communication Networks',
@@ -449,7 +450,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 03 062',
                 'account_title' => 'Accumulated Impairment Losses - Communication Networks',
             ],
-            ['full_code' => '1 07 03 070', 'account_title' => 'Seaport Systems'],
+            ['full_code' => '1 07 03 070', 'account_title' => 'Seaport Systems', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 071',
                 'account_title' => 'Accumulated Depreciation - Seaport Systems',
@@ -458,7 +459,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 03 072',
                 'account_title' => 'Accumulated Impairment Losses - Seaport Systems',
             ],
-            ['full_code' => '1 07 03 080', 'account_title' => 'Airport Systems'],
+            ['full_code' => '1 07 03 080', 'account_title' => 'Airport Systems', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 081',
                 'account_title' => 'Accumulated Depreciation - Airport Systems',
@@ -467,7 +468,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 03 082',
                 'account_title' => 'Accumulated Impairment Losses - Airport Systems',
             ],
-            ['full_code' => '1 07 03 090', 'account_title' => 'Parks, Plazas and Monuments'],
+            ['full_code' => '1 07 03 090', 'account_title' => 'Parks, Plazas and Monuments', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 091',
                 'account_title' => 'Accumulated Depreciation - Parks, Plazas and Monuments',
@@ -476,7 +477,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 03 092',
                 'account_title' => 'Accumulated Impairment Losses - Parks, Plazas and Monuments',
             ],
-            ['full_code' => '1 07 03 990', 'account_title' => 'Other Infrastructure Assets'],
+            ['full_code' => '1 07 03 990', 'account_title' => 'Other Infrastructure Assets', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 03 991',
                 'account_title' => 'Accumulated Depreciation - Other Infrastructure Assets',
@@ -486,7 +487,7 @@ class ChartOfAccountSeeder extends Seeder
                 'account_title' => 'Accumulated Impairment Losses - Other Infrastructure Assets',
             ],
             ['full_code' => '1 07 04', 'account_title' => 'Buildings and Other Structures'],
-            ['full_code' => '1 07 04 010', 'account_title' => 'Buildings'],
+            ['full_code' => '1 07 04 010', 'account_title' => 'Buildings', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 04 011',
                 'account_title' => 'Accumulated Depreciation - Buildings',
@@ -495,7 +496,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 04 012',
                 'account_title' => 'Accumulated Impairment Losses - Buildings',
             ],
-            ['full_code' => '1 07 04 020', 'account_title' => 'School Buildings'],
+            ['full_code' => '1 07 04 020', 'account_title' => 'School Buildings', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 04 021',
                 'account_title' => 'Accumulated Depreciation - School Buildings',
@@ -504,7 +505,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 04 022',
                 'account_title' => 'Accumulated Impairment Losses - School Buildings',
             ],
-            ['full_code' => '1 07 04 030', 'account_title' => 'Hospitals and Health Centers'],
+            ['full_code' => '1 07 04 030', 'account_title' => 'Hospitals and Health Centers', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 04 031',
                 'account_title' => 'Accumulated Depreciation - Hospitals and Health Centers',
@@ -513,13 +514,13 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 04 032',
                 'account_title' => 'Accumulated Impairment Losses - Hospitals and Health Centers',
             ],
-            ['full_code' => '1 07 04 040', 'account_title' => 'Markets'],
+            ['full_code' => '1 07 04 040', 'account_title' => 'Markets', 'expense_class' => 'CO'],
             ['full_code' => '1 07 04 041', 'account_title' => 'Accumulated Depreciation - Markets'],
             [
                 'full_code' => '1 07 04 042',
                 'account_title' => 'Accumulated Impairment Losses - Markets',
             ],
-            ['full_code' => '1 07 04 050', 'account_title' => 'Slaughterhouses'],
+            ['full_code' => '1 07 04 050', 'account_title' => 'Slaughterhouses', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 04 051',
                 'account_title' => 'Accumulated Depreciation - Slaughterhouses',
@@ -528,7 +529,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 04 052',
                 'account_title' => 'Accumulated Impairment Losses- Slaughterhouses',
             ],
-            ['full_code' => '1 07 04 060', 'account_title' => 'Hostels and Dormitories'],
+            ['full_code' => '1 07 04 060', 'account_title' => 'Hostels and Dormitories', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 04 061',
                 'account_title' => 'Accumulated Depreciation - Hostels and Dormitories',
@@ -537,7 +538,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 04 062',
                 'account_title' => 'Accumulated Impairment Losses - Hostels and Dormitories',
             ],
-            ['full_code' => '1 07 04 990', 'account_title' => 'Other Structures'],
+            ['full_code' => '1 07 04 990', 'account_title' => 'Other Structures', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 04 991',
                 'account_title' => 'Accumulated Depreciation - Other Structures',
@@ -547,7 +548,7 @@ class ChartOfAccountSeeder extends Seeder
                 'account_title' => 'Accumulated Impairment Losses - Other Structures',
             ],
             ['full_code' => '1 07 05', 'account_title' => 'Machinery and Equipment'],
-            ['full_code' => '1 07 05 010', 'account_title' => 'Machinery'],
+            ['full_code' => '1 07 05 010', 'account_title' => 'Machinery', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 011',
                 'account_title' => 'Accumulated Depreciation - Machinery',
@@ -556,7 +557,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 012',
                 'account_title' => 'Accumulated Impairment Losses - Machinery',
             ],
-            ['full_code' => '1 07 05 020', 'account_title' => 'Office Equipment'],
+            ['full_code' => '1 07 05 020', 'account_title' => 'Office Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 021',
                 'account_title' => 'Accumulated Depreciation - Office Equipment',
@@ -568,6 +569,7 @@ class ChartOfAccountSeeder extends Seeder
             [
                 'full_code' => '1 07 05 030',
                 'account_title' => 'Information and Communication Technology Equipment',
+                'expense_class' => 'CO',
             ],
             [
                 'full_code' => '1 07 05 031',
@@ -580,6 +582,7 @@ class ChartOfAccountSeeder extends Seeder
             [
                 'full_code' => '1 07 05 040',
                 'account_title' => 'Agricultural and Forestry Equipment',
+                'expense_class' => 'CO',
             ],
             [
                 'full_code' => '1 07 05 041',
@@ -589,7 +592,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 042',
                 'account_title' => 'Accumulated Impairment Losses - Agricultural and Forestry Equipment',
             ],
-            ['full_code' => '1 07 05 050', 'account_title' => 'Marine and Fishery Equipment'],
+            ['full_code' => '1 07 05 050', 'account_title' => 'Marine and Fishery Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 051',
                 'account_title' => 'Accumulated Depreciation - Marine and Fishery Equipment',
@@ -598,7 +601,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 052',
                 'account_title' => 'Accumulated Impairment Losses - Marine and Fishery Equipment',
             ],
-            ['full_code' => '1 07 05 060', 'account_title' => 'Airport Equipment'],
+            ['full_code' => '1 07 05 060', 'account_title' => 'Airport Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 061',
                 'account_title' => 'Accumulated Depreciation - Airport Equipment',
@@ -607,7 +610,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 062',
                 'account_title' => 'Accumulated Impairment Losses - Airport Equipment',
             ],
-            ['full_code' => '1 07 05 070', 'account_title' => 'Communication Equipment'],
+            ['full_code' => '1 07 05 070', 'account_title' => 'Communication Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 071',
                 'account_title' => 'Accumulated Depreciation - Communication Equipment',
@@ -616,7 +619,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 072',
                 'account_title' => 'Accumulated Impairment Losses - Communication Equipment',
             ],
-            ['full_code' => '1 07 05 080', 'account_title' => 'Construction and Heavy Equipment'],
+            ['full_code' => '1 07 05 080', 'account_title' => 'Construction and Heavy Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 081',
                 'account_title' => 'Accumulated Depreciation - Construction and Heavy Equipment',
@@ -628,6 +631,7 @@ class ChartOfAccountSeeder extends Seeder
             [
                 'full_code' => '1 07 05 090',
                 'account_title' => 'Disaster Response and Rescue Equipment',
+                'expense_class' => 'CO',
             ],
             [
                 'full_code' => '1 07 05 091',
@@ -640,6 +644,7 @@ class ChartOfAccountSeeder extends Seeder
             [
                 'full_code' => '1 07 05 100',
                 'account_title' => 'Military, Police and Security Equipment',
+                'expense_class' => 'CO',
             ],
             [
                 'full_code' => '1 07 05 101',
@@ -649,7 +654,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 102',
                 'account_title' => 'Accumulated Impairment Losses - Military, Police and Security Equipment',
             ],
-            ['full_code' => '1 07 05 110', 'account_title' => 'Medical Equipment'],
+            ['full_code' => '1 07 05 110', 'account_title' => 'Medical Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 111',
                 'account_title' => 'Accumulated Depreciation - Medical Equipment',
@@ -658,7 +663,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 112',
                 'account_title' => 'Accumulated Impairment Losses - Medical Equipment',
             ],
-            ['full_code' => '1 07 05 120', 'account_title' => 'Printing Equipment'],
+            ['full_code' => '1 07 05 120', 'account_title' => 'Printing Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 121',
                 'account_title' => 'Accumulated Depreciation - Printing Equipment',
@@ -667,7 +672,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 122',
                 'account_title' => 'Accumulated Impairment Losses - Printing Equipment',
             ],
-            ['full_code' => '1 07 05 130', 'account_title' => 'Sports Equipment'],
+            ['full_code' => '1 07 05 130', 'account_title' => 'Sports Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 131',
                 'account_title' => 'Accumulated Depreciation - Sports Equipment',
@@ -676,7 +681,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 132',
                 'account_title' => 'Accumulated Impairment Losses - Sports Equipment',
             ],
-            ['full_code' => '1 07 05 140', 'account_title' => 'Technical and Scientific Equipment'],
+            ['full_code' => '1 07 05 140', 'account_title' => 'Technical and Scientific Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 141',
                 'account_title' => 'Accumulated Depreciation - Technical and Scientific Equipment',
@@ -685,7 +690,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 05 142',
                 'account_title' => 'Accumulated Impairment Losses - Technical and Scientific Equipment',
             ],
-            ['full_code' => '1 07 05 990', 'account_title' => 'Other Machinery and Equipment'],
+            ['full_code' => '1 07 05 990', 'account_title' => 'Other Machinery and Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 05 991',
                 'account_title' => 'Accumulated Depreciation - Other Machinery and Equipment',
@@ -695,7 +700,7 @@ class ChartOfAccountSeeder extends Seeder
                 'account_title' => 'Accumulated Impairment Losses - Other Machinery and Equipment',
             ],
             ['full_code' => '1 07 06', 'account_title' => 'Transportation Equipment'],
-            ['full_code' => '1 07 06 010', 'account_title' => 'Motor Vehicles'],
+            ['full_code' => '1 07 06 010', 'account_title' => 'Motor Vehicles', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 06 011',
                 'account_title' => 'Accumulated Depreciation - Motor Vehicles',
@@ -704,7 +709,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 06 012',
                 'account_title' => 'Accumulated Impairment Losses - Motor Vehicles',
             ],
-            ['full_code' => '1 07 06 020', 'account_title' => 'Trains'],
+            ['full_code' => '1 07 06 020', 'account_title' => 'Trains', 'expense_class' => 'CO'],
             ['full_code' => '1 07 06 021', 'account_title' => 'Accumulated Depreciation - Trains'],
             [
                 'full_code' => '1 07 06 022',
@@ -713,6 +718,7 @@ class ChartOfAccountSeeder extends Seeder
             [
                 'full_code' => '1 07 06 030',
                 'account_title' => 'Aircrafts and Aircrafts Ground Equipment',
+                'expense_class' => 'CO',
             ],
             [
                 'full_code' => '1 07 06 031',
@@ -722,7 +728,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 06 032',
                 'account_title' => 'Accumulated Impairment Losses - Aircrafts and Aircrafts Ground Equipment',
             ],
-            ['full_code' => '1 07 06 040', 'account_title' => 'Watercrafts'],
+            ['full_code' => '1 07 06 040', 'account_title' => 'Watercrafts', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 06 041',
                 'account_title' => 'Accumulated Depreciation - Watercrafts',
@@ -731,7 +737,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 06 042',
                 'account_title' => 'Accumulated Impairment Losses - Watercrafts',
             ],
-            ['full_code' => '1 07 06 990', 'account_title' => 'Other Transportation Equipment'],
+            ['full_code' => '1 07 06 990', 'account_title' => 'Other Transportation Equipment', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 06 991',
                 'account_title' => 'Accumulated Depreciation - Other Transportation Equipment',
@@ -741,7 +747,7 @@ class ChartOfAccountSeeder extends Seeder
                 'account_title' => 'Accumulated Impairment Losses - Other Transportation Equipment',
             ],
             ['full_code' => '1 07 07', 'account_title' => 'Furniture, Fixtures and Books'],
-            ['full_code' => '1 07 07 010', 'account_title' => 'Furniture and Fixtures'],
+            ['full_code' => '1 07 07 010', 'account_title' => 'Furniture and Fixtures', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 07 011',
                 'account_title' => 'Accumulated Depreciation - Furniture and Fixtures',
@@ -750,7 +756,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 07 07 012',
                 'account_title' => 'Accumulated Impairment Losses - Furniture and Fixtures',
             ],
-            ['full_code' => '1 07 07 020', 'account_title' => 'Books'],
+            ['full_code' => '1 07 07 020', 'account_title' => 'Books', 'expense_class' => 'CO'],
             ['full_code' => '1 07 07 021', 'account_title' => 'Accumulated Depreciation - Books'],
             [
                 'full_code' => '1 07 07 022',
@@ -870,7 +876,7 @@ class ChartOfAccountSeeder extends Seeder
                 'account_title' => 'Accumulated Impairment Losses - Service Concession Assets',
             ],
             ['full_code' => '1 07 99', 'account_title' => 'Other Property, Plant and Equipment'],
-            ['full_code' => '1 07 99 010', 'account_title' => 'Work/Zoo Animals'],
+            ['full_code' => '1 07 99 010', 'account_title' => 'Work/Zoo Animals', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 07 99 011',
                 'account_title' => 'Accumulated Depreciation - Work/Zoo Animals',
@@ -882,6 +888,7 @@ class ChartOfAccountSeeder extends Seeder
             [
                 'full_code' => '1 07 99 990',
                 'account_title' => 'Other Property, Plant and Equipment',
+                'expense_class' => 'CO',
             ],
             [
                 'full_code' => '1 07 99 991',
@@ -894,14 +901,14 @@ class ChartOfAccountSeeder extends Seeder
 
             ['full_code' => '1 08', 'account_title' => 'Biological Assets'],
             ['full_code' => '1 08 01', 'account_title' => 'Bearer Biological Assets'],
-            ['full_code' => '1 08 01 010', 'account_title' => 'Breeding Stocks'],
-            ['full_code' => '1 08 01 020', 'account_title' => 'Plants and Trees'],
-            ['full_code' => '1 08 01 030', 'account_title' => 'Aquaculture'],
-            ['full_code' => '1 08 01 990', 'account_title' => 'Other Bearer Biological Assets'],
+            ['full_code' => '1 08 01 010', 'account_title' => 'Breeding Stocks', 'expense_class' => 'CO'],
+            ['full_code' => '1 08 01 020', 'account_title' => 'Plants and Trees', 'expense_class' => 'CO'],
+            ['full_code' => '1 08 01 030', 'account_title' => 'Aquaculture', 'expense_class' => 'CO'],
+            ['full_code' => '1 08 01 990', 'account_title' => 'Other Bearer Biological Assets', 'expense_class' => 'CO'],
 
             ['full_code' => '1 09', 'account_title' => 'Intangible Assets'],
             ['full_code' => '1 09 01', 'account_title' => 'Intangible Assets'],
-            ['full_code' => '1 09 01 010', 'account_title' => 'Patents/Copyrights'],
+            ['full_code' => '1 09 01 010', 'account_title' => 'Patents/Copyrights', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 09 01 011',
                 'account_title' => 'Accumulated Amortization - Patents/Copyrights',
@@ -910,7 +917,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 09 01 012',
                 'account_title' => 'Accumulated Impairment Losses - Patents/Copyrights',
             ],
-            ['full_code' => '1 09 01 020', 'account_title' => 'Computer Software'],
+            ['full_code' => '1 09 01 020', 'account_title' => 'Computer Software', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 09 01 021',
                 'account_title' => 'Accumulated Amortization - Computer Software',
@@ -919,7 +926,7 @@ class ChartOfAccountSeeder extends Seeder
                 'full_code' => '1 09 01 022',
                 'account_title' => 'Accumulated Impairment Losses - Computer Software',
             ],
-            ['full_code' => '1 09 01 990', 'account_title' => 'Other Intangible Assets'],
+            ['full_code' => '1 09 01 990', 'account_title' => 'Other Intangible Assets', 'expense_class' => 'CO'],
             [
                 'full_code' => '1 09 01 991',
                 'account_title' => 'Accumulated Amortization - Other Intangible Assets',
@@ -1341,124 +1348,138 @@ class ChartOfAccountSeeder extends Seeder
             ['full_code' => '5', 'account_title' => 'Expenses'],
             ['full_code' => '5 01', 'account_title' => 'Personnel Services'],
             ['full_code' => '5 01 01', 'account_title' => 'Salaries and Wages'],
-            ['full_code' => '5 01 01 010', 'account_title' => 'Salaries and Wages - Regular'],
+            ['full_code' => '5 01 01 010', 'account_title' => 'Salaries and Wages - Regular', 'expense_class' => 'PS'],
             [
                 'full_code' => '5 01 01 020',
                 'account_title' => 'Salaries and Wages - Casual/Contractual',
+                'expense_class' => 'PS',
             ],
             ['full_code' => '5 01 02', 'account_title' => 'Other Compensation'],
             [
                 'full_code' => '5 01 02 010',
                 'account_title' => 'Personnel Economic Relief Allowance (PERA)',
+                'expense_class' => 'PS',
             ],
-            ['full_code' => '5 01 02 020', 'account_title' => 'Representation Allowance (RA)'],
-            ['full_code' => '5 01 02 030', 'account_title' => 'Transportation Allowance (TA)'],
-            ['full_code' => '5 01 02 040', 'account_title' => 'Clothing/Uniform Allowance'],
-            ['full_code' => '5 01 02 050', 'account_title' => 'Subsistence Allowance'],
-            ['full_code' => '5 01 02 060', 'account_title' => 'Laundry Allowance'],
-            ['full_code' => '5 01 02 070', 'account_title' => 'Quarters Allowance'],
-            ['full_code' => '5 01 02 080', 'account_title' => 'Productivity Incentive Allowance'],
-            ['full_code' => '5 01 02 090', 'account_title' => 'Overseas Allowance'],
-            ['full_code' => '5 01 02 100', 'account_title' => 'Honoraria'],
-            ['full_code' => '5 01 02 110', 'account_title' => 'Hazard Pay'],
-            ['full_code' => '5 01 02 120', 'account_title' => 'Longevity Pay'],
-            ['full_code' => '5 01 02 130', 'account_title' => 'Overtime and Night Pay'],
-            ['full_code' => '5 01 02 140', 'account_title' => 'Year End Bonus'],
-            ['full_code' => '5 01 02 150', 'account_title' => 'Cash Gift'],
-            ['full_code' => '5 01 02 990', 'account_title' => 'Other Bonuses and Allowances'],
+            ['full_code' => '5 01 02 020', 'account_title' => 'Representation Allowance (RA)', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 030', 'account_title' => 'Transportation Allowance (TA)', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 040', 'account_title' => 'Clothing/Uniform Allowance', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 050', 'account_title' => 'Subsistence Allowance', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 060', 'account_title' => 'Laundry Allowance', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 070', 'account_title' => 'Quarters Allowance', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 080', 'account_title' => 'Productivity Incentive Allowance', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 090', 'account_title' => 'Overseas Allowance', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 100', 'account_title' => 'Honoraria', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 110', 'account_title' => 'Hazard Pay', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 120', 'account_title' => 'Longevity Pay', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 130', 'account_title' => 'Overtime and Night Pay', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 140', 'account_title' => 'Year End Bonus', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 150', 'account_title' => 'Cash Gift', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 02 990', 'account_title' => 'Other Bonuses and Allowances', 'expense_class' => 'PS'],
             ['full_code' => '5 01 03', 'account_title' => 'Personnel Benefit Contributions'],
             [
                 'full_code' => '5 01 03 010',
                 'account_title' => 'Retirement and Life Insurance Premiums',
+                'expense_class' => 'PS',
             ],
-            ['full_code' => '5 01 03 020', 'account_title' => 'Pag-IBIG Contributions'],
-            ['full_code' => '5 01 03 030', 'account_title' => 'PhilHealth Contributions'],
+            ['full_code' => '5 01 03 020', 'account_title' => 'Pag-IBIG Contributions', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 03 030', 'account_title' => 'PhilHealth Contributions', 'expense_class' => 'PS'],
             [
                 'full_code' => '5 01 03 040',
                 'account_title' => 'Employees Compensation Insurance Premiums',
+                'expense_class' => 'PS',
             ],
             [
                 'full_code' => '5 01 03 050',
                 'account_title' => 'Provident/Welfare Fund Contributions',
+                'expense_class' => 'PS',
             ],
             ['full_code' => '5 01 04', 'account_title' => 'Other Personnel Benefits'],
-            ['full_code' => '5 01 04 010', 'account_title' => 'Pension Benefits'],
-            ['full_code' => '5 01 04 020', 'account_title' => 'Retirement Gratuity'],
-            ['full_code' => '5 01 04 030', 'account_title' => 'Terminal Leave Benefits'],
-            ['full_code' => '5 01 04 990', 'account_title' => 'Other Personnel Benefits'],
+            ['full_code' => '5 01 04 010', 'account_title' => 'Pension Benefits', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 04 020', 'account_title' => 'Retirement Gratuity', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 04 030', 'account_title' => 'Terminal Leave Benefits', 'expense_class' => 'PS'],
+            ['full_code' => '5 01 04 990', 'account_title' => 'Other Personnel Benefits', 'expense_class' => 'PS'],
 
             ['full_code' => '5 02', 'account_title' => 'Maintenance and Other Operating Expenses'],
             ['full_code' => '5 02 01', 'account_title' => 'Traveling Expenses'],
-            ['full_code' => '5 02 01 010', 'account_title' => 'Traveling Expenses - Local'],
-            ['full_code' => '5 02 01 020', 'account_title' => 'Traveling Expenses - Foreign'],
+            ['full_code' => '5 02 01 010', 'account_title' => 'Traveling Expenses - Local', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 01 020', 'account_title' => 'Traveling Expenses - Foreign', 'expense_class' => 'MOOE'],
             ['full_code' => '5 02 02', 'account_title' => 'Training and Scholarship Expenses'],
-            ['full_code' => '5 02 02 010', 'account_title' => 'Training Expenses'],
-            ['full_code' => '5 02 02 020', 'account_title' => 'Scholarship Grants/Expenses'],
+            ['full_code' => '5 02 02 010', 'account_title' => 'Training Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 02 020', 'account_title' => 'Scholarship Grants/Expenses', 'expense_class' => 'MOOE'],
             ['full_code' => '5 02 03', 'account_title' => 'Supplies and Materials Expenses'],
-            ['full_code' => '5 02 03 010', 'account_title' => 'Office Supplies Expenses'],
-            ['full_code' => '5 02 03 020', 'account_title' => 'Accountable Forms Expenses'],
-            ['full_code' => '5 02 03 030', 'account_title' => 'Non-Accountable Forms Expenses'],
+            ['full_code' => '5 02 03 010', 'account_title' => 'Office Supplies Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 03 020', 'account_title' => 'Accountable Forms Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 03 030', 'account_title' => 'Non-Accountable Forms Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 03 040',
                 'account_title' => 'Animal/Zoological Supplies Expenses',
+                'expense_class' => 'MOOE',
             ],
-            ['full_code' => '5 02 03 050', 'account_title' => 'Food Supplies Expenses'],
-            ['full_code' => '5 02 03 060', 'account_title' => 'Welfare Goods Expenses'],
-            ['full_code' => '5 02 03 070', 'account_title' => 'Drugs and Medicines Expenses'],
+            ['full_code' => '5 02 03 050', 'account_title' => 'Food Supplies Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 03 060', 'account_title' => 'Welfare Goods Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 03 070', 'account_title' => 'Drugs and Medicines Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 03 080',
                 'account_title' => 'Medical, Dental and Laboratory Supplies Expenses',
+                'expense_class' => 'MOOE',
             ],
-            ['full_code' => '5 02 03 090', 'account_title' => 'Fuel, Oil and Lubricants Expenses'],
+            ['full_code' => '5 02 03 090', 'account_title' => 'Fuel, Oil and Lubricants Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 03 100',
                 'account_title' => 'Agricultural and Marine Supplies Expenses',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 03 110',
                 'account_title' => 'Textbooks and Instructional Materials Expenses',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 03 120',
                 'account_title' => 'Military, Police and Traffic Supplies Expenses',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 03 130',
                 'account_title' => 'Chemical and Filtering Supplies Expenses',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 03 990',
                 'account_title' => 'Other Supplies and Materials Expenses',
+                'expense_class' => 'MOOE',
             ],
             ['full_code' => '5 02 04', 'account_title' => 'Utility Expenses'],
-            ['full_code' => '5 02 04 010', 'account_title' => 'Water Expenses'],
-            ['full_code' => '5 02 04 020', 'account_title' => 'Electricity Expenses'],
+            ['full_code' => '5 02 04 010', 'account_title' => 'Water Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 04 020', 'account_title' => 'Electricity Expenses', 'expense_class' => 'MOOE'],
             ['full_code' => '5 02 05', 'account_title' => 'Communication Expenses'],
-            ['full_code' => '5 02 05 010', 'account_title' => 'Postage and Courier Services'],
-            ['full_code' => '5 02 05 020', 'account_title' => 'Telephone Expenses'],
-            ['full_code' => '5 02 05 030', 'account_title' => 'Internet Subscription Expenses'],
+            ['full_code' => '5 02 05 010', 'account_title' => 'Postage and Courier Services', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 05 020', 'account_title' => 'Telephone Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 05 030', 'account_title' => 'Internet Subscription Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 05 040',
                 'account_title' => 'Cable, Satellite, Telegraph and Radio Expenses',
+                'expense_class' => 'MOOE',
             ],
             ['full_code' => '5 02 06', 'account_title' => 'Awards/Rewards and Prizes'],
-            ['full_code' => '5 02 06 010', 'account_title' => 'Awards/Rewards Expenses'],
-            ['full_code' => '5 02 06 020', 'account_title' => 'Prizes'],
+            ['full_code' => '5 02 06 010', 'account_title' => 'Awards/Rewards Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 06 020', 'account_title' => 'Prizes', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 07',
                 'account_title' => 'Survey, Research, Exploration and Development Expenses',
             ],
-            ['full_code' => '5 02 07 010', 'account_title' => 'Survey Expenses'],
+            ['full_code' => '5 02 07 010', 'account_title' => 'Survey Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 07 020',
                 'account_title' => 'Research, Exploration and Development Expenses',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 08',
                 'account_title' => 'Demolition/Relocation and Desilting/Dredging Expenses',
             ],
-            ['full_code' => '5 02 08 010', 'account_title' => 'Demolition and Relocation Expenses'],
-            ['full_code' => '5 02 08 020', 'account_title' => 'Desilting and Dredging Expenses'],
+            ['full_code' => '5 02 08 010', 'account_title' => 'Demolition and Relocation Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 08 020', 'account_title' => 'Desilting and Dredging Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 09',
                 'account_title' => 'Generation, Transmission and Distribution Expenses',
@@ -1466,124 +1487,145 @@ class ChartOfAccountSeeder extends Seeder
             [
                 'full_code' => '5 02 09 010',
                 'account_title' => 'Generation, Transmission and Distribution Expenses',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 10',
                 'account_title' => 'Confidential, Intelligence and Extraordinary Expenses',
             ],
-            ['full_code' => '5 02 10 010', 'account_title' => 'Confidential Expenses'],
-            ['full_code' => '5 02 10 020', 'account_title' => 'Intelligence Expenses'],
+            ['full_code' => '5 02 10 010', 'account_title' => 'Confidential Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 10 020', 'account_title' => 'Intelligence Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 10 030',
                 'account_title' => 'Extraordinary and Miscellaneous Expenses',
+                'expense_class' => 'MOOE',
             ],
             ['full_code' => '5 02 11', 'account_title' => 'Professional Services'],
-            ['full_code' => '5 02 11 010', 'account_title' => 'Legal Services'],
-            ['full_code' => '5 02 11 020', 'account_title' => 'Auditing Services'],
-            ['full_code' => '5 02 11 030', 'account_title' => 'Consultancy Services'],
-            ['full_code' => '5 02 11 990', 'account_title' => 'Other Professional Services'],
+            ['full_code' => '5 02 11 010', 'account_title' => 'Legal Services', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 11 020', 'account_title' => 'Auditing Services', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 11 030', 'account_title' => 'Consultancy Services', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 11 990', 'account_title' => 'Other Professional Services', 'expense_class' => 'MOOE'],
             ['full_code' => '5 02 12', 'account_title' => 'General Services'],
-            ['full_code' => '5 02 12 010', 'account_title' => 'Environment/Sanitary Services'],
-            ['full_code' => '5 02 12 020', 'account_title' => 'Janitorial Services'],
-            ['full_code' => '5 02 12 030', 'account_title' => 'Security Services'],
-            ['full_code' => '5 02 12 990', 'account_title' => 'Other General Services'],
+            ['full_code' => '5 02 12 010', 'account_title' => 'Environment/Sanitary Services', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 12 020', 'account_title' => 'Janitorial Services', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 12 030', 'account_title' => 'Security Services', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 12 990', 'account_title' => 'Other General Services', 'expense_class' => 'MOOE'],
             ['full_code' => '5 02 13', 'account_title' => 'Repairs and Maintenance'],
             [
                 'full_code' => '5 02 13 010',
                 'account_title' => 'Repairs and Maintenance - Investment Property',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 13 020',
                 'account_title' => 'Repairs and Maintenance - Land Improvements',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 13 030',
                 'account_title' => 'Repairs and Maintenance - Infrastructure Assets',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 13 040',
                 'account_title' => 'Repairs and Maintenance - Buildings and Other Structures',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 13 050',
                 'account_title' => 'Repairs and Maintenance - Machinery and Equipment',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 13 060',
                 'account_title' => 'Repairs and Maintenance - Transportation Equipment',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 13 070',
                 'account_title' => 'Repairs and Maintenance - Furniture and Fixtures',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 13 080',
                 'account_title' => 'Repairs and Maintenance - Leased Assets',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 13 090',
                 'account_title' => 'Repairs and Maintenance - Leased Assets Improvements',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 13 990',
                 'account_title' => 'Repairs and Maintenance - Other Property, Plant and Equipment',
+                'expense_class' => 'MOOE',
             ],
             ['full_code' => '5 02 14', 'account_title' => 'Financial Assistance/Subsidy'],
             [
                 'full_code' => '5 02 14 020',
                 'account_title' => 'Subsidy to National Government Agencies',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 14 030',
                 'account_title' => 'Subsidy to Other Local Government Units',
+                'expense_class' => 'MOOE',
             ],
-            ['full_code' => '5 02 14 060', 'account_title' => 'Subsidy to Other Funds'],
+            ['full_code' => '5 02 14 060', 'account_title' => 'Subsidy to Other Funds', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 14 070',
                 'account_title' => 'Subsidy to General Fund Proper/Special Accounts',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 14 080',
                 'account_title' => 'Subsidy to Local Economic Enterprises/Public Utilities',
+                'expense_class' => 'MOOE',
             ],
-            ['full_code' => '5 02 14 990', 'account_title' => 'Subsidies - Others'],
+            ['full_code' => '5 02 14 990', 'account_title' => 'Subsidies - Others', 'expense_class' => 'MOOE'],
             ['full_code' => '5 02 15', 'account_title' => 'Transfers'],
             [
                 'full_code' => '5 02 15 010',
                 'account_title' => 'Transfers of Unspent Current Year DRRM Funds to the Trust Fund',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 15 020',
                 'account_title' => 'Transfers for Project Equity Share /LGU Counterpart',
+                'expense_class' => 'MOOE',
             ],
             [
                 'full_code' => '5 02 16',
                 'account_title' => 'Taxes, Insurance Premiums and Other Fees',
             ],
-            ['full_code' => '5 02 16 010', 'account_title' => 'Taxes, Duties and Licenses'],
-            ['full_code' => '5 02 16 020', 'account_title' => 'Fidelity Bond Premiums'],
-            ['full_code' => '5 02 16 030', 'account_title' => 'Insurance Expenses'],
+            ['full_code' => '5 02 16 010', 'account_title' => 'Taxes, Duties and Licenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 16 020', 'account_title' => 'Fidelity Bond Premiums', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 16 030', 'account_title' => 'Insurance Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 99',
                 'account_title' => 'Other Maintenance and Operating Expenses',
             ],
-            ['full_code' => '5 02 99 010', 'account_title' => 'Advertising Expenses'],
-            ['full_code' => '5 02 99 020', 'account_title' => 'Printing and Publication Expenses'],
-            ['full_code' => '5 02 99 030', 'account_title' => 'Representation Expenses'],
+            ['full_code' => '5 02 99 010', 'account_title' => 'Advertising Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 99 020', 'account_title' => 'Printing and Publication Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 99 030', 'account_title' => 'Representation Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 99 040',
                 'account_title' => 'Transportation and Delivery Expenses',
+                'expense_class' => 'MOOE',
             ],
-            ['full_code' => '5 02 99 050', 'account_title' => 'Rent Expenses'],
+            ['full_code' => '5 02 99 050', 'account_title' => 'Rent Expenses', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 99 060',
                 'account_title' => 'Membership Dues and Contributions to Organizations',
+                'expense_class' => 'MOOE',
             ],
-            ['full_code' => '5 02 99 070', 'account_title' => 'Subscription Expenses'],
-            ['full_code' => '5 02 99 080', 'account_title' => 'Donations'],
+            ['full_code' => '5 02 99 070', 'account_title' => 'Subscription Expenses', 'expense_class' => 'MOOE'],
+            ['full_code' => '5 02 99 080', 'account_title' => 'Donations', 'expense_class' => 'MOOE'],
             [
                 'full_code' => '5 02 99 990',
                 'account_title' => 'Other Maintenance and Operating Expenses',
+                'expense_class' => 'MOOE',
             ],
 
             ['full_code' => '5 03', 'account_title' => 'Financial Expenses'],
@@ -1743,17 +1785,19 @@ class ChartOfAccountSeeder extends Seeder
                 $path = str_replace(' ', '-', $fullCode);
                 $isPostable = $level === 4;
 
-                $newAccount = ChartOfAccount::create([
-                    'parent_id' => $parentId,
-                    'account_number' => $accountNumber,
-                    'account_title' => $coa['account_title'],
-                    'path' => $path,
-                    'is_postable' => $isPostable,
-                    'is_active' => true,
-                    'expense_class' => ChartOfAccountClassifier::fromPath($path),
-                ]);
+                $account = ChartOfAccount::updateOrCreate(
+                    ['path' => $path],
+                    [
+                        'parent_id' => $parentId,
+                        'account_number' => $accountNumber,
+                        'account_title' => $coa['account_title'],
+                        'is_postable' => $isPostable,
+                        'is_active' => true,
+                        'expense_class' => $coa['expense_class'] ?? null,
+                    ]
+                );
 
-                $codeToIdMap[$fullCode] = $newAccount->id;
+                $codeToIdMap[$fullCode] = $account->id;
             }
         });
 

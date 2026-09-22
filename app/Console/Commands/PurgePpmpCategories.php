@@ -1,4 +1,5 @@
 <?php
+
 // app/Console/Commands/PurgePpmpCategories.php
 
 namespace App\Console\Commands;
@@ -16,25 +17,27 @@ class PurgePpmpCategories extends Command
 
     public function handle(): int
     {
-        $catCount   = DB::table('ppmp_categories')->count();
+        $catCount = DB::table('ppmp_categories')->count();
         $pivotCount = DB::table('chart_of_account_ppmp_categories')->count();
-        $listCount  = DB::table('ppmp_price_lists')->count();
-        $ppmpCount  = DB::table('ppmps')->whereNotNull('ppmp_price_list_id')->count();
+        $listCount = DB::table('ppmp_price_lists')->count();
+        $ppmpCount = DB::table('ppmps')->whereNotNull('ppmp_price_list_id')->count();
 
         $this->table(['Table', 'Rows affected'], [
-            ['ppmp_categories',                  $catCount . ' (deleted)'],
-            ['chart_of_account_ppmp_categories', $pivotCount . ' (deleted)'],
-            ['ppmp_price_lists',                 $listCount . ' (deleted)'],
-            ['ppmps.ppmp_price_list_id',         $ppmpCount . ' (set NULL)'],
+            ['ppmp_categories',                  $catCount.' (deleted)'],
+            ['chart_of_account_ppmp_categories', $pivotCount.' (deleted)'],
+            ['ppmp_price_lists',                 $listCount.' (deleted)'],
+            ['ppmps.ppmp_price_list_id',         $ppmpCount.' (set NULL)'],
         ]);
 
         if ($this->option('dry-run')) {
             $this->warn('Dry run — nothing deleted.');
+
             return self::SUCCESS;
         }
 
         if (! $this->option('force') && ! $this->confirm('Proceed with deletion?', false)) {
             $this->info('Aborted.');
+
             return self::SUCCESS;
         }
 
@@ -59,6 +62,7 @@ class PurgePpmpCategories extends Command
         });
 
         $this->info('All PPMP categories purged.');
+
         return self::SUCCESS;
     }
 }

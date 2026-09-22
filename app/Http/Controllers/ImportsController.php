@@ -13,11 +13,11 @@ class ImportsController extends Controller
 
         return Inertia::render('imports/index', [
             'can' => [
-                'category'            => Gate::allows('category', 'imports'),
-                'categoryCoaMapping'  => Gate::allows('categoryCoaMapping', 'imports'),
-                'priceList'           => Gate::allows('priceList', 'imports'),
+                'category' => Gate::allows('category', 'imports'),
+                'categoryCoaMapping' => Gate::allows('categoryCoaMapping', 'imports'),
+                'priceList' => Gate::allows('priceList', 'imports'),
                 'priceListQuantities' => Gate::allows('priceListQuantities', 'imports'),
-                'aipSummary'          => Gate::allows('aipSummary', 'imports'),
+                'aipSummary' => Gate::allows('aipSummary', 'imports'),
             ],
         ]);
     }
