@@ -128,6 +128,88 @@ test('cumulative merges same ppa across docs by lineage and sums deltas', functi
         ->toBe(650.0);
 });
 
+test('document reports accumulate regular plus prior supplementals', function () {
+    $office = Office::factory()->create();
+    $fiscalYear = FiscalYear::factory()->create(['status' => 'draft']);
+    $fundingSource = FundingSource::create([
+        'fund_type' => 'General Fund',
+        'code' => 'GF-ACCUM',
+        'title' => 'General Fund',
+    ]);
+
+    $ppa = Ppa::factory()->create([
+        'office_id' => $office->id,
+        'fiscal_year_id' => $fiscalYear->id,
+    ]);
+
+    $regularDoc = AipDocument::create([
+        'fiscal_year_id' => $fiscalYear->id,
+        'office_id' => $office->id,
+        'kind' => 'regular',
+        'name' => 'Regular AIP',
+    ]);
+    $saip1 = AipDocument::create([
+        'fiscal_year_id' => $fiscalYear->id,
+        'office_id' => $office->id,
+        'kind' => 'supplemental',
+        'name' => 'Supplemental AIP No. 1',
+    ]);
+    $saip2 = AipDocument::create([
+        'fiscal_year_id' => $fiscalYear->id,
+        'office_id' => $office->id,
+        'kind' => 'supplemental',
+        'name' => 'Supplemental AIP No. 2',
+    ]);
+
+    // Regular: item 1, qty/amount 100.
+    $regularEntry = AipEntry::create(['ppa_id' => $ppa->id, 'aip_document_id' => $regularDoc->id]);
+    $regularOutput = AipOutput::create([
+        'aip_entry_id' => $regularEntry->id,
+        'expected_output' => 'Item 1',
+    ]);
+    PpaFundingSource::create([
+        'aip_output_id' => $regularOutput->id,
+        'funding_source_id' => $fundingSource->id,
+        'mooe_amount' => 100,
+    ]);
+
+    // SAIP 1: carry Item 1 as delta (+50) plus a brand-new Item 2 (+200).
+    $carried1 = app(AipCarryOverService::class)->carryOutputToDocument(
+        $regularOutput->fresh(['aipEntry', 'fundingSources', 'offices']),
+        $saip1,
+    );
+    $carried1->fundingSources->first()->update(['mooe_amount' => 50]);
+
+    $saip1Entry = AipEntry::where('ppa_id', $ppa->id)->where('aip_document_id', $saip1->id)->firstOrFail();
+    $item2 = AipOutput::create([
+        'aip_entry_id' => $saip1Entry->id,
+        'expected_output' => 'Item 2',
+    ]);
+    PpaFundingSource::create([
+        'aip_output_id' => $item2->id,
+        'funding_source_id' => $fundingSource->id,
+        'mooe_amount' => 200,
+    ]);
+
+    // SAIP 2: carry Item 1 again as delta (+25).
+    $carried2 = app(AipCarryOverService::class)->carryOutputToDocument(
+        $regularOutput->fresh(['aipEntry', 'fundingSources', 'offices']),
+        $saip2,
+    );
+    $carried2->fundingSources->first()->update(['mooe_amount' => 25]);
+
+    $sumFor = fn (AipDocument $doc) => (float) PpaFundingSource::whereHas(
+        'aipEntry',
+        fn ($q) => $q->whereIn('aip_document_id', $doc->cumulativeDocumentIds()),
+    )->sum('mooe_amount');
+
+    // Regular covers itself only; SAIP 1 adds its deltas; SAIP 2 adds more.
+    expect($regularDoc->cumulativeDocumentIds())->toBe([$regularDoc->id])
+        ->and($sumFor($regularDoc))->toBe(100.0)
+        ->and($sumFor($saip1))->toBe(350.0)
+        ->and($sumFor($saip2))->toBe(375.0);
+});
+
 test('sibling outputs lists same ppa outputs from other docs with carried flag', function () {
     $office = Office::factory()->create();
     $fiscalYear = FiscalYear::factory()->create(['status' => 'draft']);

@@ -70,6 +70,13 @@ class FiscalYearController extends Controller
                     return null;
                 }
 
+                // Optional per-document scope (Reports dropdown on a doc row).
+                $document = null;
+                if ($request->query('aip_document_id')) {
+                    $document = AipDocument::findOrFail($request->query('aip_document_id'));
+                    abort_unless((int) $document->fiscal_year_id === (int) $id, 422, 'Document does not belong to this fiscal year.');
+                }
+
                 $targetOfficeId = $canGenerateAppAll
                     ? $request->query('office_id', 'all')
                     : $user->office_id;
@@ -80,6 +87,15 @@ class FiscalYearController extends Controller
                 ])->whereHas('ppaFundingSource.aipEntry.ppa', function ($query) use ($id) {
                     $query->where('fiscal_year_id', $id);
                 });
+
+                if ($document) {
+                    // Cumulative up to the document: regular + all
+                    // supplementals through it.
+                    $docIds = $document->cumulativeDocumentIds();
+                    $query->whereHas('ppaFundingSource.aipEntry', function ($q) use ($docIds) {
+                        $q->whereIn('aip_document_id', $docIds);
+                    });
+                }
 
                 $officeIds = Office::where('id', $targetOfficeId)
                     ->orWhere('parent_id', $targetOfficeId)

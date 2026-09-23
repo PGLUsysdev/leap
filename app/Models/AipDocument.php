@@ -49,4 +49,29 @@ class AipDocument extends Model
             ],
         );
     }
+
+    /**
+     * Document ids accumulated up to and including this document.
+     *
+     * Reports for a supplemental are cumulative: SAIP 1 covers
+     * regular + SAIP 1, SAIP 2 covers regular + SAIP 1 + SAIP 2.
+     * Regular documents cover themselves only.
+     *
+     * @return array<int>
+     */
+    public function cumulativeDocumentIds(): array
+    {
+        return static::where('fiscal_year_id', $this->fiscal_year_id)
+            ->where('office_id', $this->office_id)
+            ->where(function ($q) {
+                $q->where('kind', 'regular')->orWhere(function ($qq) {
+                    $qq->where('kind', 'supplemental')->where('id', '<=', $this->id);
+                });
+            })
+            ->orderByRaw("kind = 'regular' desc")
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
 }

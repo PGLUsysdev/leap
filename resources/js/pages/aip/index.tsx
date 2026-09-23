@@ -1,11 +1,25 @@
 import { router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Building2, ChevronsUpDown, ExternalLink } from 'lucide-react';
+import {
+    Building2,
+    ChevronsUpDown,
+    ExternalLink,
+    FileText,
+    List,
+} from 'lucide-react';
 import DataTable from '@/components/data-table';
 import { TableSelect, useTableSelect } from '@/components/table-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Empty,
     EmptyContent,
@@ -284,6 +298,35 @@ export default function AipPage({
         });
     }
 
+    function handleGenerateDocumentApp(
+        fiscalYear: FiscalYear,
+        doc: AipDocument,
+    ) {
+        setSelectedYear(fiscalYear);
+
+        // Document scope implies its own office; fall back to FY scope rules.
+        const officeId =
+            doc.office_id != null
+                ? String(doc.office_id)
+                : can?.generateAppAll
+                  ? 'all'
+                  : String(auth.user.office_id ?? '');
+        setAppOfficeId(officeId);
+
+        setIsAppReloading(true);
+
+        router.reload({
+            only: ['app'],
+            data: {
+                fiscal_year_id: fiscalYear.id,
+                office_id: officeId,
+                aip_document_id: doc.id,
+            },
+            onSuccess: () => setOpenPdfPreviewDialog(true),
+            onFinish: () => setIsAppReloading(false),
+        });
+    }
+
     function handleAppOfficeChange(officeId: string) {
         if (!selectedYear) {
             return;
@@ -315,6 +358,15 @@ export default function AipPage({
         // ─────────────────────────────────────────────────────────────
 
         router.visit(index({ fiscalYear: data.id }));
+    }
+
+    function handleOpenDocumentPpmpSummary(
+        fiscalYear: FiscalYear,
+        doc: AipDocument,
+    ) {
+        router.visit(
+            `${index({ fiscalYear: fiscalYear.id }).url}?aip_document_id=${doc.id}`,
+        );
     }
 
     return (
@@ -368,23 +420,82 @@ export default function AipPage({
                                                 {doc.name}
                                             </span>
                                         </div>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={
-                                                !canOpenAip || isOpenAipDisabled
-                                            }
-                                            title="Open document summary"
-                                            onClick={() =>
-                                                handleOpenDocument(
-                                                    row.original,
-                                                    doc,
-                                                )
-                                            }
-                                        >
-                                            <ExternalLink className="mr-1 h-3.5 w-3.5" />
-                                            Open
-                                        </Button>
+                                        <div className="flex shrink-0 items-center gap-1">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={
+                                                    !canOpenAip ||
+                                                    isOpenAipDisabled
+                                                }
+                                                title="Open document summary"
+                                                onClick={() =>
+                                                    handleOpenDocument(
+                                                        row.original,
+                                                        doc,
+                                                    )
+                                                }
+                                            >
+                                                <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                                                Open
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger
+                                                    render={
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            title="Document reports"
+                                                        >
+                                                            <List className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    }
+                                                ></DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuGroup>
+                                                        <DropdownMenuLabel>
+                                                            Reports &amp;
+                                                            Summaries
+                                                        </DropdownMenuLabel>
+                                                        <DropdownMenuItem
+                                                            disabled={
+                                                                !(
+                                                                    can?.generateAppAll ??
+                                                                    false
+                                                                ) &&
+                                                                !(
+                                                                    can?.generateAppOwn ??
+                                                                    false
+                                                                )
+                                                            }
+                                                            onClick={() =>
+                                                                handleGenerateDocumentApp(
+                                                                    row.original,
+                                                                    doc,
+                                                                )
+                                                            }
+                                                        >
+                                                            <FileText />
+                                                            Generate APP
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            disabled={
+                                                                !can?.openPpmpSummary
+                                                            }
+                                                            onClick={() =>
+                                                                handleOpenDocumentPpmpSummary(
+                                                                    row.original,
+                                                                    doc,
+                                                                )
+                                                            }
+                                                        >
+                                                            <ExternalLink />
+                                                            Open PPMP Summary
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuGroup>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>

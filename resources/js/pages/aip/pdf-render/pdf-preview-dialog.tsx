@@ -151,57 +151,71 @@ export default function PdfPreviewDialog({
 
                 <div className="flex flex-1 overflow-hidden">
                     <div className="flex w-[340px] shrink-0 flex-col gap-4 overflow-auto border-r p-4">
-                        <Command className="rounded-lg border">
-                            <CommandInput placeholder="Type a command or search..." />
+                        {canGenerateAppAll ? (
+                            <>
+                                <Command className="rounded-lg border">
+                                    <CommandInput placeholder="Type a command or search..." />
 
-                            <CommandList className="max-h-none">
-                                <CommandEmpty>No results found.</CommandEmpty>
+                                    <CommandList className="max-h-none">
+                                        <CommandEmpty>
+                                            No results found.
+                                        </CommandEmpty>
 
-                                <CommandGroup heading="Offices">
-                                    <CommandItem
-                                        value="all"
-                                        className="flex"
-                                        onSelect={() => onOfficeChange('all')}
-                                        data-checked={
-                                            selectedOfficeId === 'all'
-                                        }
-                                    >
-                                        Consolidated (Whole PGLU)
-                                    </CommandItem>
+                                        <CommandGroup heading="Offices">
+                                            <CommandItem
+                                                value="all"
+                                                className="flex"
+                                                onSelect={() =>
+                                                    onOfficeChange('all')
+                                                }
+                                                data-checked={
+                                                    selectedOfficeId === 'all'
+                                                }
+                                            >
+                                                Consolidated (Whole PGLU)
+                                            </CommandItem>
 
-                                    <CommandSeparator />
+                                            <CommandSeparator />
 
-                                    {offices.map((office) => (
-                                        <CommandItem
-                                            key={office.id}
-                                            value={`${office.acronym} ${office.name}`}
-                                            className="flex items-start"
-                                            onSelect={() =>
-                                                onOfficeChange(
-                                                    office.id.toString(),
-                                                )
-                                            }
-                                            data-checked={
-                                                selectedOfficeId ===
-                                                office.id.toString()
-                                            }
-                                        >
-                                            <div className="grid w-full grid-cols-3">
-                                                <span className="col-span-1">
-                                                    {office.acronym}
-                                                </span>
+                                            {offices.map((office) => (
+                                                <CommandItem
+                                                    key={office.id}
+                                                    value={`${office.acronym} ${office.name}`}
+                                                    className="flex items-start"
+                                                    onSelect={() =>
+                                                        onOfficeChange(
+                                                            office.id.toString(),
+                                                        )
+                                                    }
+                                                    data-checked={
+                                                        selectedOfficeId ===
+                                                        office.id.toString()
+                                                    }
+                                                >
+                                                    <div className="grid w-full grid-cols-3">
+                                                        <span className="col-span-1">
+                                                            {
+                                                                office.acronym
+                                                            }
+                                                        </span>
 
-                                                <span className="col-span-2">
-                                                    {office.name}
-                                                </span>
-                                            </div>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            </CommandList>
-                        </Command>
+                                                        <span className="col-span-2">
+                                                            {office.name}
+                                                        </span>
+                                                    </div>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
 
-                        <Separator />
+                                <Separator />
+                            </>
+                        ) : (
+                            <p className="text-muted-foreground text-sm">
+                                {officeLabel}
+                            </p>
+                        )}
 
                         <FieldGroup>
                             <Field>

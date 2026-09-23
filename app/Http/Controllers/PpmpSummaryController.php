@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AipDocument;
 use App\Models\FiscalYear;
 use App\Models\Ppmp;
 use App\Models\PpmpPriceList;
@@ -18,22 +19,36 @@ class PpmpSummaryController extends Controller
     {
         Gate::authorize('viewAny', PpmpSummary::class);
 
+        // Optional per-document scope (?aip_document_id=) from the AIP
+        // documents subrow Reports menu. Cumulative up to the document:
+        // SAIP 1 covers regular + SAIP 1, SAIP 2 adds SAIP 2, etc.
+        // Falls back to whole FY.
+        $document = null;
+        $docIds = null;
+        if (request()->query('aip_document_id')) {
+            $document = AipDocument::findOrFail(request()->query('aip_document_id'));
+            abort_unless((int) $document->fiscal_year_id === (int) $fiscalYear->id, 422, 'Document does not belong to this fiscal year.');
+            $docIds = $document->cumulativeDocumentIds();
+        }
+
         $priceLists = PpmpPriceList::query()
             ->whereHas('ppmps.ppaFundingSource.aipEntry.ppa', function (
                 $query,
             ) use ($fiscalYear) {
                 $query->where('fiscal_year_id', $fiscalYear->id);
             })
+            ->when($docIds, fn ($q) => $q->whereHas('ppmps.ppaFundingSource.aipEntry', fn ($qq) => $qq->whereIn('aip_document_id', $docIds)))
             ->with([
                 'chartOfAccountPpmpCategory.chartOfAccount',
                 'chartOfAccountPpmpCategory.ppmpCategory',
-                'ppmps' => function ($query) use ($fiscalYear) {
+                'ppmps' => function ($query) use ($fiscalYear, $docIds) {
                     $query
                         ->whereHas('ppaFundingSource.aipEntry.ppa', function (
                             $q,
                         ) use ($fiscalYear) {
                             $q->where('fiscal_year_id', $fiscalYear->id);
                         })
+                        ->when($docIds, fn ($q) => $q->whereHas('ppaFundingSource.aipEntry', fn ($qq) => $qq->whereIn('aip_document_id', $docIds)))
                         ->with([
                             'ppaFundingSource.aipEntry.ppa.office',
                             'ppaFundingSource.fundingSource',
@@ -93,6 +108,7 @@ class PpmpSummaryController extends Controller
         return Inertia::render('ppmp-summary/index', [
             'priceLists' => $priceLists,
             'fiscalYear' => $fiscalYear,
+            'aipDocument' => $document?->only(['id', 'kind', 'name']),
         ]);
     }
 
