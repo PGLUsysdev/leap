@@ -1,5 +1,13 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, ExternalLink, FileText, FilePlus2, List } from 'lucide-react';
+import {
+    Pencil,
+    ExternalLink,
+    FileText,
+    FilePlus2,
+    List,
+    ChevronRight,
+    ChevronDown,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +24,30 @@ import type { FiscalYear } from '@/types';
 const columnHelper = createColumnHelper<FiscalYear>();
 
 const columns = [
+    columnHelper.display({
+        id: 'expander',
+        size: 48,
+        header: () => null,
+        cell: ({ row }) =>
+            row.getCanExpand() ? (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    title={
+                        row.getIsExpanded()
+                            ? 'Hide AIP documents'
+                            : 'Show AIP documents'
+                    }
+                    onClick={row.getToggleExpandedHandler()}
+                >
+                    {row.getIsExpanded() ? (
+                        <ChevronDown className="h-4 w-4" />
+                    ) : (
+                        <ChevronRight className="h-4 w-4" />
+                    )}
+                </Button>
+            ) : null,
+    }),
     columnHelper.accessor('year', {
         header: () => <div className="px-1">Fiscal Year</div>,
         size: 150,

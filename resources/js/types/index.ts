@@ -97,6 +97,7 @@ export interface FiscalYear {
     created_at: string | null;
     updated_at: string | null;
     has_regular_aip?: boolean;
+    aip_documents?: AipDocument[];
 }
 
 export interface SupplementalAip {

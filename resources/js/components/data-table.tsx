@@ -15,6 +15,8 @@ import {
 import type {
     Column,
     ColumnDef,
+    ExpandedState,
+    Row,
     Table,
     TableMeta,
 } from '@tanstack/react-table';
@@ -25,7 +27,7 @@ import {
     ChevronsLeft,
     SearchIcon,
 } from 'lucide-react';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, Fragment } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +75,14 @@ interface TableProps<TData> {
     searchParamName?: string;
     only?: string[];
     getSubRows?: (row: TData) => TData[] | undefined;
+    getRowCanExpand?: (row: Row<TData>) => boolean;
+    renderSubComponent?: (props: { row: Row<TData> }) => ReactNode;
+    /**
+     * Initial expansion for detail-panel tables (renderSubComponent).
+     * Defaults to true (all expandable rows open). Pass false or a
+     * record to start collapsed / partially expanded.
+     */
+    defaultExpanded?: ExpandedState;
     showFooter?: boolean;
     /**
      * Opt-in client-side pagination. When set (and no `paginationData`
@@ -137,6 +147,9 @@ export default function Table<TData>({
     searchParamName = 'search',
     only,
     getSubRows,
+    getRowCanExpand,
+    renderSubComponent,
+    defaultExpanded = true,
     showFooter = false,
     pageSize,
 
@@ -252,6 +265,11 @@ export default function Table<TData>({
         return () => clearTimeout(timeout);
     }, [pageInput, paginationData]);
 
+    // TanStack v8 expansion: sub-rows via getSubRows render as child
+    // rows; renderSubComponent renders a detail panel below the row.
+    const [expanded, setExpanded] = useState<ExpandedState>(defaultExpanded);
+    const expandable = !!getSubRows || !!renderSubComponent || !!getRowCanExpand;
+
     // table
     const table = useReactTable({
         columns,
@@ -259,7 +277,8 @@ export default function Table<TData>({
 
         // row models
         getCoreRowModel: getCoreRowModel(),
-        getExpandedRowModel: getSubRows ? getExpandedRowModel() : undefined,
+        getExpandedRowModel: expandable ? getExpandedRowModel() : undefined,
+        getRowCanExpand,
         // getFacetedMinMaxValues: getFacetedMinMaxValues(),
         // getFacetedRowModel: getFacetedRowModel(),
         // getFacetedUniqueValues: getFacetedUniqueValues(),
@@ -283,8 +302,11 @@ export default function Table<TData>({
         },
         state: {
             globalFilter,
-            expanded: getSubRows ? true : undefined,
+            // Legacy hierarchical tables pass getSubRows and expect all
+            // rows expanded; detail-panel tables manage it via state.
+            expanded: getSubRows && !renderSubComponent ? true : expanded,
         },
+        onExpandedChange: renderSubComponent ? setExpanded : undefined,
 
         // for table
         // defaultColumn: {
@@ -471,24 +493,24 @@ export default function Table<TData>({
                                         disabledValue;
 
                                 return (
-                                    <TableRow
-                                        key={row.id}
-                                        className={cn(
-                                            variant === 'select' &&
-                                                'hover:bg-accent cursor-pointer',
-                                            isSelected && 'bg-primary',
-                                            isDisabled &&
-                                                'cursor-not-allowed opacity-50',
-                                        )}
-                                        onClick={() => {
-                                            if (
+                                    <Fragment key={row.id}>
+                                        <TableRow
+                                            className={cn(
                                                 variant === 'select' &&
-                                                !isDisabled
-                                            ) {
-                                                onRowClick?.(row.original);
-                                            }
-                                        }}
-                                    >
+                                                    'hover:bg-accent cursor-pointer',
+                                                isSelected && 'bg-primary',
+                                                isDisabled &&
+                                                    'cursor-not-allowed opacity-50',
+                                            )}
+                                            onClick={() => {
+                                                if (
+                                                    variant === 'select' &&
+                                                    !isDisabled
+                                                ) {
+                                                    onRowClick?.(row.original);
+                                                }
+                                            }}
+                                        >
                                         {row.getVisibleCells().map((cell) => {
                                             const columnMeta = cell.column
                                                 .columnDef.meta as any;
@@ -567,7 +589,24 @@ export default function Table<TData>({
                                                 </TableCell>
                                             );
                                         })}
-                                    </TableRow>
+                                        </TableRow>
+                                        {renderSubComponent &&
+                                        row.getIsExpanded() ? (
+                                            <TableRow>
+                                                <TableCell
+                                                    colSpan={
+                                                        row.getVisibleCells()
+                                                            .length
+                                                    }
+                                                    className="bg-muted/40 border p-0 px-2 first:border-l-0 last:border-r-0"
+                                                >
+                                                    {renderSubComponent({
+                                                        row,
+                                                    })}
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : null}
+                                    </Fragment>
                                 );
                             })}
                         </TableBody>

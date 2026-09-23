@@ -41,12 +41,16 @@ class FiscalYearController extends Controller
             'fiscalYears' => FiscalYear::orderBy('year', 'asc')
                 ->get()
                 ->each(function ($fiscalYear) use ($contextOfficeId) {
-                    $fiscalYear->has_regular_aip = $contextOfficeId
-                        ? AipDocument::regular()
-                            ->where('fiscal_year_id', $fiscalYear->id)
+                    $docs = $contextOfficeId
+                        ? AipDocument::where('fiscal_year_id', $fiscalYear->id)
                             ->where('office_id', $contextOfficeId)
-                            ->exists()
-                        : false;
+                            ->orderByRaw("kind = 'regular' desc")
+                            ->orderBy('id')
+                            ->get(['id', 'fiscal_year_id', 'office_id', 'kind', 'name'])
+                        : collect();
+
+                    $fiscalYear->has_regular_aip = $docs->where('kind', 'regular')->isNotEmpty();
+                    $fiscalYear->setRelation('aipDocuments', $docs);
                 }),
             'offices' => $showOffices ? Office::get() : [],
             'can' => [
