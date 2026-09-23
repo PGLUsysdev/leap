@@ -24,8 +24,8 @@ class FiscalYear extends Model
         return $this->hasMany(Ppa::class, 'fiscal_year_id');
     }
 
-    public function supplementalAips(): HasMany
+    public function aipDocuments(): HasMany
     {
-        return $this->hasMany(SupplementalAip::class, 'fiscal_year_id');
+        return $this->hasMany(AipDocument::class, 'fiscal_year_id');
     }
 }

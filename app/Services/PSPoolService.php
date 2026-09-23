@@ -27,10 +27,6 @@ class PSPoolService
                 );
             }
 
-            if ($ppa->supplemental_aip_id !== null) {
-                throw new \Exception('Supplemental PPAs cannot be the PS pool.');
-            }
-
             // Unset any existing pool for this fiscal year
             Ppa::where('fiscal_year_id', $ppa->fiscal_year_id)
                 ->where('id', '!=', $ppa->id)
@@ -61,7 +57,7 @@ class PSPoolService
     {
         return (float) DB::transaction(function () use ($oldPool, $newPool) {
             $newEntry = $newPool->aipEntries()
-                ->whereNull('supplemental_aip_id')
+                ->regular()
                 ->orderBy('id')
                 ->first();
 
@@ -128,12 +124,12 @@ class PSPoolService
     }
 
     /**
-     * All (non-supplemental) aip_entry ids belonging to a PPA.
+     * All regular (non-supplemental) aip_entry ids belonging to a PPA.
      */
     private function entryIds(Ppa $ppa): array
     {
         return $ppa->aipEntries()
-            ->whereNull('supplemental_aip_id')
+            ->regular()
             ->pluck('id')
             ->all();
     }

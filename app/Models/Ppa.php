@@ -23,7 +23,6 @@ class Ppa extends Model
         'is_active',
         'sort_order',
         'fiscal_year_id',
-        'supplemental_aip_id',
         'is_ps_pool',
     ];
 
@@ -145,11 +144,6 @@ class Ppa extends Model
     public function office(): BelongsTo
     {
         return $this->belongsTo(Office::class, 'office_id');
-    }
-
-    public function supplementalAip(): BelongsTo
-    {
-        return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
     }
 
     public function scopePsPoolForFiscalYear($query, int $fiscalYearId)

@@ -38,7 +38,6 @@ use App\Http\Controllers\PriceListQuantitiesImportController;
 // use App\Http\Controllers\SalaryStandardController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SectorController;
-use App\Http\Controllers\SupplementalAipController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -119,15 +118,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         AipDocumentController::class,
         'destroy',
     ])->name('aip-documents.destroy');
-
-    // --- Supplemental AIPs ---
-    Route::post('/supplemental-aips', [SupplementalAipController::class, 'store'])->name(
-        'supplemental-aips.store',
-    );
-    Route::delete('/supplemental-aips/{supplementalAip}', [
-        SupplementalAipController::class,
-        'destroy',
-    ])->name('supplemental-aips.destroy');
 
     // --- PPA (Programs, Projects, and Activities) ---
     Route::get('ppa', [PpaController::class, 'index'])->name('ppa.index');

@@ -32,7 +32,6 @@ class StorePpaRequest extends FormRequest
             'type' => ['required', 'string', Rule::in($allowed)],
             'code_suffix' => 'nullable|string|max:10',
             'is_active' => 'boolean',
-            'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
         ];
     }
 }

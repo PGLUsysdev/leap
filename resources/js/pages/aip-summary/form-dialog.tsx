@@ -249,6 +249,9 @@ export default function FormDialog({
                 ccTypologies={ccTypologies}
                 fiscalYearId={fiscalYearId}
                 isPsPool={data?.ppa?.is_ps_pool ?? false}
+                isSupplemental={
+                    data?.aip_document?.kind === 'supplemental'
+                }
             />
         </>
     );

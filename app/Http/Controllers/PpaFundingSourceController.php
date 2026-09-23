@@ -14,16 +14,12 @@ class PpaFundingSourceController extends Controller
     public function store(StorePpaFundingSourceRequest $request, AipOutput $aipOutput)
     {
         $validated = $request->validated();
-        $saipId = $validated['supplemental_aip_id'] ?? null;
 
+        // Uniqueness is (aip_output_id, funding_source_id); document
+        // scoping flows through output -> entry -> document.
         $exists = $aipOutput
             ->fundingSources()
             ->where('funding_source_id', $validated['funding_source_id'])
-            ->when(
-                $saipId,
-                fn ($query) => $query->where('supplemental_aip_id', $saipId),
-                fn ($query) => $query->whereNull('supplemental_aip_id'),
-            )
             ->exists();
 
         if ($exists) {

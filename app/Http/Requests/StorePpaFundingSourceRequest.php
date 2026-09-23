@@ -25,7 +25,6 @@ class StorePpaFundingSourceRequest extends FormRequest
     {
         return [
             'funding_source_id' => 'required|exists:funding_sources,id',
-            // 'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
         ];
     }
 }

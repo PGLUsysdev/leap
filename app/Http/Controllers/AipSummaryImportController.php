@@ -554,9 +554,10 @@ class AipSummaryImportController extends Controller
                     continue;
                 }
 
+                // Uniqueness is (aip_output_id, funding_source_id); document
+                // scoping flows through output -> entry -> document.
                 $duplicate = PpaFundingSource::where('aip_output_id', $output->id)
                     ->where('funding_source_id', $item['funding_source_id'])
-                    ->whereNull('supplemental_aip_id')
                     ->exists();
                 if ($duplicate) {
                     $skip('skipped: exists');

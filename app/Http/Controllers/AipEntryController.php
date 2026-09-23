@@ -15,7 +15,6 @@ use App\Models\Ppmp;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
 use App\Models\PsBreakdownItem;
-use App\Models\SupplementalAip;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -41,9 +40,6 @@ class AipEntryController extends Controller
         $officeIds = $this->getOfficeHierarchyIds($officeId);
 
         $yearId = $fiscalYear->id;
-
-        $scope = $request->query('scope', 'original');
-        $saipId = $request->query('supplemental_aip_id');
 
         $aipDocuments = AipDocument::where('fiscal_year_id', $fiscalYear->id)
             ->whereIn('office_id', $officeIds)
@@ -249,7 +245,7 @@ class AipEntryController extends Controller
                     ->can('import', [AipEntry::class, []]),
                 'createSaip' => $request
                     ->user()
-                    ->can('create', SupplementalAip::class),
+                    ->can('create', AipDocument::class),
                 'showSummaryAll' => $permissions->contains(
                     'aip-summary.show.all',
                 ),
@@ -265,8 +261,6 @@ class AipEntryController extends Controller
                 $request,
                 $officeIds,
                 $yearId,
-                $scope,
-                $saipId,
             ) {
                 $id = $request->query('dialog_id');
                 $search = $request->query('dialog_search');
@@ -361,26 +355,25 @@ class AipEntryController extends Controller
         $validated = $request->validate([
             'ppa_ids' => 'required|array',
             'ppa_ids.*' => 'exists:ppas,id',
-            'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
+            'aip_document_id' => 'required|exists:aip_documents,id',
         ]);
 
         Gate::authorize('import', [AipEntry::class, $validated['ppa_ids']]);
 
-        $saipId = $validated['supplemental_aip_id'] ?? null;
+        $document = AipDocument::findOrFail($validated['aip_document_id']);
 
-        DB::transaction(function () use ($validated, $fiscalYear, $saipId) {
+        abort_unless(
+            $document->fiscal_year_id === $fiscalYear->id,
+            422,
+            'The selected document does not belong to this fiscal year.',
+        );
+
+        DB::transaction(function () use ($validated, $document) {
             foreach ($validated['ppa_ids'] as $ppaId) {
-                AipEntry::firstOrCreate(
-                    [
-                        'ppa_id' => $ppaId,
-                        'supplemental_aip_id' => $saipId ?: null,
-                    ],
-                    [
-                        'start_date' => $fiscalYear->year.'-01-01',
-                        'end_date' => $fiscalYear->year.'-12-31',
-                        'expected_output' => '-',
-                    ],
-                );
+                AipEntry::firstOrCreate([
+                    'ppa_id' => $ppaId,
+                    'aip_document_id' => $document->id,
+                ]);
             }
         });
 
@@ -429,7 +422,7 @@ class AipEntryController extends Controller
                 'ppa_id',
                 $ppaIdsToRemoveFromAip,
             )
-                ->where('supplemental_aip_id', $aipEntry->supplemental_aip_id)
+                ->where('aip_document_id', $aipEntry->aip_document_id)
                 ->when($fiscalYearId, function ($query) use ($fiscalYearId) {
                     $query->whereHas('ppa', function ($subQuery) use (
                         $fiscalYearId,

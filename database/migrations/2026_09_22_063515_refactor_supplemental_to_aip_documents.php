@@ -117,9 +117,17 @@ return new class extends Migration
         });
 
         // 6.6 drop leftover auto-created index from step 6.1
-        Schema::table('ppa_funding_sources', function (Blueprint $table) {
-            $table->dropIndex('ppa_funding_sources_supplemental_aip_id_foreign');
-        });
+        // (MariaDB auto-creates an index named after the FK; SQLite does
+        // not, so only drop when it exists to keep tests green.)
+        $existingIndexes = collect(Schema::getIndexes('ppa_funding_sources'))
+            ->pluck('name')
+            ->all();
+
+        if (in_array('ppa_funding_sources_supplemental_aip_id_foreign', $existingIndexes, true)) {
+            Schema::table('ppa_funding_sources', function (Blueprint $table) {
+                $table->dropIndex('ppa_funding_sources_supplemental_aip_id_foreign');
+            });
+        }
 
         // 6.7 drop the column
         Schema::table('ppa_funding_sources', function (Blueprint $table) {

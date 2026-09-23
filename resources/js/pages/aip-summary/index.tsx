@@ -517,7 +517,7 @@ export default function AipSummary({
                 filters={filters}
                 fiscalYearId={fiscalYear.id}
                 existingPpaIds={existingPpaIds}
-                supplementalAipId={null}
+                aipDocumentId={currentDocument?.id ?? null}
                 ppaTypes={ppaTypes}
             />
 

@@ -23,7 +23,7 @@ interface PpaSelectorDialogProps {
     fiscalYearId: number;
     existingPpaIds: number[];
     filters: Filter;
-    supplementalAipId?: number | null;
+    aipDocumentId?: number | null;
     ppaTypes: string[];
 }
 
@@ -35,7 +35,7 @@ export default function PpaSelectorDialog({
     filters,
     fiscalYearId,
     existingPpaIds = [],
-    supplementalAipId = null,
+    aipDocumentId = null,
     ppaTypes,
 }: PpaSelectorDialogProps) {
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
@@ -148,7 +148,7 @@ export default function PpaSelectorDialog({
             `/aip/${fiscalYearId}/import`,
             {
                 ppa_ids: ids,
-                supplemental_aip_id: supplementalAipId,
+                aip_document_id: aipDocumentId,
             },
             {
                 onStart: () => setLoading(true),

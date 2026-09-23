@@ -323,12 +323,12 @@ const columns = [
                                     }
                                     title={
                                         poolLocked
-                                            ? 'A PS Pool cannot have PPMP items'
+                                            ? `A PS Pool cannot have ${meta?.isSupplemental ? 'SPPMP' : 'PPMP'} items`
                                             : undefined
                                     }
                                 >
                                     <ShoppingBasket />
-                                    PPMP
+                                    {meta?.isSupplemental ? 'SPPMP' : 'PPMP'}
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                             <DropdownMenuItem

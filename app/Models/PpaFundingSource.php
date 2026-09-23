@@ -41,9 +41,19 @@ class PpaFundingSource extends Model
         'co_amount',
         'ccet_adaptation',
         'ccet_mitigation',
-        'supplemental_aip_id',
         'cc_typology_id',
     ];
+
+    /**
+     * Scope to funding sources belonging to regular (non-supplemental)
+     * AIP documents, via output -> entry -> document.
+     */
+    public function scopeRegular($query)
+    {
+        return $query->whereHas('aipEntry.aipDocument', function ($q) {
+            $q->where('kind', 'regular');
+        });
+    }
 
     // hasMany
     public function aipOutput()
@@ -77,11 +87,6 @@ class PpaFundingSource extends Model
     public function fundingSource(): BelongsTo
     {
         return $this->belongsTo(FundingSource::class, 'funding_source_id');
-    }
-
-    public function supplementalAip(): BelongsTo
-    {
-        return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
     }
 
     public function ccTypology(): BelongsTo

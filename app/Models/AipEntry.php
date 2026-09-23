@@ -27,6 +27,16 @@ class AipEntry extends Model
         return $this->belongsTo(AipDocument::class, 'aip_document_id');
     }
 
+    /**
+     * Scope to entries belonging to regular (non-supplemental) documents.
+     */
+    public function scopeRegular($query)
+    {
+        return $query->whereHas('aipDocument', function ($q) {
+            $q->where('kind', 'regular');
+        });
+    }
+
     // hasMany
     public function outputs(): HasMany
     {

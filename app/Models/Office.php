@@ -74,9 +74,9 @@ class Office extends Model
         return $this->hasMany(Ppa::class, 'office_id');
     }
 
-    public function supplementalAips(): HasMany
+    public function aipDocuments(): HasMany
     {
-        return $this->hasMany(SupplementalAip::class, 'office_id');
+        return $this->hasMany(AipDocument::class, 'office_id');
     }
 
     // belongsToMany

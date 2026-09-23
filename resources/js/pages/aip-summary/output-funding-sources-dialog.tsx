@@ -43,6 +43,7 @@ interface OutputFundingSourcesDialogProps {
     ccTypologies?: CcTypology[];
     fiscalYearId: number;
     isPsPool?: boolean;
+    isSupplemental?: boolean;
 }
 
 export default function OutputFundingSourcesDialog({
@@ -53,6 +54,7 @@ export default function OutputFundingSourcesDialog({
     ccTypologies = [],
     fiscalYearId,
     isPsPool = false,
+    isSupplemental = false,
 }: OutputFundingSourcesDialogProps) {
     const [loadingState, setLoadingState] = useState<
         'idle' | 'saving' | 'saved'
@@ -206,6 +208,7 @@ export default function OutputFundingSourcesDialog({
                             data={output.funding_sources ?? []}
                             meta={{
                                 isPsPool,
+                                isSupplemental,
                                 ccTypologies,
                                 isSaving: loadingState === 'saving',
                                 onSaveAmount: saveField,
@@ -330,7 +333,8 @@ export default function OutputFundingSourcesDialog({
                             CCET amounts)
                         </li>
                         <li>
-                            All PPMP line items assigned to this funding source
+                            All {isSupplemental ? 'SPPMP' : 'PPMP'} line items
+                            assigned to this funding source
                         </li>
                         <li>
                             All PS breakdown entries for this funding source
