@@ -469,25 +469,23 @@ const columns = [
         id: 'actions',
         size: 154,
         cell: ({ row, table }) => {
-            const meta = table.options.meta;
+            const meta = table.options.meta as
+                | {
+                      onAdd?: (row: FundingSourceRow) => void;
+                      onEdit?: (id: number) => void;
+                      onDelete?: (row: FundingSourceRow) => void;
+                      onSetAsPsPool?: (row: FundingSourceRow) => void;
+                      canDelete?: boolean;
+                      canSetPsPool?: boolean;
+                      readOnly?: boolean;
+                  }
+                | undefined;
 
-            // console.log(row.original);
-
-            // const isReadOnly = meta?.readOnly;
-            // const canSetPsPool = meta?.canSetPsPool;
-            // const can = row.original.can;
-            // const canImport = can?.import;
-            // const canEdit = can?.edit;
-            // const canDelete = can?.delete;
-            // const canEditFundingSources = can?.editFundingSources;
-            // const canViewPpmp = can?.viewPpmp;
-            // const canViewPsBreakdown = can?.viewPsBreakdown;
-
-            // if (isReadOnly) {
-            //     return (
-            //         <div className="text-center text-muted-foreground">-</div>
-            //     );
-            // }
+            if (meta?.readOnly) {
+                return (
+                    <div className="text-muted-foreground text-center">-</div>
+                );
+            }
 
             return (
                 <div className="flex items-center gap-1">
@@ -495,7 +493,10 @@ const columns = [
                         size="icon"
                         variant="outline"
                         onClick={() => meta?.onAdd?.(row.original)}
-                        disabled={row.original.ppa?.type === 'Sub-Activity'}
+                        disabled={
+                            row.original.ppa?.type === 'Sub-Activity' ||
+                            !meta?.onAdd
+                        }
                     >
                         <Plus />
                     </Button>
@@ -504,12 +505,7 @@ const columns = [
                         size="icon"
                         variant="outline"
                         onClick={() => meta?.onEdit?.(row.original.id)}
-                        // disabled={
-                        //     !canEdit &&
-                        //     !canEditFundingSources &&
-                        //     !canViewPpmp &&
-                        //     !canViewPsBreakdown
-                        // }
+                        disabled={!meta?.onEdit}
                     >
                         <Pencil />
                     </Button>
@@ -549,7 +545,7 @@ const columns = [
                         size="icon"
                         variant="destructive"
                         onClick={() => meta?.onDelete?.(row.original)}
-                        disabled={!meta?.canDelete}
+                        disabled={!meta?.canDelete || !meta?.onDelete}
                     >
                         <Trash />
                     </Button>

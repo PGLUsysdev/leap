@@ -149,6 +149,7 @@ export interface AipEntry {
 export interface AipOutput {
     id: number;
     aip_entry_id: number;
+    source_output_id?: number | null;
 
     expected_output: string | null;
     start_date: string | null;

@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAipOutputRequest;
 use App\Http\Requests\UpdateAipOutputRequest;
+use App\Models\AipDocument;
 use App\Models\AipEntry;
 use App\Models\AipOutput;
 use App\Models\Ppmp;
+use App\Services\AipCarryOverService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -63,6 +66,31 @@ class AipOutputController extends Controller
         });
 
         // return back()->with('success', 'Output deleted successfully.');
+    }
+
+    /**
+     * Carry an output into a supplemental document.
+     *
+     * Creates (if missing) the same-PPA entry + linked output with
+     * source_output_id set, plus zero-amount delta funding rows.
+     * User then edits the supplemental delta (extra amount / PPMPs).
+     */
+    public function carryToSupplemental(
+        Request $request,
+        AipOutput $aipOutput,
+        AipCarryOverService $carryOver,
+    ) {
+        Gate::authorize('update', $aipOutput->aipEntry);
+
+        $validated = $request->validate([
+            'aip_document_id' => 'required|exists:aip_documents,id',
+        ]);
+
+        $target = AipDocument::findOrFail($validated['aip_document_id']);
+
+        $targetOutput = $carryOver->carryOutputToDocument($aipOutput, $target);
+
+        return back()->with('success', 'Output carried to '.$target->name.'.');
     }
 
     /**

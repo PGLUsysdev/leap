@@ -15,6 +15,7 @@ use App\Models\Ppmp;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
 use App\Models\PsBreakdownItem;
+use App\Services\AipCumulativeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -47,13 +48,16 @@ class AipEntryController extends Controller
             ->orderBy('id')
             ->get(['id', 'fiscal_year_id', 'office_id', 'kind', 'name']);
 
-        $currentDocument =
-            $aipDocuments->firstWhere(
+        $isCumulative = $request->query('aip_document_id') === 'all';
+
+        $currentDocument = $isCumulative
+            ? null
+            : ($aipDocuments->firstWhere(
                 'id',
                 (int) $request->query('aip_document_id'),
             ) ?:
             $aipDocuments->firstWhere('kind', 'regular') ?:
-            AipDocument::regularFor($officeId, $fiscalYear->id);
+            AipDocument::regularFor($officeId, $fiscalYear->id));
 
         // Only the latest supplemental per office is deletable; newer
         // documents build on top of the earlier ones.
@@ -68,9 +72,11 @@ class AipEntryController extends Controller
                 ($latestIds[$doc->office_id] ?? null) === $doc->id;
         });
 
-        if (! isset($currentDocument->is_latest)) {
+        if ($currentDocument && ! isset($currentDocument->is_latest)) {
             $currentDocument->is_latest = false;
         }
+
+        $docIds = $aipDocuments->pluck('id')->all();
 
         $newAipEntries = AipEntry::whereHas('ppa', function ($query) use (
             $fiscalYear,
@@ -80,7 +86,11 @@ class AipEntryController extends Controller
                 ->where('fiscal_year_id', $fiscalYear->id)
                 ->whereIn('office_id', $officeIds);
         })
-            ->where('aip_document_id', $currentDocument->id)
+            ->when(
+                $isCumulative,
+                fn ($q) => $q->whereIn('aip_document_id', $docIds),
+                fn ($q) => $q->where('aip_document_id', $currentDocument->id),
+            )
             ->select([
                 'id',
                 'ppa_id',
@@ -97,6 +107,7 @@ class AipEntryController extends Controller
                         ->select([
                             'id',
                             'aip_entry_id',
+                            'source_output_id',
                             'expected_output',
                             'start_date',
                             'end_date',
@@ -125,6 +136,10 @@ class AipEntryController extends Controller
             ])
             // ->limit(100)
             ->get();
+
+        if ($isCumulative) {
+            $newAipEntries = app(AipCumulativeService::class)->merge($newAipEntries);
+        }
 
         // Attach per-entry permissions so the AIP entry form dialog can
         // enable/disable its controls based on the user's rights.
@@ -163,7 +178,7 @@ class AipEntryController extends Controller
             // 'aipEntries' => $aipEntries,
             'newAipEntries' => $newAipEntries,
             'aipDocuments' => $aipDocuments,
-            'currentDocument' => $currentDocument->only([
+            'currentDocument' => $currentDocument?->only([
                 'id',
                 'fiscal_year_id',
                 'office_id',
@@ -171,6 +186,7 @@ class AipEntryController extends Controller
                 'name',
                 'is_latest',
             ]),
+            'isCumulative' => $isCumulative,
             // 'ppmpCoaTotals' => $ppmpCoaTotals,
             // 'psCoaAutoTotals' => $officeId
             //     ? PsBreakdownController::computePsCoaTotalsForOffice(
@@ -381,6 +397,49 @@ class AipEntryController extends Controller
             'success',
             'Selected items imported to AIP Summary.',
         );
+    }
+
+    /**
+     * List outputs for the same PPA in other documents (same fiscal year).
+     *
+     * Used by the supplemental "Add output → From existing" picker.
+     * Each row includes whether it was already carried into this entry
+     * (via source_output_id lineage), so the UI can disable it.
+     */
+    public function siblingOutputs(AipEntry $aipEntry)
+    {
+        Gate::authorize('update', $aipEntry);
+
+        $aipEntry->loadMissing('ppa', 'aipDocument');
+
+        $carriedSourceIds = $aipEntry->outputs()->pluck('source_output_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $siblings = AipEntry::where('ppa_id', $aipEntry->ppa_id)
+            ->where('id', '!=', $aipEntry->id)
+            ->whereHas('aipDocument', function ($q) use ($aipEntry) {
+                $q->where('fiscal_year_id', $aipEntry->aipDocument?->fiscal_year_id
+                    ?? $aipEntry->ppa?->fiscal_year_id);
+            })
+            ->with([
+                'aipDocument:id,fiscal_year_id,office_id,kind,name',
+                'outputs' => fn ($q) => $q->orderBy('sort_order')->withCount('fundingSources'),
+            ])
+            ->get()
+            ->flatMap(fn (AipEntry $e) => $e->outputs->map(fn ($o) => [
+                'id' => $o->id,
+                'expected_output' => $o->expected_output,
+                'start_date' => $o->start_date,
+                'end_date' => $o->end_date,
+                'funding_sources_count' => $o->funding_sources_count ?? 0,
+                'document' => $e->aipDocument?->only(['id', 'kind', 'name']),
+                'already_carried' => in_array((int) $o->id, $carriedSourceIds, true),
+            ]))
+            ->values();
+
+        return response()->json($siblings);
     }
 
     /**

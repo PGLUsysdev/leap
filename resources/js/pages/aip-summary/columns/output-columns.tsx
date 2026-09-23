@@ -91,7 +91,15 @@ const columns = [
         id: 'actions',
         size: 120,
         cell: ({ row, table }) => {
-            const meta = table.options.meta;
+            const meta = table.options.meta as
+                | {
+                      onEditFundingSources?: (output: AipOutput) => void;
+                      onEditOutput?: (output: AipOutput) => void;
+                      onDeleteOutput?: (output: AipOutput) => void;
+                      disabled?: boolean;
+                      isPsPool?: boolean;
+                  }
+                | undefined;
             const output = row.original;
 
             return (
@@ -110,6 +118,7 @@ const columns = [
                         variant="outline"
                         title="Edit output details"
                         onClick={() => meta?.onEditOutput?.(output)}
+                        disabled={Boolean(meta?.disabled)}
                     >
                         <Pencil className="h-4 w-4" />
                     </Button>

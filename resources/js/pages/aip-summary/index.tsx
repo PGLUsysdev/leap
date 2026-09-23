@@ -104,6 +104,7 @@ interface AipSummaryProps {
     newAipEntries: AipEntry[];
     aipDocuments: AipDocument[];
     currentDocument: AipDocument | null;
+    isCumulative?: boolean;
     ppaTypes: string[];
     ppaTypePadding: Record<string, number>;
 }
@@ -179,6 +180,7 @@ export default function AipSummary({
     newAipEntries,
     aipDocuments = [],
     currentDocument = null,
+    isCumulative = false,
     offices,
     fundingSources,
     ppaTypes,
@@ -252,8 +254,14 @@ export default function AipSummary({
     const [saipName, setSaipName] = useState('');
     const [isSavingSaip, setIsSavingSaip] = useState(false);
 
-    const currentDocId = currentDocument ? String(currentDocument.id) : '';
-    const isDeletableDoc = currentDocument?.is_latest === true;
+    const currentDocId = isCumulative
+        ? 'all'
+        : currentDocument
+          ? String(currentDocument.id)
+          : '';
+    const isDeletableDoc =
+        !isCumulative && currentDocument?.is_latest === true;
+    const readOnly = isCumulative;
 
     const nextSaipName = useMemo(() => {
         const count = aipDocuments.filter(
@@ -279,6 +287,7 @@ export default function AipSummary({
                         'newAipEntries',
                         'aipDocuments',
                         'currentDocument',
+                        'isCumulative',
                         'filters',
                     ],
                 },
@@ -408,6 +417,12 @@ export default function AipSummary({
                         <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 <TabsList>
+                                    <TabsTrigger value="all">
+                                        Cumulative
+                                        {aipDocuments.length > 0
+                                            ? ` (${aipDocuments.length})`
+                                            : ''}
+                                    </TabsTrigger>
                                     {aipDocuments.map((doc) => (
                                         <TabsTrigger
                                             key={doc.id}
@@ -454,13 +469,22 @@ export default function AipSummary({
                         sortFlatLikeTree(newAipEntries),
                     )}
                     meta={{
-                        onEdit: handleEdit,
-                        onAdd: handleAddEntry,
-                        onDelete: handleDeleteDialogOpen,
-                        canDelete: can?.delete ?? false,
-                        canSetPsPool: can?.setPsPool ?? false,
+                        onEdit: readOnly ? undefined : handleEdit,
+                        onAdd: readOnly ? undefined : handleAddEntry,
+                        onDelete: readOnly
+                            ? undefined
+                            : handleDeleteDialogOpen,
+                        canDelete: readOnly
+                            ? false
+                            : (can?.delete ?? false),
+                        canSetPsPool: readOnly
+                            ? false
+                            : (can?.setPsPool ?? false),
                         psPoolPpaId,
-                        onSetAsPsPool: handleSetAsPsPool,
+                        onSetAsPsPool: readOnly
+                            ? undefined
+                            : handleSetAsPsPool,
+                        readOnly,
                     }}
                     showFooter={true}
                     withRowSpan={true}
@@ -497,7 +521,7 @@ export default function AipSummary({
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        {can.import && (
+                        {can.import && !readOnly && (
                             <Button onClick={handleImportLibrary}>
                                 <Library className="mr-2 h-4 w-4" /> Import from
                                 Library
@@ -529,6 +553,7 @@ export default function AipSummary({
                 fundingSources={fundingSources}
                 fiscalYearId={fiscalYear.id}
                 ccTypologies={ccTypologies}
+                readOnly={readOnly}
             />
 
             <DeleteDialog

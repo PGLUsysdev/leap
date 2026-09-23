@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { destroy } from '@/routes/aip-outputs';
 import type {
+    AipDocument,
     AipEntry,
     AipOutput,
     CcTypology,
@@ -35,6 +36,7 @@ import type {
     Office,
 } from '@/types';
 import outputColumns from './columns/output-columns';
+import AddOutputFromExistingDialog from './add-output-from-existing-dialog';
 import OutputFormDialog from './output-form-dialog';
 import OutputFundingSourcesDialog from './output-funding-sources-dialog';
 
@@ -46,6 +48,7 @@ interface FormDialogProps {
     fundingSources?: FundingSource[];
     ccTypologies?: CcTypology[];
     fiscalYearId: number;
+    readOnly?: boolean;
 }
 
 export default function FormDialog({
@@ -56,6 +59,7 @@ export default function FormDialog({
     fundingSources,
     ccTypologies,
     fiscalYearId,
+    readOnly = false,
 }: FormDialogProps) {
     const [loadingState, setLoadingState] = useState<
         'idle' | 'saving' | 'saved'
@@ -75,7 +79,11 @@ export default function FormDialog({
     );
     const [openFundingDialog, setOpenFundingDialog] = useState(false);
 
+    // Add-from-existing (same PPA, other docs) dialog
+    const [fromExistingOpen, setFromExistingOpen] = useState(false);
+
     const outputs = data?.outputs ?? [];
+    const isSupplementalEntry = data?.aip_document?.kind === 'supplemental';
 
     function handleAddOutput() {
         setEditingOutput(null);
@@ -127,9 +135,9 @@ export default function FormDialog({
     // Meta for output columns
     const outputMeta = {
         onEditFundingSources: handleEditFundingSources,
-        onEditOutput: handleEditOutput,
-        onDeleteOutput: handleDeleteOutput,
-        disabled: loadingState === 'saving' || isPsPool,
+        onEditOutput: readOnly ? undefined : handleEditOutput,
+        onDeleteOutput: readOnly ? undefined : handleDeleteOutput,
+        disabled: loadingState === 'saving' || isPsPool || readOnly,
         isPsPool,
     };
 
@@ -173,19 +181,40 @@ export default function FormDialog({
                                 withRowSpan={false}
                                 meta={outputMeta}
                             >
-                                <Button
-                                    onClick={handleAddOutput}
-                                    disabled={
-                                        loadingState === 'saving' || isPsPool
-                                    }
-                                    title={
-                                        isPsPool
-                                            ? 'A PS Pool cannot have additional outputs'
-                                            : undefined
-                                    }
-                                >
-                                    <Plus className="mr-1 h-4 w-4" /> Add Output
-                                </Button>
+                                {!readOnly && (
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={handleAddOutput}
+                                            disabled={
+                                                loadingState === 'saving' ||
+                                                isPsPool
+                                            }
+                                            title={
+                                                isPsPool
+                                                    ? 'A PS Pool cannot have additional outputs'
+                                                    : 'Create a new blank output'
+                                            }
+                                        >
+                                            <Plus className="mr-1 h-4 w-4" />{' '}
+                                            Add Output
+                                        </Button>
+                                        {isSupplementalEntry && (
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setFromExistingOpen(true)
+                                                }
+                                                disabled={
+                                                    loadingState ===
+                                                        'saving' || isPsPool
+                                                }
+                                                title="Add an output carried from the same PPA in Regular or earlier supplementals (lineage preserved)"
+                                            >
+                                                From existing
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
                             </DataTable>
 
                             <ScrollBar orientation="vertical" />
@@ -252,6 +281,12 @@ export default function FormDialog({
                 isSupplemental={
                     data?.aip_document?.kind === 'supplemental'
                 }
+            />
+
+            <AddOutputFromExistingDialog
+                open={fromExistingOpen}
+                onOpenChange={setFromExistingOpen}
+                entry={data ?? null}
             />
         </>
     );

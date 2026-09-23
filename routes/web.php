@@ -84,6 +84,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/aip-entries/{aipEntry}', [AipEntryController::class, 'destroy'])->name(
         'aip-entry.update',
     );
+    Route::get('/aip-entries/{aipEntry}/sibling-outputs', [
+        AipEntryController::class,
+        'siblingOutputs',
+    ])->name('aip-entries.sibling-outputs');
 
     // --- AIP Outputs ---
     Route::post('/aip-entries/{aipEntry}/outputs', [AipOutputController::class, 'store'])->name(
@@ -95,6 +99,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/aip-outputs/{aipOutput}', [AipOutputController::class, 'destroy'])->name(
         'aip-outputs.destroy',
     );
+    Route::post('/aip-outputs/{aipOutput}/carry-to-supplemental', [
+        AipOutputController::class,
+        'carryToSupplemental',
+    ])->name('aip-outputs.carry-to-supplemental');
 
     // Funding sources scoped to an AIP output
     Route::post('/aip-outputs/{aipOutput}/ppa-funding-sources', [
