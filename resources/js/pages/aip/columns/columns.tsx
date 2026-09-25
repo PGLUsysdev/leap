@@ -2,7 +2,6 @@ import { createColumnHelper } from '@tanstack/react-table';
 import {
     Pencil,
     ExternalLink,
-    FileText,
     FilePlus2,
     List,
     ChevronRight,
@@ -16,7 +15,6 @@ import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { FiscalYear } from '@/types';
@@ -217,38 +215,6 @@ const columns = [
                                 >
                                     <FilePlus2 />
                                     Initialize AIP
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                    Reports & Summaries
-                                </DropdownMenuLabel>
-                                <DropdownMenuItem
-                                    disabled={
-                                        !table.options.meta?.canGenerateApp
-                                    }
-                                    onClick={() => {
-                                        table.options.meta?.onGeneratePdf?.(
-                                            row.original,
-                                        );
-                                    }}
-                                >
-                                    <FileText />
-                                    Generate APP
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    disabled={
-                                        !table.options.meta?.canOpenPpmpSummary
-                                    }
-                                    onClick={() => {
-                                        table.options.meta?.onOpenPpmpSummary?.(
-                                            row.original,
-                                        );
-                                    }}
-                                >
-                                    <ExternalLink />
-                                    Open PPMP Summary
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                         </DropdownMenuContent>

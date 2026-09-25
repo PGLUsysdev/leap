@@ -166,8 +166,6 @@ export default function AipPage({
         value: selectedOfficeId,
     });
 
-
-
     function onUpdateStatus(data: FiscalYear, status: FiscalYearStatus) {
         // ─── DEBUG: status update ────────────────────────────────────
         log('[aip] update status', { fiscalYearId: data.id, status });
@@ -262,42 +260,6 @@ export default function AipPage({
         );
     }
 
-    function handleGeneratePdf(year: FiscalYear) {
-        setSelectedYear(year);
-
-        // Default office scope: consolidated for all-scope users, own office otherwise.
-        const defaultOfficeId = can?.generateAppAll
-            ? 'all'
-            : String(auth.user.office_id ?? '');
-        setAppOfficeId(defaultOfficeId);
-
-        const data: Record<string, any> = { fiscal_year_id: year.id };
-
-        if (!can?.generateAppAll && can?.generateAppOwn) {
-            data.office_id = auth.user.office_id;
-        }
-
-        // ─── DEBUG: generate PDF ─────────────────────────────────────
-        log('[aip] generate PDF', {
-            fiscalYearId: year.id,
-            year: year.year,
-            defaultOfficeId,
-            reloadData: data,
-            canGenerateAppAll: can?.generateAppAll,
-            canGenerateAppOwn: can?.generateAppOwn,
-        });
-        // ─────────────────────────────────────────────────────────────
-
-        setIsAppReloading(true);
-
-        router.reload({
-            only: ['app'],
-            data,
-            onSuccess: () => setOpenPdfPreviewDialog(true),
-            onFinish: () => setIsAppReloading(false),
-        });
-    }
-
     function handleGenerateDocumentApp(
         fiscalYear: FiscalYear,
         doc: AipDocument,
@@ -347,17 +309,6 @@ export default function AipPage({
             data: { fiscal_year_id: selectedYear.id, office_id: officeId },
             onFinish: () => setIsAppReloading(false),
         });
-    }
-
-    function handleOpenPpmpSummary(data: FiscalYear) {
-        // ─── DEBUG: open PPMP summary ────────────────────────────────
-        log('[aip] open PPMP summary', {
-            fiscalYearId: data.id,
-            year: data.year,
-        });
-        // ─────────────────────────────────────────────────────────────
-
-        router.visit(index({ fiscalYear: data.id }));
     }
 
     function handleOpenDocumentPpmpSummary(
@@ -421,30 +372,12 @@ export default function AipPage({
                                             </span>
                                         </div>
                                         <div className="flex shrink-0 items-center gap-1">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={
-                                                    !canOpenAip ||
-                                                    isOpenAipDisabled
-                                                }
-                                                title="Open document summary"
-                                                onClick={() =>
-                                                    handleOpenDocument(
-                                                        row.original,
-                                                        doc,
-                                                    )
-                                                }
-                                            >
-                                                <ExternalLink className="mr-1 h-3.5 w-3.5" />
-                                                Open
-                                            </Button>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger
                                                     render={
                                                         <Button
                                                             variant="outline"
-                                                            size="sm"
+                                                            size="icon"
                                                             title="Document reports"
                                                         >
                                                             <List className="h-3.5 w-3.5" />
@@ -495,6 +428,23 @@ export default function AipPage({
                                                     </DropdownMenuGroup>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                disabled={
+                                                    !canOpenAip ||
+                                                    isOpenAipDisabled
+                                                }
+                                                title="Open document summary"
+                                                onClick={() =>
+                                                    handleOpenDocument(
+                                                        row.original,
+                                                        doc,
+                                                    )
+                                                }
+                                            >
+                                                <ExternalLink />
+                                            </Button>
                                         </div>
                                     </li>
                                 ))}
@@ -507,14 +457,8 @@ export default function AipPage({
                         onInitializeAip: handleInitializeAip,
                         canOpenAip: canOpenAip ?? false,
                         disableOpenAip: isOpenAipDisabled,
-                        canGenerateApp:
-                            (can?.generateAppAll ?? false) ||
-                            (can?.generateAppOwn ?? false),
-                        canOpenPpmpSummary: can?.openPpmpSummary ?? false,
                         onUpdateStatus,
                         onOpen: handleOpenAipSummary,
-                        onGeneratePdf: handleGeneratePdf,
-                        onOpenPpmpSummary: handleOpenPpmpSummary,
                     }}
                 >
                     <div className="flex gap-2">
