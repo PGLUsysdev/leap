@@ -37,6 +37,7 @@ interface PdfPreviewDialogProps {
     /** Called when the user picks an office; the parent triggers the reload. */
     onOfficeChange: (officeId: string) => void;
     isReloading?: boolean;
+    isSupplemental?: boolean;
 }
 
 function getOfficeLabel(
@@ -71,6 +72,7 @@ export default function PdfPreviewDialog({
     selectedOfficeId,
     onOfficeChange,
     isReloading = false,
+    isSupplemental = false,
 }: PdfPreviewDialogProps) {
     const [deptHead, setDeptHead] = useState('');
     const [deptHeadPosition, setDeptHeadPosition] = useState('Department Head');
@@ -126,10 +128,11 @@ export default function PdfPreviewDialog({
                       data,
                       fiscalYear,
                       officeLabel,
+                      isSupplemental,
                       signatories: debouncedSignatories,
                   }
                 : null,
-        [data, fiscalYear, officeLabel, debouncedSignatories],
+        [data, fiscalYear, officeLabel, isSupplemental, debouncedSignatories],
     );
 
     const { url, status } = usePdfPreview('app', payload);
@@ -144,7 +147,10 @@ export default function PdfPreviewDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="flex h-[100vh] flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
                 <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b p-4">
-                    <DialogTitle>APP Preview - {fiscalYear.year}</DialogTitle>
+                    <DialogTitle>
+                        {isSupplemental ? 'SAPP' : 'APP'} Preview -{' '}
+                        {fiscalYear.year}
+                    </DialogTitle>
 
                     <DialogDescription className="sr-only" />
                 </DialogHeader>
@@ -279,7 +285,7 @@ export default function PdfPreviewDialog({
                             url={url}
                             status={status}
                             busy={busy}
-                            title={`APP Preview ${fiscalYear.year}`}
+                            title={`${isSupplemental ? 'SAPP' : 'APP'} Preview ${fiscalYear.year}`}
                         />
                     </div>
                 </div>

@@ -110,6 +110,7 @@ interface PpmpDocumentProps {
     groupedData?: any[]; // now optional – defaults to []
     officeName?: string;
     ppaFundingSource?: PpaFundingSource;
+    isSupplemental?: boolean;
     signatories: {
         deptHead: string;
         deptHeadPosition: string;
@@ -121,6 +122,7 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
     fiscalYear,
     groupedData = [], // empty array fallback (no mock data)
     ppaFundingSource,
+    isSupplemental = false,
     signatories,
 }) => {
     // console.log({ aipEntry, fiscalYear, groupedData, ppaFundingSource });
@@ -274,10 +276,11 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                             <Text
                                 style={{
                                     textAlign: 'center',
-                                    fontSize: 15,
+                                    fontSize: isSupplemental ? 12 : 15,
                                     fontWeight: 'bold',
                                 }}
                             >
+                                {isSupplemental ? 'SUPPLEMENTAL ' : ''}
                                 PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY{' '}
                                 {fiscalYear?.year || '-'}
                             </Text>

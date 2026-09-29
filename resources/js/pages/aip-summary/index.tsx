@@ -1,7 +1,9 @@
 import { router, usePage } from '@inertiajs/react';
 import {
     FileUp,
+    Layers,
     Library,
+    Menu,
     Plus,
     Settings,
     Sheet,
@@ -184,7 +186,6 @@ export default function AipSummary({
     offices,
     fundingSources,
     ppaTypes,
-    currentScope = { scope: 'original', supplemental_aip_id: null },
     ccTypologies,
 }: AipSummaryProps) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
@@ -262,6 +263,21 @@ export default function AipSummary({
     const isDeletableDoc =
         !isCumulative && currentDocument?.is_latest === true;
     const readOnly = isCumulative;
+
+    const exportScope = useMemo(() => {
+        if (isCumulative) {
+            return { scope: 'cumulative', supplemental_aip_id: null };
+        }
+
+        if (currentDocument?.kind === 'supplemental') {
+            return {
+                scope: 'supplemental',
+                supplemental_aip_id: currentDocument.id,
+            };
+        }
+
+        return { scope: 'original', supplemental_aip_id: null };
+    }, [isCumulative, currentDocument]);
 
     const nextSaipName = useMemo(() => {
         const count = aipDocuments.filter(
@@ -416,13 +432,51 @@ export default function AipSummary({
                     <Tabs value={currentDocId} onValueChange={handleTabChange}>
                         <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger
+                                        render={
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                type="button"
+                                                title="AIP options"
+                                            />
+                                        }
+                                    >
+                                        <Menu />
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        className="w-55"
+                                        align="start"
+                                    >
+                                        <DropdownMenuGroup>
+                                            <DropdownMenuLabel>
+                                                AIP documents
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    handleTabChange('all')
+                                                }
+                                            >
+                                                <Layers /> Show cumulative AIP
+                                                {aipDocuments.length > 0
+                                                    ? ` (${aipDocuments.length})`
+                                                    : ''}
+                                            </DropdownMenuItem>
+                                            {can.createSaip && (
+                                                <DropdownMenuItem
+                                                    onClick={
+                                                        handleSaipDialogOpen
+                                                    }
+                                                >
+                                                    <Plus /> New supplemental
+                                                    AIP
+                                                </DropdownMenuItem>
+                                            )}
+                                        </DropdownMenuGroup>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 <TabsList>
-                                    <TabsTrigger value="all">
-                                        Cumulative
-                                        {aipDocuments.length > 0
-                                            ? ` (${aipDocuments.length})`
-                                            : ''}
-                                    </TabsTrigger>
                                     {aipDocuments.map((doc) => (
                                         <TabsTrigger
                                             key={doc.id}
@@ -432,17 +486,6 @@ export default function AipSummary({
                                         </TabsTrigger>
                                     ))}
                                 </TabsList>
-                                {can.createSaip && (
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        type="button"
-                                        title="New supplemental AIP"
-                                        onClick={handleSaipDialogOpen}
-                                    >
-                                        <Plus />
-                                    </Button>
-                                )}
                             </div>
 
                             {isDeletableDoc && can.deleteSaip && (
@@ -673,7 +716,7 @@ export default function AipSummary({
                 aipEntries={newAipEntries}
                 fiscalYear={fiscalYear}
                 officeName={auth.user.office?.name || ''}
-                currentScope={currentScope}
+                currentScope={exportScope}
             />
 
             <ExportSummaryToPdfDialog
@@ -682,7 +725,7 @@ export default function AipSummary({
                 aipEntries={newAipEntries}
                 fiscalYear={fiscalYear}
                 officeName={auth.user.office?.name || ''}
-                currentScope={currentScope}
+                currentScope={exportScope}
             />
 
             <Dialog open={isSaipDialogOpen} onOpenChange={setIsSaipDialogOpen}>
@@ -761,9 +804,18 @@ export default function AipSummary({
     );
 }
 
-AipSummary.layout = {
+AipSummary.layout = ({
+    currentDocument,
+    isCumulative,
+}: AipSummaryProps) => ({
     breadcrumbs: [
         { title: 'Annual Investment Programs', href: '/aip' },
-        { title: 'AIP Summary', href: '#' },
+        {
+            title:
+                !isCumulative && currentDocument?.kind === 'supplemental'
+                    ? 'SAIP Summary'
+                    : 'AIP Summary',
+            href: '#',
+        },
     ],
-};
+});

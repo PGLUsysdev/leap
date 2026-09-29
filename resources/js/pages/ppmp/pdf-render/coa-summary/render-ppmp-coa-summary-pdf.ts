@@ -10,6 +10,7 @@ export interface PpmpCoaSummaryPdfPayload {
     fiscalYear?: FiscalYear;
     groupedData?: any[];
     ppaFundingSource?: PpaFundingSource;
+    isSupplemental?: boolean;
     sheetNumber?: number;
 }
 

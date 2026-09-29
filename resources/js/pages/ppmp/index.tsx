@@ -37,6 +37,7 @@ import { formatCurrency } from '@/lib/utils';
 import FormDialog from '@/pages/ppmp/form-dialog';
 import { index, summary } from '@/routes/aip';
 import type {
+    AipDocument,
     AipEntry,
     ChartOfAccount,
     FiscalYear,
@@ -81,6 +82,7 @@ import ppmpColumns from './columns/ppmp-columns';
 
 interface PpmpPageProps {
     aipEntry: AipEntry;
+    aipDocument?: Pick<AipDocument, 'id' | 'kind' | 'name'> | null;
     categories: PaginatedResponse<PpmpCategory>;
     chartOfAccounts: PaginatedResponse<ChartOfAccount>;
     fiscalYear: FiscalYear;
@@ -108,6 +110,7 @@ interface PpmpPageProps {
 
 export default function PpmpPage({
     aipEntry,
+    aipDocument = null,
     categories,
     chartOfAccounts,
     fiscalYear,
@@ -185,6 +188,8 @@ export default function PpmpPage({
         setOpenPdfPreview(nextOpen);
     }
 
+    const isSupplemental = aipDocument?.kind === 'supplemental';
+
     // Shared, worker-rendered PDF payloads; only generated while open so
     // closing a preview releases the blob URL instead of regenerating.
     const pdfPayload = useMemo(
@@ -193,6 +198,7 @@ export default function PpmpPage({
             fiscalYear,
             groupedData: ppmpItems,
             ppaFundingSource,
+            isSupplemental,
             signatories: debouncedSignatories,
         }),
         [
@@ -200,6 +206,7 @@ export default function PpmpPage({
             fiscalYear,
             ppaFundingSource,
             ppmpItems,
+            isSupplemental,
             debouncedSignatories,
         ],
     );
@@ -1075,13 +1082,19 @@ export default function PpmpPage({
     );
 }
 
-PpmpPage.layout = ({ fiscalYear }: PpmpPageProps) => ({
+PpmpPage.layout = ({ fiscalYear, aipDocument }: PpmpPageProps) => ({
     breadcrumbs: [
         { title: 'Annual Investment Programs', href: index() },
         {
             title: `AIP Summary FY ${fiscalYear.year}`,
             href: summary({ fiscalYear: fiscalYear.id }),
         },
-        { title: 'PPMP Management', href: '#' },
+        {
+            title:
+                aipDocument?.kind === 'supplemental'
+                    ? 'SPPMP Management'
+                    : 'PPMP Management',
+            href: '#',
+        },
     ],
 });

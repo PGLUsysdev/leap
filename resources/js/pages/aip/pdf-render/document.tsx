@@ -112,6 +112,7 @@ interface AppDocumentProps {
     data: App;
     fiscalYear: FiscalYear;
     officeLabel: string;
+    isSupplemental?: boolean;
     signatories: {
         deptHead: string;
         deptHeadPosition: string;
@@ -124,6 +125,7 @@ export function AppDocument({
     data,
     fiscalYear,
     officeLabel,
+    isSupplemental = false,
     signatories,
 }: AppDocumentProps) {
     const columns = getAppColumnDefs();
@@ -143,7 +145,8 @@ export function AppDocument({
                         style={{ marginBottom: 10, textAlign: 'center' }}
                     >
                         <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
-                            ANNUAL PROCUREMENT PLAN
+                            {isSupplemental ? 'SUPPLEMENTAL ' : ''}ANNUAL
+                            PROCUREMENT PLAN
                         </Text>
                         <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
                             FOR THE YEAR {fiscalYear.year}

@@ -141,6 +141,11 @@ class PpmpController extends Controller
 
         return Inertia::render('ppmp/index', [
             'aipEntry' => $aipEntry->load('ppa.office'),
+            'aipDocument' => $aipEntry->aipDocument?->only([
+                'id',
+                'kind',
+                'name',
+            ]),
             'categories' => $categories,
             'chartOfAccounts' => $chartOfAccounts,
             'fiscalYear' => $fiscalYear,

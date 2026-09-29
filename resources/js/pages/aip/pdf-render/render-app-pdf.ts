@@ -9,6 +9,7 @@ export interface AppPdfPayload {
     data: App;
     fiscalYear: FiscalYear;
     officeLabel: string;
+    isSupplemental?: boolean;
     signatories: {
         deptHead: string;
         deptHeadPosition: string;

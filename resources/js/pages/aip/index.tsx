@@ -106,6 +106,7 @@ export default function AipPage({
     const [openFormDialog, setOpenFormDialog] = useState(false);
     const [openPdfPreviewDialog, setOpenPdfPreviewDialog] = useState(false);
     const [selectedYear, setSelectedYear] = useState<FiscalYear | null>(null);
+    const [selectedDoc, setSelectedDoc] = useState<AipDocument | null>(null);
     const [isAppReloading, setIsAppReloading] = useState(false);
 
     const params = new URLSearchParams(window.location.search);
@@ -265,6 +266,7 @@ export default function AipPage({
         doc: AipDocument,
     ) {
         setSelectedYear(fiscalYear);
+        setSelectedDoc(doc);
 
         // Document scope implies its own office; fall back to FY scope rules.
         const officeId =
@@ -384,7 +386,10 @@ export default function AipPage({
                                                         </Button>
                                                     }
                                                 ></DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="w-55"
+                                                >
                                                     <DropdownMenuGroup>
                                                         <DropdownMenuLabel>
                                                             Reports &amp;
@@ -409,7 +414,10 @@ export default function AipPage({
                                                             }
                                                         >
                                                             <FileText />
-                                                            Generate APP
+                                                            {doc.kind ===
+                                                            'supplemental'
+                                                                ? 'Generate SAPP'
+                                                                : 'Generate APP'}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             disabled={
@@ -547,6 +555,7 @@ export default function AipPage({
                 selectedOfficeId={appOfficeId}
                 onOfficeChange={handleAppOfficeChange}
                 isReloading={isAppReloading}
+                isSupplemental={selectedDoc?.kind === 'supplemental'}
             />
         </>
     );
