@@ -1,7 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import {
     Pencil,
-    ExternalLink,
     FilePlus2,
     List,
     ChevronRight,
@@ -219,22 +218,6 @@ const columns = [
                             </DropdownMenuGroup>
                         </DropdownMenuContent>
                     </DropdownMenu>
-
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        title="Open AIP"
-                        disabled={
-                            !table.options.meta?.canOpenAip ||
-                            table.options.meta?.disableOpenAip ||
-                            !row.original.has_regular_aip
-                        }
-                        onClick={() =>
-                            table.options.meta?.onOpen?.(row.original)
-                        }
-                    >
-                        <ExternalLink />
-                    </Button>
                 </div>
             );
         },
