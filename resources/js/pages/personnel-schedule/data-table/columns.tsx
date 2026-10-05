@@ -1,4 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
+import type { Row, Table } from '@tanstack/react-table';
+import { Decimal } from 'decimal.js';
 
 export interface PersonnelScheduleItem {
     id: number;
@@ -38,6 +40,47 @@ function formatAmount(value: string | null | undefined) {
             })}
         </div>
     );
+}
+
+type AmountField =
+    | 'current_year_amount'
+    | 'proposed_amount'
+    | 'increase_decrease';
+
+/**
+ * Sums one amount field across the currently visible (filtered) rows, so the
+ * footer tracks the search box. Decimal keeps the currency arithmetic exact;
+ * blank or non-numeric values count as zero.
+ */
+function sumField(rows: Array<Row<PersonnelScheduleItem>>, field: AmountField) {
+    return rows.reduce((sum, row) => {
+        const value = Number(row.original[field] ?? 0);
+
+        return sum.plus(Number.isNaN(value) ? 0 : value);
+    }, new Decimal(0));
+}
+
+/**
+ * Footer renderer for one amount column, summing the currently visible rows.
+ */
+function amountFooter(field: AmountField) {
+    return function AmountFooterRenderer({
+        table,
+    }: {
+        table: Table<PersonnelScheduleItem>;
+    }) {
+        const rows = table.getFilteredRowModel().flatRows;
+        const total = sumField(rows, field);
+
+        return (
+            <div className="text-right font-bold slashed-zero tabular-nums">
+                {total.toNumber().toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                })}
+            </div>
+        );
+    };
 }
 
 const columns = [
@@ -118,6 +161,7 @@ const columns = [
                     <div className="text-center text-wrap">Amount</div>
                 ),
                 cell: (info) => formatAmount(info.getValue()),
+                footer: amountFooter('current_year_amount'),
             }),
         ],
     }),
@@ -151,6 +195,7 @@ const columns = [
                     <div className="text-center text-wrap">Amount</div>
                 ),
                 cell: (info) => formatAmount(info.getValue()),
+                footer: amountFooter('proposed_amount'),
             }),
         ],
     }),
@@ -161,6 +206,7 @@ const columns = [
             <div className="text-center text-wrap">Increase/Decrease</div>
         ),
         cell: (info) => formatAmount(info.getValue()),
+        footer: amountFooter('increase_decrease'),
     }),
     columnHelper.accessor('step_increment_effectivity', {
         id: 'step_increment_effectivity',

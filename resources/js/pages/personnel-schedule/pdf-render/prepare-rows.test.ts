@@ -36,13 +36,11 @@ describe('prepareLbpForm3Rows', () => {
         expect(rows.filter((row) => row.type === 'item')).toHaveLength(2);
     });
 
-    it('should_AppendGrandTotalRow_When_ThereIsAtLeastOneItem', () => {
+    it('should_AppendUnlabelledGrandTotalRow_When_ThereIsAtLeastOneItem', () => {
         const rows = prepareLbpForm3Rows([makeItem()]);
 
-        expect(rows.at(-1)).toMatchObject({
-            type: 'grand-total',
-            label: 'TOTAL',
-        });
+        expect(rows.at(-1)).toMatchObject({ type: 'grand-total' });
+        expect(rows.at(-1)?.label).toBeUndefined();
     });
 
     it('should_NotAppendGrandTotalRow_When_ThereAreNoItems', () => {

@@ -34,6 +34,7 @@ function sumAmounts(items: PersonnelScheduleItem[]) {
 /**
  * Flattens personnel schedule items into the shared PDF row model: one item row
  * per entry, followed by a grand total row when there is anything to total.
+ * The totals row carries no label; each amount lands under its own column.
  */
 export function prepareLbpForm3Rows(
     items: PersonnelScheduleItem[],
@@ -61,7 +62,6 @@ export function prepareLbpForm3Rows(
         rows.push({
             id: `row-${rowIdCounter++}`,
             type: 'grand-total',
-            label: 'TOTAL',
             totals,
         });
     }

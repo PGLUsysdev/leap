@@ -143,24 +143,24 @@ const formatTotal = (value: unknown): string => {
     });
 };
 
-// "TOTAL" spans the first four columns (item number, position title, name of
-// incumbent); the three amount columns then carry their summed totals.
-const LABEL_SPAN_END = 3;
 const AMOUNT_COLUMN_IDS = [
     'current_year_amount',
     'proposed_amount',
     'increase_decrease',
 ];
 
+const leftBorderStyle = {
+    borderLeftWidth: 0.5,
+    borderLeftColor: '#000000',
+};
+
+// Totals row with one cell per column and no label: each summed amount lands
+// under its own column, every other cell stays empty.
 const renderLbpForm3GrandTotal = (
     row: TableRow,
     columns: ColumnDef<PersonnelScheduleItem>[],
 ) => {
     const totals = row.totals || {};
-
-    const labelWidth = columns
-        .slice(0, LABEL_SPAN_END + 1)
-        .reduce((sum, col) => sum + parseFloat(col.width), 0);
 
     return (
         <View
@@ -174,42 +174,22 @@ const renderLbpForm3GrandTotal = (
                 alignItems: 'stretch',
             }}
         >
-            <View
-                style={{
-                    width: `${labelWidth}%`,
-                    borderLeftWidth: 0.5,
-                    borderLeftColor: '#000000',
-                    borderRightWidth: 0.5,
-                    borderRightColor: '#000000',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    paddingHorizontal: 2,
-                }}
-            >
-                <Text
-                    style={{
-                        fontSize: 5,
-                        fontWeight: 'bold',
-                        color: '#000000',
-                    }}
-                >
-                    {row.label}
-                </Text>
-            </View>
-
-            {columns.slice(LABEL_SPAN_END + 1).map((col) => {
+            {columns.map((col, colIdx) => {
                 const isAmount = AMOUNT_COLUMN_IDS.includes(col.id);
 
                 return (
                     <View
                         key={col.id}
-                        style={{
-                            width: col.width,
-                            borderRightWidth: 0.5,
-                            borderRightColor: '#000000',
-                            justifyContent: 'center',
-                            paddingHorizontal: 1,
-                        }}
+                        style={[
+                            {
+                                width: col.width,
+                                borderRightWidth: 0.5,
+                                borderRightColor: '#000000',
+                                justifyContent: 'center',
+                                paddingHorizontal: 1,
+                            },
+                            colIdx === 0 ? leftBorderStyle : {},
+                        ]}
                     >
                         <Text
                             style={{
