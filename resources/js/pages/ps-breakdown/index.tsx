@@ -1,10 +1,15 @@
 import { useMemo, useState } from 'react';
 import DataTable from '@/components/data-table';
+import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { index as aipIndex, summary } from '@/routes/aip';
 import type { ChartOfAccount, Position, PsBreakdownItem } from '@/types';
 import getPsBreakdownCols from './columns/ps-breakdown-cols';
+import { mockAnnualRateMap, mockPositions, mockRates } from './mock-data';
 import PreviewPdfDialog from './pdf-preview-dialog';
+
+/** TEMPORARY: use hardcoded mock dataset for UI dev. Set to false for live data. */
+const USE_MOCK = true;
 
 interface PsBreakdownProps {
     chartOfAccounts: ChartOfAccount[];
@@ -26,14 +31,18 @@ interface PsBreakdownProps {
 export default function PsBreakdown({
     chartOfAccounts,
     breakdownItems,
-    positions,
+    positions: livePositions,
     ppaFundingSourceId,
-    rates,
+    rates: liveRates,
     // fiscalYear,
-    annualRateMap,
+    annualRateMap: liveAnnualRateMap,
     // can,
 }: PsBreakdownProps) {
     const [openPdfPreview, setOpenPdfPreview] = useState(false);
+
+    const positions = USE_MOCK ? mockPositions : livePositions;
+    const rates = USE_MOCK ? mockRates : liveRates;
+    const annualRateMap = USE_MOCK ? mockAnnualRateMap : liveAnnualRateMap;
 
     const psBreakdownCols = useMemo(
         () =>
@@ -73,6 +82,13 @@ export default function PsBreakdown({
                     columns={psBreakdownCols}
                     showFooter={true}
                 >
+                    {USE_MOCK && (
+                        <div>
+                            <Badge variant="outline">
+                                Mock data — temporary
+                            </Badge>
+                        </div>
+                    )}
                     {/*<div>
                         {can?.export && (
                             <Button

@@ -22,6 +22,12 @@ class PsBreakdownController extends Controller
     /**
      * Core computation: given positions, rates, and annualRateMap,
      * return PS COA totals keyed by account_number.
+     *
+     * Hardcoded per-position rules mirroring the frontend
+     * getCellNumericValue. COAs without a deterministic rule
+     * (subsistence, quarters, overseas, honoraria, longevity,
+     * overtime, provident, pension/gratuity/terminal-leave, other
+     * personnel benefits) contribute zero until manual inputs exist.
      */
     public static function computePsCoaTotals(
         $positions,
@@ -34,19 +40,33 @@ class PsBreakdownController extends Controller
             '5-01-01-010' => 0,
             '5-01-01-020' => 0,
             '5-01-02-010' => 0,
+            '5-01-02-020' => 0,
+            '5-01-02-030' => 0,
             '5-01-02-040' => 0,
+            '5-01-02-060' => 0,
             '5-01-02-080' => 0,
+            '5-01-02-110' => 0,
             '5-01-02-140' => 0,
             '5-01-02-150' => 0,
             '5-01-02-990' => 0,
             '5-01-03-010' => 0,
             '5-01-03-020' => 0,
             '5-01-03-030' => 0,
+            '5-01-03-040' => 0,
         ];
 
         foreach ($positions as $pos) {
-            $isRegular = $pos->employment_type === 'permanent';
             $budgetAnnual = (float) ($annualRateMap[$pos->id]['budget'] ?? 0);
+            $monthly = $budgetAnnual / 12;
+            $sg = $pos->ios?->salary_grade;
+
+            $budgeted = $pos->status !== 'abolished' && (bool) $pos->is_funded;
+            $occupied = $budgeted && $pos->status === 'occupied';
+            $isRegular = $pos->employment_type === 'permanent';
+
+            if (! $budgeted) {
+                continue;
+            }
 
             // 5-01-01-010 — Salaries & Wages - Regular
             if ($isRegular) {
@@ -61,38 +81,71 @@ class PsBreakdownController extends Controller
                 $totals['5-01-01-020'] += $budgetAnnual;
             }
 
-            // 5-01-02-010 — PERA (all positions)
-            $totals['5-01-02-010'] +=
-                (float) ($rates['pera_monthly'] ?? 2000) * 12;
+            // 5-01-02-140 — Year End Bonus (1 month basic pay)
+            $totals['5-01-02-140'] += $monthly;
 
-            // 5-01-02-040 — Clothing Allowance (all positions)
-            $totals['5-01-02-040'] +=
-                (float) ($rates['clothing_annual'] ?? 5000);
+            // 5-01-02-990 — Other Bonuses & Allowances placeholder
+            $totals['5-01-02-990'] += $monthly;
 
-            // 5-01-02-080 — PEI (all positions)
-            $totals['5-01-02-080'] += (float) ($rates['pei_max'] ?? 5000);
-
-            // 5-01-02-140 — Year End Bonus (1 month salary, all positions)
-            $totals['5-01-02-140'] += $budgetAnnual / 12;
-
-            // 5-01-02-150 — Cash Gift (all positions)
-            $totals['5-01-02-150'] += (float) ($rates['cash_gift'] ?? 5000);
-
-            // 5-01-02-990 — Other Bonuses & Allowances (1 month salary, all positions)
-            $totals['5-01-02-990'] += $budgetAnnual / 12;
-
-            // 5-01-03-010 — GSIS (all positions)
+            // 5-01-03-010 — GSIS employer share
             $totals['5-01-03-010'] +=
                 $budgetAnnual * ((float) ($rates['gsis_percent'] ?? 12) / 100);
 
-            // 5-01-03-020 — Pag-ibig (all positions)
-            $totals['5-01-03-020'] +=
-                (float) ($rates['pagibig_monthly'] ?? 100) * 12;
+            // 5-01-03-020 — Pag-IBIG employer share (2%, MFS 10,000/mo)
+            $totals['5-01-03-020'] += min($monthly, 10000) * 0.02 * 12;
 
-            // 5-01-03-030 — PhilHealth (all positions)
-            $totals['5-01-03-030'] +=
-                $budgetAnnual *
-                ((float) ($rates['philhealth_percent'] ?? 2.5) / 100);
+            // 5-01-03-030 — PhilHealth employer share (2.5%, floor 250 / ceiling 2,500 mo)
+            $totals['5-01-03-030'] += min(max($monthly * 0.025, 250), 2500) * 12;
+
+            // 5-01-03-040 — ECIP (1% capped at 1,200)
+            $totals['5-01-03-040'] += min(
+                $budgetAnnual * ((float) ($rates['ecip_percent'] ?? 1) / 100),
+                1200,
+            );
+
+            if (! $occupied) {
+                continue;
+            }
+
+            // 5-01-02-010 — PERA (flat monthly x 12)
+            $totals['5-01-02-010'] +=
+                (float) ($rates['pera_monthly'] ?? 2000) * 12;
+
+            // 5-01-02-020 — RA (SG-banded monthly x 12, permanent only)
+            // 5-01-02-030 — TA (SG-banded monthly x 12, permanent only)
+            if ($isRegular && $sg !== null) {
+                if ($sg >= 24) {
+                    $totals['5-01-02-020'] +=
+                        (float) ($rates['rata_sg_24_above'] ?? 4000) * 12;
+                    $totals['5-01-02-030'] +=
+                        (float) ($rates['ta_sg_24_above'] ?? 2000) * 12;
+                } elseif ($sg >= 16) {
+                    $totals['5-01-02-020'] +=
+                        (float) ($rates['rata_sg_16_23'] ?? 2000) * 12;
+                    $totals['5-01-02-030'] +=
+                        (float) ($rates['ta_sg_16_23'] ?? 1000) * 12;
+                }
+            }
+
+            // 5-01-02-040 — Clothing Allowance (flat annual)
+            $totals['5-01-02-040'] +=
+                (float) ($rates['clothing_annual'] ?? 8000);
+
+            // 5-01-02-060 — Laundry Allowance (flat monthly x 12)
+            $totals['5-01-02-060'] +=
+                (float) ($rates['laundry_monthly'] ?? 150) * 12;
+
+            // 5-01-02-080 — PEI (flat annual ceiling)
+            $totals['5-01-02-080'] += (float) ($rates['pei_max'] ?? 5000);
+
+            // 5-01-02-110 — Hazard Pay (SG-banded % of monthly x 12)
+            if ($sg !== null) {
+                $totals['5-01-02-110'] +=
+                    ($sg <= 19 ? $monthly * 0.25 : $monthly * 0.05) * 12;
+            }
+
+            // 5-01-02-150 — Cash Gift (flat annual)
+            $totals['5-01-02-150'] += (float) ($rates['cash_gift'] ?? 5000);
         }
 
         return $totals;
@@ -398,7 +451,7 @@ class PsBreakdownController extends Controller
                 $validated['ppa_funding_source_id'],
                 [],
             );
-            $amount = $autoValues[$coa->account_number] ?? 0;
+            $amount = $autoValues[$coa->path] ?? 0;
             $isManual = false;
             $positionId = null;
         } else {
@@ -495,7 +548,7 @@ class PsBreakdownController extends Controller
 
         foreach ($autoValues as $accountNumber => $amount) {
             $coa = ChartOfAccount::where(
-                'account_number',
+                'path',
                 $accountNumber,
             )->first();
             if (! $coa) {
