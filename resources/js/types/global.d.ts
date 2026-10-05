@@ -104,6 +104,7 @@ declare module '@tanstack/react-table' {
         onSaveCcTypology?: (id: number) => void;
         onClearCcTypology?: (id: number) => void;
         isPsPool?: boolean;
+        isSupplemental?: boolean;
         ccTypologies?: CcTypology[];
         isSaving?: boolean;
     }

@@ -24,6 +24,7 @@ use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\LguLevelController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\OfficeTypeController;
+use App\Http\Controllers\PersonnelScheduleController;
 use App\Http\Controllers\PpaController;
 use App\Http\Controllers\PpaFundingSourceController;
 use App\Http\Controllers\PpaListController;
@@ -31,15 +32,14 @@ use App\Http\Controllers\PpmpCategoryController;
 use App\Http\Controllers\PpmpController;
 use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
-// use App\Http\Controllers\PsBreakdownController;
 use App\Http\Controllers\PriceListImportController;
 use App\Http\Controllers\PriceListQuantitiesImportController;
 // Disabled for now — PS logic refactor in progress (kept for later).
 // use App\Http\Controllers\SalaryStandardController;
+use App\Http\Controllers\PsBreakdownController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\PersonnelScheduleController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -409,12 +409,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //     'salary-standard.index',
     // );
 
-    // ps breakdown (disabled: controller gutted — PS amounts are now managed
-    // manually through the funding sources dialog on PS Pool PPAs only)
-    // Route::get('/aip/{fiscalYear}/summary/{aipEntry}/ps-breakdown', [
-    //     PsBreakdownController::class,
-    //     'index',
-    // ])->name('ps-breakdown.index');
+    // ps breakdown (re-activated; PS amounts are managed manually through
+    // the funding sources dialog on PS Pool PPAs only)
+    Route::get('/aip/{fiscalYear}/summary/{aipEntry}/ps-breakdown', [
+        PsBreakdownController::class,
+        'index',
+    ])->name('ps-breakdown.index');
     // Route::post('/ps-breakdown-items', [PsBreakdownController::class, 'store'])->name(
     //     'ps-breakdown-items.store',
     // );

@@ -59,7 +59,7 @@ export default function getColumns(
             cell: ({ row }) => (
                 <div className="px-1 text-wrap">
                     {row.original.ios?.salary_grade ?? '—'}/
-                    {row.original.user?.step ?? 1}
+                    {Number(row.original.user?.step ?? 1)}
                 </div>
             ),
         }),
