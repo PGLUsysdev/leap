@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePage } from '@inertiajs/react';
 import { FileText } from 'lucide-react';
 
 import DataTable from '@/components/data-table';
@@ -14,6 +15,7 @@ import {
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 import { index } from '@/routes/personnel-schedule';
+import type { FiscalYear, SharedData } from '@/types';
 
 import LbpForm3Dialog from './lbp-form-3-dialog';
 
@@ -24,10 +26,19 @@ interface PersonnelScheduleProps {
     items?: PersonnelScheduleItem[];
 }
 
+// Stable reference so the LBP Form 3 PDF payload keeps a stable identity when
+// there is no data yet, instead of regenerating on every parent render.
+const NO_ITEMS: PersonnelScheduleItem[] = [];
+
 export default function PersonnelSchedulePage({
-    items = [],
+    items = NO_ITEMS,
 }: PersonnelScheduleProps) {
     const [isLbpForm3Open, setIsLbpForm3Open] = useState(false);
+
+    const activeFiscalYear = usePage<SharedData>().props
+        .activeFiscalYear as FiscalYear | null;
+
+    const fiscalYear = activeFiscalYear?.year ?? '';
 
     return (
         <>
@@ -35,17 +46,13 @@ export default function PersonnelSchedulePage({
                 <DataTable columns={columns} data={items}>
                     <DropdownMenu>
                         <DropdownMenuTrigger
-                            render={
-                                <Button variant="outline" size="icon" />
-                            }
+                            render={<Button variant="outline" size="icon" />}
                         >
                             <FileText />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                    Generate
-                                </DropdownMenuLabel>
+                                <DropdownMenuLabel>Generate</DropdownMenuLabel>
                                 <DropdownMenuItem
                                     onClick={() => setIsLbpForm3Open(true)}
                                 >
@@ -62,6 +69,8 @@ export default function PersonnelSchedulePage({
             <LbpForm3Dialog
                 open={isLbpForm3Open}
                 onOpenChange={setIsLbpForm3Open}
+                items={items}
+                fiscalYear={fiscalYear}
             />
         </>
     );

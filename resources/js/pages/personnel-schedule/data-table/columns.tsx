@@ -1,4 +1,4 @@
-import { createColumnHelper } from "@tanstack/react-table";
+import { createColumnHelper } from '@tanstack/react-table';
 
 export interface PersonnelScheduleItem {
     id: number;
@@ -32,7 +32,7 @@ function formatAmount(value: string | null | undefined) {
 
     return (
         <div className="text-right slashed-zero tabular-nums">
-            {Number(value).toLocaleString("en-US", {
+            {Number(value).toLocaleString('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             })}
@@ -42,30 +42,24 @@ function formatAmount(value: string | null | undefined) {
 
 const columns = [
     columnHelper.group({
-        id: "item_number",
+        id: 'item_number',
         size: 200,
-        header: () => (
-            <div className="text-center text-wrap">Item Number</div>
-        ),
+        header: () => <div className="text-center text-wrap">Item Number</div>,
         columns: [
-            columnHelper.accessor("old", {
-                id: "old",
+            columnHelper.accessor('old', {
+                id: 'old',
                 size: 100,
-                header: () => (
-                    <div className="text-center text-wrap">Old</div>
-                ),
+                header: () => <div className="text-center text-wrap">Old</div>,
                 cell: (info) => (
                     <div className="text-center text-wrap">
                         {formatText(info.getValue())}
                     </div>
                 ),
             }),
-            columnHelper.accessor("new", {
-                id: "new",
+            columnHelper.accessor('new', {
+                id: 'new',
                 size: 100,
-                header: () => (
-                    <div className="text-center text-wrap">New</div>
-                ),
+                header: () => <div className="text-center text-wrap">New</div>,
                 cell: (info) => (
                     <div className="text-center text-wrap">
                         {formatText(info.getValue())}
@@ -74,8 +68,8 @@ const columns = [
             }),
         ],
     }),
-    columnHelper.accessor("position_title", {
-        id: "position_title",
+    columnHelper.accessor('position_title', {
+        id: 'position_title',
         size: 300,
         header: () => (
             <div className="text-center text-wrap">Position Title</div>
@@ -84,8 +78,8 @@ const columns = [
             <div className="text-wrap">{formatText(info.getValue())}</div>
         ),
     }),
-    columnHelper.accessor("incumbent_name", {
-        id: "incumbent_name",
+    columnHelper.accessor('incumbent_name', {
+        id: 'incumbent_name',
         size: 200,
         header: () => (
             <div className="text-center text-wrap">Name of Incumbent</div>
@@ -95,7 +89,7 @@ const columns = [
         ),
     }),
     columnHelper.group({
-        id: "current-year",
+        id: 'current-year',
         size: 240,
         header: () => (
             <div className="text-center text-wrap">
@@ -103,8 +97,8 @@ const columns = [
             </div>
         ),
         columns: [
-            columnHelper.accessor("current_year_sg_step", {
-                id: "current_year_sg_step",
+            columnHelper.accessor('current_year_sg_step', {
+                id: 'current_year_sg_step',
                 size: 120,
                 header: () => (
                     <div className="text-center text-wrap">
@@ -117,8 +111,8 @@ const columns = [
                     </div>
                 ),
             }),
-            columnHelper.accessor("current_year_amount", {
-                id: "current_year_amount",
+            columnHelper.accessor('current_year_amount', {
+                id: 'current_year_amount',
                 size: 120,
                 header: () => (
                     <div className="text-center text-wrap">Amount</div>
@@ -128,7 +122,7 @@ const columns = [
         ],
     }),
     columnHelper.group({
-        id: "budget-year",
+        id: 'budget-year',
         size: 240,
         header: () => (
             <div className="text-center text-wrap">
@@ -136,8 +130,8 @@ const columns = [
             </div>
         ),
         columns: [
-            columnHelper.accessor("proposed_sg_step", {
-                id: "proposed_sg_step",
+            columnHelper.accessor('proposed_sg_step', {
+                id: 'proposed_sg_step',
                 size: 120,
                 header: () => (
                     <div className="text-center text-wrap">
@@ -150,8 +144,8 @@ const columns = [
                     </div>
                 ),
             }),
-            columnHelper.accessor("proposed_amount", {
-                id: "proposed_amount",
+            columnHelper.accessor('proposed_amount', {
+                id: 'proposed_amount',
                 size: 120,
                 header: () => (
                     <div className="text-center text-wrap">Amount</div>
@@ -160,16 +154,16 @@ const columns = [
             }),
         ],
     }),
-    columnHelper.accessor("increase_decrease", {
-        id: "increase_decrease",
+    columnHelper.accessor('increase_decrease', {
+        id: 'increase_decrease',
         size: 140,
         header: () => (
             <div className="text-center text-wrap">Increase/Decrease</div>
         ),
         cell: (info) => formatAmount(info.getValue()),
     }),
-    columnHelper.accessor("step_increment_effectivity", {
-        id: "step_increment_effectivity",
+    columnHelper.accessor('step_increment_effectivity', {
+        id: 'step_increment_effectivity',
         size: 200,
         header: () => (
             <div className="text-center text-wrap">

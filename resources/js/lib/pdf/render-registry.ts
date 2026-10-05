@@ -4,6 +4,7 @@ import type { AppPdfPayload } from '@/pages/aip/pdf-render/render-app-pdf';
 import type { FsSummaryPdfPayload } from '@/pages/aip-summary/pdf-render/amounts-by-fs/render-fs-summary-pdf';
 import type { AipSummaryPdfPayload } from '@/pages/aip-summary/pdf-render/render-aip-summary-pdf';
 import type { PpmpCoaSummaryPdfPayload } from '@/pages/ppmp/pdf-render/coa-summary/render-ppmp-coa-summary-pdf';
+import type { LbpForm3PdfPayload } from '@/pages/personnel-schedule/pdf-render/render-lbp-form-3-pdf';
 import type { PpmpPdfPayload } from '@/pages/ppmp/pdf-render/ppmp/render-ppmp-pdf';
 
 /**
@@ -17,6 +18,7 @@ export interface PdfPayloadMap {
     'fs-summary': FsSummaryPdfPayload;
     ppmp: PpmpPdfPayload;
     'ppmp-coa-summary': PpmpCoaSummaryPdfPayload;
+    'lbp-form-3': LbpForm3PdfPayload;
 }
 
 export type PdfKind = keyof PdfPayloadMap;
@@ -36,6 +38,8 @@ const rendererLoaders: {
     ppmp: () => import('@/pages/ppmp/pdf-render/ppmp/render-ppmp-pdf'),
     'ppmp-coa-summary': () =>
         import('@/pages/ppmp/pdf-render/coa-summary/render-ppmp-coa-summary-pdf'),
+    'lbp-form-3': () =>
+        import('@/pages/personnel-schedule/pdf-render/render-lbp-form-3-pdf'),
 };
 
 /**
@@ -67,6 +71,10 @@ export async function renderPdf(
         case 'ppmp-coa-summary':
             return (await rendererLoaders['ppmp-coa-summary']()).renderPdf(
                 payload as PpmpCoaSummaryPdfPayload,
+            );
+        case 'lbp-form-3':
+            return (await rendererLoaders['lbp-form-3']()).renderPdf(
+                payload as LbpForm3PdfPayload,
             );
         default:
             throw new Error(
