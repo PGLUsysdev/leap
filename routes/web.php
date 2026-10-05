@@ -39,6 +39,7 @@ use App\Http\Controllers\PriceListQuantitiesImportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PersonnelScheduleController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -474,6 +475,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         AipSummaryImportController::class,
         'storeFundingSources',
     ])->name('aip-summary-import.store-funding-sources');
+
+    // personnel schedule / form 3 & 3a
+    Route::get('/personnel-schedule', [PersonnelScheduleController::class, 'index'])->name('personnel-schedule.index');
 });
 
 require __DIR__.'/settings.php';
