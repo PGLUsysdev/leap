@@ -8,6 +8,7 @@ import type { PersonnelScheduleItem } from '../data-table/columns';
 export interface LbpForm3PdfPayload {
     items: PersonnelScheduleItem[];
     fiscalYear: string;
+    formLabel: string;
     signatories: {
         preparedName: string;
         preparedPosition: string;

@@ -18,6 +18,7 @@ import { index } from '@/routes/personnel-schedule';
 import type { FiscalYear, SharedData } from '@/types';
 
 import LbpForm3Dialog from './lbp-form-3-dialog';
+import type { LbpFormNo } from './lbp-form-3-dialog';
 
 import columns from './data-table/columns';
 import type { PersonnelScheduleItem } from './data-table/columns';
@@ -78,6 +79,12 @@ export default function PersonnelSchedulePage({
     items = MOCK_ITEMS,
 }: PersonnelScheduleProps) {
     const [isLbpForm3Open, setIsLbpForm3Open] = useState(false);
+    const [formNo, setFormNo] = useState<LbpFormNo>('3');
+
+    function handleFormOpen(selected: LbpFormNo) {
+        setFormNo(selected);
+        setIsLbpForm3Open(true);
+    }
 
     const activeFiscalYear = usePage<SharedData>().props
         .activeFiscalYear as FiscalYear | null;
@@ -98,9 +105,14 @@ export default function PersonnelSchedulePage({
                             <DropdownMenuGroup>
                                 <DropdownMenuLabel>Generate</DropdownMenuLabel>
                                 <DropdownMenuItem
-                                    onClick={() => setIsLbpForm3Open(true)}
+                                    onClick={() => handleFormOpen('3')}
                                 >
                                     <FileText /> LBP Form 3
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => handleFormOpen('3A')}
+                                >
+                                    <FileText /> LBP Form 3A
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                         </DropdownMenuContent>
@@ -115,6 +127,7 @@ export default function PersonnelSchedulePage({
                 onOpenChange={setIsLbpForm3Open}
                 items={items}
                 fiscalYear={fiscalYear}
+                formNo={formNo}
             />
         </>
     );

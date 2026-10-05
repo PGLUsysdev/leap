@@ -128,6 +128,7 @@ interface LbpForm3DocumentProps {
     items: PersonnelScheduleItem[];
     signatories: LbpForm3Signatories;
     fiscalYear: string;
+    formLabel: string;
 }
 
 const formatTotal = (value: unknown): string => {
@@ -234,6 +235,7 @@ export const LbpForm3Document: React.FC<LbpForm3DocumentProps> = ({
     items,
     signatories,
     fiscalYear,
+    formLabel,
 }) => {
     const columns = getLbpForm3ColumnDefs();
     const rows = prepareLbpForm3Rows(items);
@@ -242,7 +244,7 @@ export const LbpForm3Document: React.FC<LbpForm3DocumentProps> = ({
         <Document>
             <Page size={[612, 936]} orientation="landscape" style={styles.page}>
                 <View fixed style={styles.headerContainer}>
-                    <Text style={styles.formLabel}>LBP Form No. 3</Text>
+                    <Text style={styles.formLabel}>{formLabel}</Text>
                     <Text style={styles.title}>
                         PLANTILLA OF PERSONNEL ({fiscalYear.trim() || '____'})
                     </Text>

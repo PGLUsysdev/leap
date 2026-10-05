@@ -14,11 +14,14 @@ import { PdfPreviewPane } from '@/lib/pdf/pdf-preview-pane';
 import { usePdfPreview } from '@/lib/pdf/use-pdf-preview';
 import type { PersonnelScheduleItem } from './data-table/columns';
 
+export type LbpFormNo = '3' | '3A';
+
 interface LbpForm3DialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     items: PersonnelScheduleItem[];
     fiscalYear: string;
+    formNo: LbpFormNo;
 }
 
 const INITIAL_SIGNATORIES = {
@@ -35,7 +38,9 @@ export default function LbpForm3Dialog({
     onOpenChange,
     items,
     fiscalYear,
+    formNo,
 }: LbpForm3DialogProps) {
+    const formLabel = `LBP Form No. ${formNo}`;
     const [signatories, setSignatories] = useState(INITIAL_SIGNATORIES);
     const [debouncedSignatories, setDebouncedSignatories] =
         useState(INITIAL_SIGNATORIES);
@@ -66,9 +71,14 @@ export default function LbpForm3Dialog({
     const payload = useMemo(
         () =>
             open
-                ? { items, fiscalYear, signatories: debouncedSignatories }
+                ? {
+                      items,
+                      fiscalYear,
+                      formLabel,
+                      signatories: debouncedSignatories,
+                  }
                 : null,
-        [open, items, fiscalYear, debouncedSignatories],
+        [open, items, fiscalYear, formLabel, debouncedSignatories],
     );
 
     const { url, status } = usePdfPreview('lbp-form-3', payload);
@@ -81,7 +91,7 @@ export default function LbpForm3Dialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="flex h-[100vh] flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
                 <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b p-4">
-                    <DialogTitle>LBP Form 3</DialogTitle>
+                    <DialogTitle>{formLabel}</DialogTitle>
                     <DialogDescription className="sr-only">
                         Personnel Schedule signatories
                     </DialogDescription>
@@ -209,7 +219,7 @@ export default function LbpForm3Dialog({
                             url={url}
                             status={status}
                             busy={status === 'generating'}
-                            title="LBP Form 3"
+                            title={formLabel}
                         />
                     </div>
                 </div>

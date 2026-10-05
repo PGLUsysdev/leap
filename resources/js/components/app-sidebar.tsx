@@ -19,6 +19,7 @@ import {
     Waypoints,
     Network,
     Upload,
+    IdCard,
     // Scale,      // disabled: Salary Standards
     // AppWindow,  // disabled: IOS
 } from 'lucide-react';
@@ -48,6 +49,7 @@ import { index as fundingSourcesIndex } from '@/routes/funding-sources';
 import { index as lguLevelsIndex } from '@/routes/lgu-levels';
 import { index as officeTypesIndex } from '@/routes/office-types';
 import { index as officesIndex } from '@/routes/offices';
+import { index as personnelScheduleIndex } from '@/routes/personnel-schedule';
 // Disabled for now — PS logic refactor in progress (kept for later).
 // import { index as positionIndex } from "@/routes/position";
 import { index as ppaIndex } from '@/routes/ppa';
@@ -209,6 +211,20 @@ const mainNavItems: NavItem[] = [
     //     href: "",
     //     type: "separator",
     // },
+    {
+        title: 'Personnel Schedule',
+        href: personnelScheduleIndex(),
+        icon: IdCard,
+        // No permission yet: no personnel-schedule.view exists in
+        // PermissionSeeder, and the route itself is unguarded. Add
+        // `permission: 'personnel-schedule.view'` here once it is seeded,
+        // otherwise the filter below hides this item for everyone.
+    },
+    {
+        title: '',
+        href: '',
+        type: 'separator',
+    },
     {
         title: 'Roles',
         href: rolesIndex(),
