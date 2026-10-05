@@ -6,6 +6,7 @@ use App\Http\Requests\StoreFiscalYearRequest;
 use App\Http\Requests\UpdateFiscalYearRequest;
 use App\Models\AipDocument;
 use App\Models\AipEntry;
+use App\Models\ChartOfAccount;
 use App\Models\FiscalYear;
 use App\Models\Office;
 use App\Models\Ppmp;
@@ -180,6 +181,171 @@ class FiscalYearController extends Controller
                                 ->account_title ?? 'General Account';
                         });
                     });
+            }),
+            'lbp2' => Inertia::optional(function () use ($request) {
+                $fyId = $request->query('lbp2_fiscal_year_id');
+                $officeId = $request->query('lbp2_office_id');
+
+                if (! $fyId || ! $officeId) {
+                    return null;
+                }
+
+                $fy = FiscalYear::find($fyId);
+
+                if (! $fy) {
+                    return null;
+                }
+
+                // Optional per-document scope (Reports dropdown on a doc row).
+                $docIds = null;
+
+                if ($request->query('lbp2_document_id')) {
+                    $document = AipDocument::find($request->query('lbp2_document_id'));
+
+                    if (
+                        $document &&
+                        (int) $document->fiscal_year_id === (int) $fyId
+                    ) {
+                        $docIds = $document->cumulativeDocumentIds();
+                    }
+                }
+
+                $officeIds = $officeId === 'all'
+                    ? Office::pluck('id')
+                    : Office::where('id', $officeId)
+                        ->orWhere('parent_id', $officeId)
+                        ->pluck('id');
+
+                $officeName = $officeId === 'all'
+                    ? 'All Offices (Consolidated)'
+                    : (Office::where('id', $officeId)->value('name') ?? '');
+
+                // PS detail rows from the breakdown computation.
+                $psTotals = [];
+
+                foreach ($officeIds as $oid) {
+                    foreach (
+                        PsBreakdownController::computePsCoaTotalsForOffice(
+                            (int) $oid,
+                            (int) $fyId,
+                        ) as $path => $amount
+                    ) {
+                        $psTotals[$path] = ($psTotals[$path] ?? 0) + $amount;
+                    }
+                }
+
+                $titles = ChartOfAccount::whereIn('path', array_keys($psTotals))
+                    ->pluck('account_title', 'path');
+
+                $psRows = collect($psTotals)
+                    ->map(fn ($amount, $path) => [
+                        'path' => $path,
+                        'title' => $titles[$path] ?? $path,
+                        'amount' => round((float) $amount, 2),
+                    ])
+                    ->sortBy('path')
+                    ->values();
+
+                // MOOE / CO / FE detail rows from PPMP lines, grouped by COA.
+                $months = [
+                    'jan',
+                    'feb',
+                    'mar',
+                    'apr',
+                    'may',
+                    'jun',
+                    'jul',
+                    'aug',
+                    'sep',
+                    'oct',
+                    'nov',
+                    'dec',
+                ];
+
+                $ppmpQuery = Ppmp::with(
+                    'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount',
+                )->whereHas('ppaFundingSource.aipEntry.ppa', function (
+                    $query,
+                ) use ($fyId, $officeIds) {
+                    $query->where('fiscal_year_id', $fyId)->whereIn(
+                        'office_id',
+                        $officeIds,
+                    );
+                });
+
+                if ($docIds !== null) {
+                    $ppmpQuery->whereHas(
+                        'ppaFundingSource.aipEntry',
+                        function ($q) use ($docIds) {
+                            $q->whereIn('aip_document_id', $docIds);
+                        },
+                    );
+                }
+
+                $classRows = ['MOOE' => [], 'CO' => [], 'FE' => []];
+
+                foreach ($ppmpQuery->get() as $ppmp) {
+                    $coa = $ppmp->ppmpPriceList
+                        ?->chartOfAccountPpmpCategory
+                        ?->chartOfAccount;
+
+                    if (! $coa || ! isset($classRows[$coa->expense_class])) {
+                        continue;
+                    }
+
+                    $amount = 0;
+
+                    foreach ($months as $m) {
+                        $amount += (float) ($ppmp->{"{$m}_amount"} ?? 0);
+                    }
+
+                    $path = $coa->path;
+
+                    if (! isset($classRows[$coa->expense_class][$path])) {
+                        $classRows[$coa->expense_class][$path] = [
+                            'path' => $path,
+                            'title' => $coa->account_title,
+                            'amount' => 0,
+                        ];
+                    }
+
+                    $classRows[$coa->expense_class][$path]['amount'] += $amount;
+                }
+
+                $toRows = fn (array $grouped) => collect($grouped)
+                    ->map(fn ($row) => [
+                        'path' => $row['path'],
+                        'title' => $row['title'],
+                        'amount' => round($row['amount'], 2),
+                    ])
+                    ->sortBy('path')
+                    ->values();
+
+                $mooeRows = $toRows($classRows['MOOE']);
+                $coRows = $toRows($classRows['CO']);
+                $feRows = $toRows($classRows['FE']);
+
+                $psTotal = (float) $psRows->sum('amount');
+                $mooeTotal = (float) $mooeRows->sum('amount');
+                $feTotal = (float) $feRows->sum('amount');
+                $coTotal = (float) $coRows->sum('amount');
+
+                return [
+                    'fiscalYear' => $fy->year,
+                    'officeName' => $officeName,
+                    'psRows' => $psRows,
+                    'psTotal' => round($psTotal, 2),
+                    'mooeRows' => $mooeRows,
+                    'mooeTotal' => round($mooeTotal, 2),
+                    'feRows' => $feRows,
+                    'feTotal' => round($feTotal, 2),
+                    'coRows' => $coRows,
+                    'coTotal' => round($coTotal, 2),
+                    'grandTotal' => round(
+                        $psTotal + $mooeTotal + $feTotal + $coTotal,
+                        2,
+                    ),
+                ];
             }),
         ]);
     }

@@ -112,7 +112,7 @@ const columns = [
     }),
     columnHelper.display({
         id: 'actions',
-        size: 120,
+        size: 86,
         cell: ({ row, table }) => {
             const initialStatus = row.original.status;
 

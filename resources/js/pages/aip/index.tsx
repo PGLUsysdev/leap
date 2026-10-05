@@ -40,6 +40,8 @@ import type {
     SharedData,
 } from '@/types';
 import columns from './columns/columns';
+import type { LbpForm2Data } from './pdf-render/lbp-form-2/lbp-form-2-preview-dialog';
+import LbpForm2PreviewDialog from './pdf-render/lbp-form-2/lbp-form-2-preview-dialog';
 import PdfPreviewDialog from './pdf-render/pdf-preview-dialog';
 
 const officeColumnHelper = createColumnHelper<Office>();
@@ -61,6 +63,7 @@ const officeColumns = [
 interface AipProps {
     fiscalYears: FiscalYear[];
     app: App | null;
+    lbp2: LbpForm2Data | null;
     offices: Office[];
     can?: {
         add: boolean;
@@ -88,6 +91,7 @@ const log = (...args: unknown[]) => {
 export default function AipPage({
     fiscalYears,
     app,
+    lbp2 = null,
     offices = [],
     can,
 }: AipProps) {
@@ -105,6 +109,8 @@ export default function AipPage({
 
     const [openFormDialog, setOpenFormDialog] = useState(false);
     const [openPdfPreviewDialog, setOpenPdfPreviewDialog] = useState(false);
+    const [openLbpForm2Dialog, setOpenLbpForm2Dialog] = useState(false);
+    const [isLbp2Reloading, setIsLbp2Reloading] = useState(false);
     const [selectedYear, setSelectedYear] = useState<FiscalYear | null>(null);
     const [selectedDoc, setSelectedDoc] = useState<AipDocument | null>(null);
     const [isAppReloading, setIsAppReloading] = useState(false);
@@ -313,6 +319,27 @@ export default function AipPage({
         });
     }
 
+    function handleOpenLbpForm2(fiscalYear: FiscalYear, doc: AipDocument) {
+        const officeId =
+            doc.office_id != null
+                ? String(doc.office_id)
+                : selectedOfficeId || String(auth.user.office_id ?? '');
+
+        setSelectedYear(fiscalYear);
+        setIsLbp2Reloading(true);
+
+        router.reload({
+            only: ['lbp2'],
+            data: {
+                lbp2_fiscal_year_id: fiscalYear.id,
+                lbp2_office_id: officeId,
+                lbp2_document_id: doc.id,
+            },
+            onSuccess: () => setOpenLbpForm2Dialog(true),
+            onFinish: () => setIsLbp2Reloading(false),
+        });
+    }
+
     function handleOpenDocumentPpmpSummary(
         fiscalYear: FiscalYear,
         doc: AipDocument,
@@ -418,6 +445,17 @@ export default function AipPage({
                                                             'supplemental'
                                                                 ? 'Generate SAPP'
                                                                 : 'Generate APP'}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() =>
+                                                                handleOpenLbpForm2(
+                                                                    row.original,
+                                                                    doc,
+                                                                )
+                                                            }
+                                                        >
+                                                            <FileText />
+                                                            LBP Form No. 2
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             disabled={
@@ -556,6 +594,14 @@ export default function AipPage({
                 onOfficeChange={handleAppOfficeChange}
                 isReloading={isAppReloading}
                 isSupplemental={selectedDoc?.kind === 'supplemental'}
+            />
+
+            <LbpForm2PreviewDialog
+                open={openLbpForm2Dialog}
+                onOpenChange={setOpenLbpForm2Dialog}
+                fiscalYear={selectedYear}
+                data={lbp2}
+                isReloading={isLbp2Reloading}
             />
         </>
     );

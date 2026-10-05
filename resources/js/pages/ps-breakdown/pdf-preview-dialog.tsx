@@ -219,8 +219,8 @@ const MyDocument = ({ sections, psComputationData }: MyDocumentProps) => {
     }[] = [
         { key: 'ps', label: 'PERSONAL SERVICES' },
         { key: 'mooe', label: 'MAINTENANCE AND OTHER OPERATING EXPENSES' },
-        { key: 'fe', label: 'FINANCIAL EXPENSES' },
         { key: 'co', label: 'CAPITAL OUTLAYS' },
+        { key: 'fe', label: 'FINANCIAL EXPENSES' },
     ];
 
     // If psComputationData is provided, compute PS section dynamically to
