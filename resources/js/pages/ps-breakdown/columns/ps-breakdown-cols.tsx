@@ -31,6 +31,9 @@ export default function getColumns(
         manualLookup.set(key, item.amount);
     }
 
+    // Dynamic columns come strictly from PS chart of accounts.
+    const psCoas = coas.filter((coa) => coa.expense_class === 'PS');
+
     const columns = [
         columnHelper.accessor('item_number', {
             size: 300,
@@ -121,7 +124,7 @@ export default function getColumns(
                 return <div className="px-1 text-right">{currency(total)}</div>;
             },
         }),
-        ...coas.map((coa) =>
+        ...psCoas.map((coa) =>
             columnHelper.display({
                 id: `coa_${coa.id}`,
                 size: 310,

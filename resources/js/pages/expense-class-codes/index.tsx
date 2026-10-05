@@ -6,6 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MultiTableSelect } from '@/components/multi-table-select';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
     Card,
     CardContent,
     CardDescription,
@@ -143,6 +153,10 @@ export default function ExpenseClassCodes({
     can,
 }: ExpenseClassCodesProps) {
     const [unlinkingId, setUnlinkingId] = useState<number | null>(null);
+    const [pendingUnlink, setPendingUnlink] = useState<{
+        coa: PostableCoa;
+        expenseClass: string;
+    } | null>(null);
 
     const linkedByClass = useMemo(() => {
         const next: Record<string, PostableCoa[]> = {};
@@ -167,15 +181,27 @@ export default function ExpenseClassCodes({
         [chartOfAccounts],
     );
 
-    function handleUnlink(coa: PostableCoa) {
+    function handleUnlinkRequest(coa: PostableCoa, expenseClass: string) {
         if (unlinkingId !== null) {
             return;
         }
 
-        setUnlinkingId(coa.id);
-        router.delete(destroy(coa.id).url, {
+        setPendingUnlink({ coa, expenseClass });
+    }
+
+    function confirmUnlink() {
+        if (pendingUnlink === null || unlinkingId !== null) {
+            return;
+        }
+
+        const coaId = pendingUnlink.coa.id;
+        setUnlinkingId(coaId);
+        router.delete(destroy(coaId).url, {
             preserveScroll: true,
-            onFinish: () => setUnlinkingId(null),
+            onFinish: () => {
+                setUnlinkingId(null);
+                setPendingUnlink(null);
+            },
         });
     }
 
@@ -266,8 +292,9 @@ export default function ExpenseClassCodes({
                                                                             coa.id
                                                                     }
                                                                     onClick={() =>
-                                                                        handleUnlink(
+                                                                        handleUnlinkRequest(
                                                                             coa,
+                                                                            info.class,
                                                                         )
                                                                     }
                                                                 >
@@ -336,6 +363,47 @@ export default function ExpenseClassCodes({
                 </div>
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
+
+            <AlertDialog
+                open={pendingUnlink !== null}
+                onOpenChange={(open) => {
+                    if (!open && unlinkingId === null) {
+                        setPendingUnlink(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Unlink account</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {pendingUnlink !== null ? (
+                                <>
+                                    Unlink{' '}
+                                    <span className="font-mono">
+                                        {pendingUnlink.coa.path}
+                                    </span>{' '}
+                                    — {pendingUnlink.coa.account_title} from{' '}
+                                    {pendingUnlink.expenseClass}? It will move
+                                    back to Unassigned and be ignored by the
+                                    funding source totals sync.
+                                </>
+                            ) : (
+                                'Unlink this account?'
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            disabled={unlinkingId !== null}
+                            onClick={confirmUnlink}
+                        >
+                            Unlink
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

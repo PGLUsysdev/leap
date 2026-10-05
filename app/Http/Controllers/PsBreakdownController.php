@@ -282,7 +282,7 @@ class PsBreakdownController extends Controller
 
         $chartOfAccounts = ChartOfAccount::where('expense_class', 'PS')
             ->where('is_active', true)
-            ->orderBy('account_number')
+            ->orderBy('path')
             ->get();
 
         $breakdownItems = collect();

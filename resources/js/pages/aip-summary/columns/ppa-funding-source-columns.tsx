@@ -333,9 +333,13 @@ const columns = [
                             </DropdownMenuGroup>
                             <DropdownMenuItem
                                 disabled={!poolLocked}
-                                onClick={() => {
-                                    console.log('to ps breakdown');
-                                }}
+                                onClick={() =>
+                                    (
+                                        meta?.onOpenPsBreakdown as
+                                            | ((id: number) => void)
+                                            | undefined
+                                    )?.(rowData.id)
+                                }
                                 title={
                                     !poolLocked
                                         ? 'PS Breakdown is only available for the PS Pool'

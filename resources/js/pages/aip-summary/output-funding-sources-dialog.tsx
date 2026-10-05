@@ -28,6 +28,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { index as ppmpIndex } from '@/routes/aip/summary/ppmp';
+import { index as psBreakdownIndex } from '@/routes/ps-breakdown';
 import { destroy, store } from '@/routes/aip-outputs/ppa-funding-sources';
 import { update } from '@/routes/ppa-funding-sources';
 import type { AipOutput, FundingSource, CcTypology } from '@/types';
@@ -222,6 +223,22 @@ export default function OutputFundingSourcesDialog({
                                             aipEntry: output.aip_entry_id,
                                             ppaFundingSource: fsId,
                                         }).url,
+                                        { method: 'get' },
+                                    );
+                                },
+                                onOpenPsBreakdown: (fsId: number) => {
+                                    router.visit(
+                                        psBreakdownIndex(
+                                            {
+                                                fiscalYear: fiscalYearId,
+                                                aipEntry: output.aip_entry_id,
+                                            },
+                                            {
+                                                query: {
+                                                    ppa_funding_source_id: fsId,
+                                                },
+                                            },
+                                        ).url,
                                         { method: 'get' },
                                     );
                                 },

@@ -37,6 +37,7 @@ declare module '@tanstack/react-table' {
         onDelete?: ((id: number) => void) | ((data: TData) => void);
         onDeletePpmpItem?: (item: Ppmp) => void;
         onOpenPpmp?: (id: number) => void;
+        onOpenPsBreakdown?: (id: number) => void;
         disabled?: boolean;
         year?: FiscalYear;
 
