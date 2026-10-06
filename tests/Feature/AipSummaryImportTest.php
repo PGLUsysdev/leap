@@ -20,8 +20,10 @@ use App\Models\User;
 function createImportUser(): User
 {
     $role = Role::create(['name' => 'import-tester']);
-    $permission = Permission::firstOrCreate(['name' => 'ppa.create']);
-    PermissionRole::create(['role_id' => $role->id, 'permission_id' => $permission->id]);
+    foreach (['imports.aip-summary', 'ppa.create'] as $name) {
+        $permission = Permission::firstOrCreate(['name' => $name]);
+        PermissionRole::create(['role_id' => $role->id, 'permission_id' => $permission->id]);
+    }
 
     return User::factory()->create(['role_id' => $role->id]);
 }
@@ -42,7 +44,7 @@ function createImportOffice(): Office
 function createOutputsUser(Office $office): User
 {
     $role = Role::create(['name' => 'outputs-tester']);
-    foreach (['aip-summary.edit', 'aip-summary.show.all'] as $name) {
+    foreach (['imports.aip-summary', 'aip-summary.edit', 'aip-summary.show.all'] as $name) {
         $permission = Permission::firstOrCreate(['name' => $name]);
         PermissionRole::create(['role_id' => $role->id, 'permission_id' => $permission->id]);
     }

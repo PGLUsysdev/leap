@@ -34,8 +34,10 @@ beforeEach(function () {
 function qtyImportUser(): User
 {
     $role = Role::create(['name' => 'qty-import-tester']);
-    $permission = Permission::firstOrCreate(['name' => 'ppmp.add.price-list']);
-    PermissionRole::create(['role_id' => $role->id, 'permission_id' => $permission->id]);
+    foreach (['imports.price-list-quantities', 'ppmp.add.price-list'] as $name) {
+        $permission = Permission::firstOrCreate(['name' => $name]);
+        PermissionRole::create(['role_id' => $role->id, 'permission_id' => $permission->id]);
+    }
 
     return User::factory()->create(['role_id' => $role->id]);
 }

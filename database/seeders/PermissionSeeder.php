@@ -134,6 +134,12 @@ class PermissionSeeder extends Seeder
             'expense-class-code.view',
             'expense-class-code.add',
             'expense-class-code.delete',
+            'imports.view',
+            'imports.category',
+            'imports.category-coa-mapping',
+            'imports.price-list',
+            'imports.price-list-quantities',
+            'imports.aip-summary',
         ];
 
         foreach ($names as $name) {

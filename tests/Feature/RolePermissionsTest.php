@@ -4,6 +4,8 @@ use App\Models\Permission;
 use App\Models\PermissionRole;
 use App\Models\Role;
 use App\Models\User;
+use App\Policies\ImportPolicy;
+use Database\Seeders\PermissionSeeder;
 
 function rolePermUser(array $permissionNames): User
 {
@@ -104,4 +106,21 @@ test('it forbids creating roles without role.add', function () {
     $user = rolePermUser(['role.view']);
 
     $this->actingAs($user)->post('/roles', ['name' => 'role-perm-no-add'])->assertForbidden();
+});
+
+test('it seeds a permission for every ability the import policy gates', function () {
+    $this->seed(PermissionSeeder::class);
+
+    foreach (ImportPolicy::ABILITIES as $ability => $name) {
+        expect(Permission::where('name', $name)->exists())
+            ->toBeTrue("PermissionSeeder is missing {$name}, which gates {$ability}.");
+    }
+});
+
+test('it lets a role holding imports.view reach the imports hub', function () {
+    $this->seed(PermissionSeeder::class);
+
+    $user = rolePermUser(['imports.view']);
+
+    $this->actingAs($user)->get('/imports')->assertOk();
 });
