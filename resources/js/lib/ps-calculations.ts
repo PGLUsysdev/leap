@@ -30,6 +30,35 @@ function isOccupied(pos: Position): boolean {
     return isBudgeted(pos) && pos.status === 'occupied';
 }
 
+/** Working days per month for daily-rate items (monthly rate / 22). */
+const WORKING_DAYS_PER_MONTH = 22;
+
+/**
+ * Service budgeted for a position whose actual service length is unknown.
+ * `positions` carries no appointment date, so every position is budgeted for
+ * a full year until a service-length source exists.
+ */
+const DEFAULT_MONTHS_OF_SERVICE = 12;
+
+/**
+ * Per-position months of service in the budget year, keyed by position id.
+ * Positions absent from the map are budgeted for a full year.
+ */
+export type PsMonthsOfService = Record<number, number>;
+
+/**
+ * Resolve a position's budgeted months of service, clamped to the 1-12 budget
+ * year. A position with no entry is assumed to serve the whole year.
+ */
+function monthsOfService(
+    pos: Position,
+    monthsOfServiceMap: PsMonthsOfService,
+): number {
+    const months = monthsOfServiceMap[pos.id] ?? DEFAULT_MONTHS_OF_SERVICE;
+
+    return Math.min(Math.max(months, 1), 12);
+}
+
 /**
  * Compute the budget-year (proposed) amount for a single position + COA combination,
  * matching the logic used in the PS Breakdown data table.
@@ -39,6 +68,7 @@ export function getCellNumericValue(
     coa: ChartOfAccount,
     rates: Record<string, number>,
     annualRateMap: Record<number, { current: number; budget: number }>,
+    monthsOfServiceMap: PsMonthsOfService = {},
 ): number | null {
     const budgetAnnualRate = annualRateMap[pos.id]?.budget ?? 0;
     const monthlyRate = budgetAnnualRate / 12;
@@ -55,13 +85,24 @@ export function getCellNumericValue(
                 ? budgetAnnualRate
                 : null;
         // 5-01-01-020 — Salaries & Wages - Casual/Contractual
-        // (hardcoded full annual; daily-rate proration needs days worked)
-        case '5-01-01-020':
-            return isBudgeted(pos) &&
-                (pos.employment_type === 'casual' ||
-                    pos.employment_type === 'contractual')
-                ? budgetAnnualRate
-                : null;
+        // Daily Wage Rate = Authorized Monthly Salary / 22 days
+        // Actual Pay     = Daily Wage Rate * Days Actually Worked
+        case '5-01-01-020': {
+            if (
+                !isBudgeted(pos) ||
+                (pos.employment_type !== 'casual' &&
+                    pos.employment_type !== 'contractual')
+            ) {
+                return null;
+            }
+
+            const dailyRate = monthlyRate / WORKING_DAYS_PER_MONTH;
+            const daysWorked =
+                monthsOfService(pos, monthsOfServiceMap) *
+                WORKING_DAYS_PER_MONTH;
+
+            return dailyRate * daysWorked;
+        }
         // 5-01-02-010 — PERA: flat monthly rate x 12
         case '5-01-02-010':
             return isOccupied(pos)
@@ -187,6 +228,7 @@ export function computePsCoaTotals(
     chartOfAccounts: ChartOfAccount[],
     rates: Record<string, number>,
     annualRateMap: Record<number, { current: number; budget: number }>,
+    monthsOfServiceMap: PsMonthsOfService = {},
 ): Record<string, number> {
     const totals: Record<string, number> = {};
 
@@ -198,7 +240,13 @@ export function computePsCoaTotals(
         let total = 0;
 
         for (const pos of positions) {
-            const val = getCellNumericValue(pos, coa, rates, annualRateMap);
+            const val = getCellNumericValue(
+                pos,
+                coa,
+                rates,
+                annualRateMap,
+                monthsOfServiceMap,
+            );
 
             if (val !== null) {
                 total += val;

@@ -5,18 +5,15 @@ use App\Models\ChartOfAccount;
 use App\Models\ChartOfAccountPpmpCategory;
 use App\Models\FiscalYear;
 use App\Models\FundingSource;
-use App\Models\Ios;
 use App\Models\Office;
 use App\Models\Permission;
 use App\Models\PermissionRole;
-use App\Models\Position;
 use App\Models\Ppa;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
 use App\Models\Role;
-use App\Models\SalaryStandard;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -36,27 +33,6 @@ test('it serves lbp form 2 data scoped to office and fiscal year', function () {
 
     $fy = FiscalYear::factory()->create(['status' => 'draft']);
     $office = Office::factory()->create();
-    $ios = Ios::create([
-        'occupational_service_code' => '11',
-        'occupational_group_code' => '001',
-        'class_id' => 'A',
-        'class' => 'Officer V',
-        'salary_grade' => 24,
-    ]);
-    Position::create([
-        'item_number' => 'LBP2-1',
-        'office_id' => $office->id,
-        'ios_id' => $ios->id,
-        'employment_type' => 'permanent',
-        'is_funded' => true,
-        'status' => 'occupied',
-    ]);
-    SalaryStandard::forceCreate([
-        'fiscal_year_id' => $fy->id,
-        'salary_grade' => 24,
-        'step_increment' => 1,
-        'monthly_rate' => 90000,
-    ]);
 
     $ppa = Ppa::create([
         'office_id' => $office->id,

@@ -1,9 +1,6 @@
-import { router } from '@inertiajs/react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Input } from '@/components/ui/input';
 import { getCellNumericValue } from '@/lib/ps-calculations';
 import type { ChartOfAccount, Position } from '@/types';
-import type { PsBreakdownItem } from '@/types';
 
 const columnHelper = createColumnHelper<Position>();
 
@@ -19,18 +16,10 @@ const currency = (value: string | number | null | undefined) => {
 
 export default function getColumns(
     coas: ChartOfAccount[],
-    breakdownItems: PsBreakdownItem[],
-    ppaFundingSourceId: number | null,
     rates: Record<string, number> = {},
     annualRateMap: Record<number, { current: number; budget: number }> = {},
+    monthsOfService: Record<number, number> = {},
 ) {
-    const manualLookup = new Map<string, string>();
-
-    for (const item of breakdownItems) {
-        const key = `${item.chart_of_account_id}`;
-        manualLookup.set(key, item.amount);
-    }
-
     // Dynamic columns come strictly from PS chart of accounts.
     const psCoas = coas.filter((coa) => coa.expense_class === 'PS');
 
@@ -137,48 +126,8 @@ export default function getColumns(
                         coa,
                         rates,
                         annualRateMap,
+                        monthsOfService,
                     );
-
-                    if (coa.is_manual) {
-                        const storedKey = `${coa.id}_${row.original.id}`;
-                        const storedValue = manualLookup.get(storedKey);
-
-                        return (
-                            <Input
-                                type="number"
-                                className="bg-background text-foreground focus:ring-primary w-full rounded border px-2 py-1 text-sm focus:ring-2 focus:outline-none"
-                                defaultValue={storedValue ?? ''}
-                                placeholder="0.00"
-                                onBlur={(e) => {
-                                    const parsed = Number(e.target.value);
-                                    const newValue =
-                                        e.target.value === '' || isNaN(parsed)
-                                            ? null
-                                            : parsed;
-
-                                    if (
-                                        ppaFundingSourceId &&
-                                        newValue !== null
-                                    ) {
-                                        router.post(
-                                            '/ps-breakdown-items',
-                                            {
-                                                ppa_funding_source_id:
-                                                    ppaFundingSourceId,
-                                                chart_of_account_id: coa.id,
-                                                position_id: row.original.id,
-                                                amount: newValue,
-                                            },
-                                            {
-                                                preserveState: true,
-                                                preserveScroll: true,
-                                            },
-                                        );
-                                    }
-                                }}
-                            />
-                        );
-                    }
 
                     return value !== null ? (
                         <div className="px-1 text-right text-wrap">
@@ -189,39 +138,21 @@ export default function getColumns(
                     );
                 },
                 footer: ({ table }) => {
-                    let total;
-
-                    if (coa.is_manual) {
-                        total = breakdownItems
-                            .filter(
-                                (item) => item.chart_of_account_id === coa.id,
-                            )
-                            .reduce(
-                                (sum, item) => sum + parseFloat(item.amount),
-                                0,
+                    const total = table
+                        .getCoreRowModel()
+                        .rows.reduce((sum, row) => {
+                            const val = getCellNumericValue(
+                                row.original,
+                                coa,
+                                rates,
+                                annualRateMap,
+                                monthsOfService,
                             );
-                    } else {
-                        total = table
-                            .getCoreRowModel()
-                            .rows.reduce((sum, row) => {
-                                const val = getCellNumericValue(
-                                    row.original,
-                                    coa,
-                                    rates,
-                                    annualRateMap,
-                                );
 
-                                return sum + (val ?? 0);
-                            }, 0);
-                    }
+                            return sum + (val ?? 0);
+                        }, 0);
 
-                    return (
-                        <div className="px-1 text-right">
-                            {coa.is_manual && total <= 0
-                                ? '—'
-                                : currency(total)}
-                        </div>
-                    );
+                    return <div className="px-1 text-right">{currency(total)}</div>;
                 },
             }),
         ),

@@ -409,23 +409,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //     'salary-standard.index',
     // );
 
-    // ps breakdown (re-activated; PS amounts are managed manually through
-    // the funding sources dialog on PS Pool PPAs only)
+    // ps breakdown (mock-data driven; personnel data arrives from the API)
     Route::get('/aip/{fiscalYear}/summary/{aipEntry}/ps-breakdown', [
         PsBreakdownController::class,
         'index',
     ])->name('ps-breakdown.index');
-    // Route::post('/ps-breakdown-items', [PsBreakdownController::class, 'store'])->name(
-    //     'ps-breakdown-items.store',
-    // );
-    // Route::delete('/ps-breakdown-items/{psBreakdownItem}', [
-    //     PsBreakdownController::class,
-    //     'destroy',
-    // ])->name('ps-breakdown-items.destroy');
-    // Route::post('/ps-breakdown-items/recalculate', [
-    //     PsBreakdownController::class,
-    //     'recalculate',
-    // ])->name('ps-breakdown-items.recalculate');
 
     // --- Imports Hub + all importers ---
     Route::get('imports', [ImportsController::class, 'index'])->name('imports.index');
