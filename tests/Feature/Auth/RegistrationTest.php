@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
@@ -12,7 +13,7 @@ test('registration screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('new users can register', function () {
+test('it creates a pending account and signs the new user out', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -20,6 +21,10 @@ test('new users can register', function () {
         'password_confirmation' => 'password',
     ]);
 
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    // New accounts await administrator approval, so they cannot sign in yet.
+    expect(User::where('email', 'test@example.com')->sole()->status)->toBe('pending');
+
+    $this->assertGuest();
+    $response->assertRedirect(route('register', absolute: false))
+        ->assertSessionHas('status', 'awaiting-approval');
 });

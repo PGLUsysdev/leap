@@ -45,11 +45,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::redirect('/', '/login');
-// Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('home', fn () => Inertia::render('home'));
 
     Route::get('test-combobox', fn () => Inertia::render('test-combobox'));
 });
