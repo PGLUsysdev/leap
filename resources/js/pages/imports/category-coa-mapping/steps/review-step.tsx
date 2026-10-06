@@ -1,7 +1,8 @@
 // resources/js/pages/imports/category-coa-mapping/steps/review-step.tsx
 
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Check, Plus, X } from 'lucide-react';
+import { AlertTriangle, Plus } from 'lucide-react';
+import DataTable from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,14 +14,6 @@ import {
     ComboboxList,
 } from '@/components/ui/combobox';
 import { Spinner } from '@/components/ui/spinner';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { TabsContent } from '@/components/ui/tabs';
 import {
     formatCoaOption,
@@ -29,32 +22,16 @@ import {
 } from '@/lib/ppmp/batch-match';
 import { cn } from '@/lib/utils';
 import { index as categoryImportIndex } from '@/routes/category-import';
-import type { CategoryCoaMappingState, EffectiveVerifiedPair } from '../types';
-
-type PairFilter = 'all' | 'creatable' | 'missingCat' | 'missingCoa' | 'exists';
-
-type RowStatus = 'creatable' | 'missingCat' | 'missingCoa' | 'exists';
-
-/** Display labels drop the `coa:<id>:` machine prefix from option values. */
-function stripCoaPrefix(option: string): string {
-    return option.replace(/^coa:\d+:/, '');
-}
-
-function rowStatus(p: EffectiveVerifiedPair): RowStatus {
-    if (!p.catExists) return 'missingCat';
-    if (!p.effectiveCoaExists) return 'missingCoa';
-    if (p.effectiveMappingExists) return 'exists';
-
-    return 'creatable';
-}
-
-const ROW_TINT: Record<RowStatus, string> = {
-    creatable:
-        'bg-amber-50/40 hover:bg-amber-50/70 dark:bg-amber-950/10 dark:hover:bg-amber-950/20',
-    missingCat: 'bg-destructive/5 hover:bg-destructive/10',
-    missingCoa: 'bg-destructive/5 hover:bg-destructive/10',
-    exists: 'opacity-70 hover:opacity-100',
-};
+import columns, {
+    ROW_TINT,
+    rowStatus,
+    stripCoaPrefix,
+    type PairFilter,
+} from '../data-table/columns';
+import type {
+    CategoryCoaMappingState,
+    CategoryCoaReviewTableMeta,
+} from '../types';
 
 export function ReviewStep({ s }: { s: CategoryCoaMappingState }) {
     const {
@@ -150,6 +127,16 @@ export function ReviewStep({ s }: { s: CategoryCoaMappingState }) {
             setCoaOverrides((prev) => ({ ...prev, [rowKey]: id }));
         }
     }
+
+    const reviewTableMeta: CategoryCoaReviewTableMeta = useMemo(
+        () => ({
+            allCoaLabels,
+            onCoaPick: handleCoaPick,
+            onClearOverride: handleClearOverride,
+        }),
+        // biome-ignore lint/correctness/useExhaustiveDependencies: handlers close over these
+        [allCoaLabels, coaLabelToId, handleClearOverride],
+    );
 
     if (!effectiveVerification) {
         return (
@@ -369,327 +356,21 @@ export function ReviewStep({ s }: { s: CategoryCoaMappingState }) {
             )}
 
             {/* ── Table ─────────────────────────────────────────────── */}
-            <div className="overflow-hidden rounded-lg border">
-                <div className="max-h-[65vh] overflow-auto">
-                    <Table>
-                        <TableHeader className="bg-background sticky top-0 z-10 shadow-[inset_0_-1px_0_hsl(var(--border))]">
-                            <TableRow>
-                                <TableHead className="w-[22%]">
-                                    Category
-                                </TableHead>
-                                <TableHead className="min-w-[340px]">
-                                    COA
-                                </TableHead>
-                                <TableHead className="w-[10%]">
-                                    Section
-                                </TableHead>
-                                <TableHead className="w-[6%] text-right">
-                                    Items
-                                </TableHead>
-                                <TableHead className="w-[16%]">
-                                    Status
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredPairs.length === 0 ? (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={5}
-                                        className="text-muted-foreground p-10 text-center text-sm"
-                                    >
-                                        {counts.total === 0
-                                            ? 'No Category ↔ COA pairs extracted.'
-                                            : 'No pairs match this filter.'}
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredPairs.map((p) => {
-                                    const status = rowStatus(p);
-                                    const suggestedLabels = p.coaTopMatches.map(
-                                        (m) =>
-                                            stripCoaPrefix(
-                                                formatCoaOption(m.coa),
-                                            ),
-                                    );
-                                    const suggestedSet = new Set(
-                                        suggestedLabels,
-                                    );
-                                    const itemsForRow = [
-                                        ...suggestedLabels,
-                                        ...allCoaLabels.filter(
-                                            (l) => !suggestedSet.has(l),
-                                        ),
-                                    ];
-                                    const selectedDisplay = p.effectiveCoa
-                                        ? stripCoaPrefix(
-                                              formatCoaOption(p.effectiveCoa),
-                                          )
-                                        : '';
-
-                                    return (
-                                        <TableRow
-                                            key={p.key}
-                                            className={cn(ROW_TINT[status])}
-                                        >
-                                            {/* Category */}
-                                            <TableCell className="align-top">
-                                                <div className="flex items-start gap-2">
-                                                    {p.catExists ? (
-                                                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600" />
-                                                    ) : (
-                                                        <X className="text-destructive mt-0.5 h-3.5 w-3.5 shrink-0" />
-                                                    )}
-                                                    <div className="min-w-0">
-                                                        <div
-                                                            className="truncate text-sm font-medium"
-                                                            title={p.category}
-                                                        >
-                                                            {p.category}
-                                                        </div>
-                                                        <div className="text-muted-foreground text-[11px]">
-                                                            {p.catExists &&
-                                                            p.catId !== null
-                                                                ? `id ${p.catId}`
-                                                                : `row ${p.catRow} · not in DB`}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-
-                                            {/* COA */}
-                                            <TableCell className="align-top">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <div className="flex items-center gap-1.5 text-[11px]">
-                                                        <span className="text-muted-foreground shrink-0">
-                                                            Excel:
-                                                        </span>
-                                                        <span
-                                                            className="truncate font-mono"
-                                                            title={p.coa}
-                                                        >
-                                                            {p.coa}
-                                                        </span>
-                                                        {p.coaExists ? (
-                                                            <Check className="h-3 w-3 shrink-0 text-green-600" />
-                                                        ) : p.coaMatchType ===
-                                                          'partial' ? (
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="h-4 shrink-0 px-1 text-[10px]"
-                                                            >
-                                                                partial
-                                                            </Badge>
-                                                        ) : (
-                                                            <X className="text-destructive h-3 w-3 shrink-0" />
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex items-center gap-1">
-                                                        <Combobox
-                                                            items={itemsForRow}
-                                                            value={
-                                                                selectedDisplay
-                                                            }
-                                                            onValueChange={(
-                                                                val,
-                                                            ) =>
-                                                                handleCoaPick(
-                                                                    p.key,
-                                                                    val as
-                                                                        | string
-                                                                        | null,
-                                                                )
-                                                            }
-                                                        >
-                                                            <ComboboxInput
-                                                                placeholder={
-                                                                    p.coaMatchType ===
-                                                                    'partial'
-                                                                        ? 'Suggested at top — search COA…'
-                                                                        : 'Search COA…'
-                                                                }
-                                                                className="h-8 w-full text-xs"
-                                                            />
-                                                            <ComboboxContent>
-                                                                <ComboboxEmpty>
-                                                                    No COA
-                                                                    found.
-                                                                </ComboboxEmpty>
-                                                                <ComboboxList>
-                                                                    {(
-                                                                        item: string,
-                                                                    ) => {
-                                                                        const isSuggested =
-                                                                            suggestedSet.has(
-                                                                                item,
-                                                                            );
-                                                                        return (
-                                                                            <ComboboxItem
-                                                                                key={
-                                                                                    item
-                                                                                }
-                                                                                value={
-                                                                                    item
-                                                                                }
-                                                                                className={
-                                                                                    isSuggested
-                                                                                        ? 'font-medium'
-                                                                                        : ''
-                                                                                }
-                                                                            >
-                                                                                {isSuggested
-                                                                                    ? '★ '
-                                                                                    : ''}
-                                                                                {
-                                                                                    item
-                                                                                }
-                                                                            </ComboboxItem>
-                                                                        );
-                                                                    }}
-                                                                </ComboboxList>
-                                                            </ComboboxContent>
-                                                        </Combobox>
-                                                        {p.overrideId !==
-                                                            null && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 shrink-0"
-                                                                title="Clear override"
-                                                                onClick={() =>
-                                                                    handleClearOverride(
-                                                                        p.key,
-                                                                    )
-                                                                }
-                                                            >
-                                                                <X className="h-3.5 w-3.5" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-
-                                                    {p.effectiveCoa ? (
-                                                        <div
-                                                            className="truncate text-xs text-green-600"
-                                                            title={`${p.effectiveCoa.path} — ${p.effectiveCoa.account_title}`}
-                                                        >
-                                                            →{' '}
-                                                            {
-                                                                p.effectiveCoa
-                                                                    .path
-                                                            }{' '}
-                                                            —{' '}
-                                                            {
-                                                                p.effectiveCoa
-                                                                    .account_title
-                                                            }
-                                                            {p.overrideId !==
-                                                                null && (
-                                                                <span className="ml-1 text-amber-600">
-                                                                    (override)
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ) : p.coaTopMatches.length >
-                                                      0 ? (
-                                                        <div
-                                                            className="text-muted-foreground truncate text-xs"
-                                                            title={p.coaTopMatches
-                                                                .map(
-                                                                    (m) =>
-                                                                        `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
-                                                                )
-                                                                .join(' | ')}
-                                                        >
-                                                            Suggest:{' '}
-                                                            {
-                                                                p
-                                                                    .coaTopMatches[0]
-                                                                    .coa.path
-                                                            }{' '}
-                                                            —{' '}
-                                                            {
-                                                                p
-                                                                    .coaTopMatches[0]
-                                                                    .coa
-                                                                    .account_title
-                                                            }
-                                                        </div>
-                                                    ) : null}
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Section */}
-                                            <TableCell className="text-muted-foreground align-top text-xs">
-                                                <div
-                                                    className="truncate"
-                                                    title={p.section}
-                                                >
-                                                    {p.section}
-                                                </div>
-                                                <div className="text-[10px]">
-                                                    coa row {p.coaRow}
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Items */}
-                                            <TableCell className="text-right align-top text-xs tabular-nums">
-                                                {p.items}
-                                            </TableCell>
-
-                                            {/* Status */}
-                                            <TableCell className="align-top">
-                                                {status === 'creatable' && (
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="border-amber-500 text-amber-700 dark:text-amber-400"
-                                                    >
-                                                        <Plus className="mr-1 h-3 w-3" />
-                                                        Not mapped
-                                                    </Badge>
-                                                )}
-                                                {status === 'exists' && (
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="border-green-600 text-green-700 dark:text-green-400"
-                                                    >
-                                                        <Check className="mr-1 h-3 w-3" />
-                                                        Mapped
-                                                    </Badge>
-                                                )}
-                                                {status === 'missingCat' && (
-                                                    <div className="flex flex-col gap-1">
-                                                        <Badge variant="destructive">
-                                                            <X className="mr-1 h-3 w-3" />
-                                                            No category
-                                                        </Badge>
-                                                        <a
-                                                            href={
-                                                                categoryImportIndex()
-                                                                    .url
-                                                            }
-                                                            className="text-[11px] underline"
-                                                        >
-                                                            Category Import →
-                                                        </a>
-                                                    </div>
-                                                )}
-                                                {status === 'missingCoa' && (
-                                                    <Badge variant="destructive">
-                                                        <X className="mr-1 h-3 w-3" />
-                                                        Pick a COA
-                                                    </Badge>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </div>
-
+            <DataTable
+                data={filteredPairs}
+                columns={columns}
+                meta={reviewTableMeta}
+                withColgroup
+                className="h-[65vh]"
+                getRowClassName={({ original }) =>
+                    ROW_TINT[rowStatus(original)]
+                }
+                emptyState={
+                    counts.total === 0
+                        ? 'No Category ↔ COA pairs extracted.'
+                        : 'No pairs match this filter.'
+                }
+            />
             {/* ── Sticky bulk action bar ─────────────────────────────── */}
             <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10 flex flex-wrap items-center gap-3 rounded-lg border p-3 backdrop-blur">
                 <Button

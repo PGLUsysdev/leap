@@ -2,6 +2,7 @@
 
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import type ExcelJS from 'exceljs';
+import type { TableMeta } from '@tanstack/react-table';
 import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
 import type { RawSheet } from '@/lib/raw-extract';
 import type { ExtractedCoaGroup } from '@/lib/ppmp/batch-match';
@@ -93,6 +94,17 @@ export type ExistingPriceList = {
     unit_of_measurement: string;
     price: string;
     chart_of_account_ppmp_category_id: number;
+};
+
+export type PriceListReviewTableMeta = TableMeta<VerifiedItem> & {
+    /** Row keys the user has ticked. Survives paging. */
+    selected: Set<string>;
+    setSelected: Dispatch<SetStateAction<Set<string>>>;
+    /** Every COA available to the per-row override combobox. */
+    existingCoas: ExistingCoa[];
+    onCoaOverrideChange: (rowKey: string, selectedValue: string | null) => void;
+    onClearOverride: (rowKey: string) => void;
+    onTruncateDescription: (rowKey: string) => void;
 };
 
 export type PriceListImportState = {

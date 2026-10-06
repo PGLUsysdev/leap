@@ -91,6 +91,18 @@ interface TableProps<TData> {
      */
     pageSize?: number;
 
+    /**
+     * Extra classes for a row, merged after the built-in variant /
+     * selected / disabled classes. Use for per-row status tints.
+     */
+    getRowClassName?: (row: Row<TData>) => string | undefined;
+
+    /**
+     * Rendered in place of the body rows when there is nothing to show.
+     * The fallback cell spans every visible column.
+     */
+    emptyState?: ReactNode;
+
     withRowSpan?: boolean;
 
     withColgroup?: boolean;
@@ -152,6 +164,8 @@ export default function Table<TData>({
     defaultExpanded = true,
     showFooter = false,
     pageSize,
+    getRowClassName,
+    emptyState,
 
     withRowSpan = false,
     withColgroup = false,
@@ -268,7 +282,8 @@ export default function Table<TData>({
     // TanStack v8 expansion: sub-rows via getSubRows render as child
     // rows; renderSubComponent renders a detail panel below the row.
     const [expanded, setExpanded] = useState<ExpandedState>(defaultExpanded);
-    const expandable = !!getSubRows || !!renderSubComponent || !!getRowCanExpand;
+    const expandable =
+        !!getSubRows || !!renderSubComponent || !!getRowCanExpand;
 
     // table
     const table = useReactTable({
@@ -480,6 +495,18 @@ export default function Table<TData>({
                             })}
                         </TableHeader>
                         <TableBody>
+                            {rows.length === 0 && emptyState && (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={
+                                            table.getVisibleLeafColumns().length
+                                        }
+                                        className="text-muted-foreground p-10 text-center text-sm"
+                                    >
+                                        {emptyState}
+                                    </TableCell>
+                                </TableRow>
+                            )}
                             {rows.map((row, rowIndex) => {
                                 const isSelected =
                                     selectedKey &&
@@ -501,6 +528,7 @@ export default function Table<TData>({
                                                 isSelected && 'bg-primary',
                                                 isDisabled &&
                                                     'cursor-not-allowed opacity-50',
+                                                getRowClassName?.(row),
                                             )}
                                             onClick={() => {
                                                 if (
@@ -511,84 +539,98 @@ export default function Table<TData>({
                                                 }
                                             }}
                                         >
-                                        {row.getVisibleCells().map((cell) => {
-                                            const columnMeta = cell.column
-                                                .columnDef.meta as any;
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell) => {
+                                                    const columnMeta = cell
+                                                        .column.columnDef
+                                                        .meta as any;
 
-                                            const isSpannedColumn =
-                                                withRowSpan &&
-                                                columnMeta?.rowSpan;
+                                                    const isSpannedColumn =
+                                                        withRowSpan &&
+                                                        columnMeta?.rowSpan;
 
-                                            const rowData = row.original as any;
+                                                    const rowData =
+                                                        row.original as any;
 
-                                            let isFirstVisible = true;
-                                            let spanSize: number | undefined =
-                                                1;
+                                                    let isFirstVisible = true;
+                                                    let spanSize:
+                                                        | number
+                                                        | undefined = 1;
 
-                                            if (isSpannedColumn) {
-                                                const spanKey: string =
-                                                    columnMeta?.spanKey ?? 'id';
-                                                const spanData =
-                                                    visibleSpans[
-                                                        cell.column.id
-                                                    ];
-                                                const rawKey =
-                                                    rowData?.[spanKey];
-                                                const key =
-                                                    rawKey === undefined ||
-                                                    rawKey === null
-                                                        ? null
-                                                        : String(rawKey);
+                                                    if (isSpannedColumn) {
+                                                        const spanKey: string =
+                                                            columnMeta?.spanKey ??
+                                                            'id';
+                                                        const spanData =
+                                                            visibleSpans[
+                                                                cell.column.id
+                                                            ];
+                                                        const rawKey =
+                                                            rowData?.[spanKey];
+                                                        const key =
+                                                            rawKey ===
+                                                                undefined ||
+                                                            rawKey === null
+                                                                ? null
+                                                                : String(
+                                                                      rawKey,
+                                                                  );
 
-                                                if (key !== null && spanData) {
-                                                    isFirstVisible =
-                                                        spanData
-                                                            .firstVisibleIdx[
-                                                            key
-                                                        ] === rowIndex;
-                                                    spanSize =
-                                                        spanData.visibleCounts[
-                                                            key
-                                                        ] ?? 1;
-                                                }
-                                            }
-
-                                            if (
-                                                isSpannedColumn &&
-                                                !isFirstVisible
-                                            ) {
-                                                return null;
-                                            }
-
-                                            return (
-                                                <TableCell
-                                                    key={cell.id}
-                                                    rowSpan={
-                                                        isSpannedColumn
-                                                            ? spanSize
-                                                            : 1
+                                                        if (
+                                                            key !== null &&
+                                                            spanData
+                                                        ) {
+                                                            isFirstVisible =
+                                                                spanData
+                                                                    .firstVisibleIdx[
+                                                                    key
+                                                                ] === rowIndex;
+                                                            spanSize =
+                                                                spanData
+                                                                    .visibleCounts[
+                                                                    key
+                                                                ] ?? 1;
+                                                        }
                                                     }
-                                                    style={{
-                                                        width: `${cell.column.getSize()}px`,
-                                                        ...getCommonPinningStyles(
-                                                            cell.column,
-                                                            table,
-                                                        ),
-                                                    }}
-                                                    className={cn(
-                                                        'border p-1 px-2 first:border-l-0 last:border-r-0',
-                                                        cell.column.getIsPinned() &&
-                                                            'bg-background/95',
-                                                    )}
-                                                >
-                                                    {flexRender(
-                                                        cell.column.columnDef
-                                                            .cell,
-                                                        cell.getContext(),
-                                                    )}
-                                                </TableCell>
-                                            );
-                                        })}
+
+                                                    if (
+                                                        isSpannedColumn &&
+                                                        !isFirstVisible
+                                                    ) {
+                                                        return null;
+                                                    }
+
+                                                    return (
+                                                        <TableCell
+                                                            key={cell.id}
+                                                            rowSpan={
+                                                                isSpannedColumn
+                                                                    ? spanSize
+                                                                    : 1
+                                                            }
+                                                            style={{
+                                                                width: `${cell.column.getSize()}px`,
+                                                                ...getCommonPinningStyles(
+                                                                    cell.column,
+                                                                    table,
+                                                                ),
+                                                            }}
+                                                            className={cn(
+                                                                'border p-1 px-2 first:border-l-0 last:border-r-0',
+                                                                cell.column.getIsPinned() &&
+                                                                    'bg-background/95',
+                                                            )}
+                                                        >
+                                                            {flexRender(
+                                                                cell.column
+                                                                    .columnDef
+                                                                    .cell,
+                                                                cell.getContext(),
+                                                            )}
+                                                        </TableCell>
+                                                    );
+                                                })}
                                         </TableRow>
                                         {renderSubComponent &&
                                         row.getIsExpanded() ? (

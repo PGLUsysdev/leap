@@ -2,6 +2,7 @@
 
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import type ExcelJS from 'exceljs';
+import type { TableMeta } from '@tanstack/react-table';
 import type { CategoryCoaSheetConfig } from '@/lib/ppmp/sheet-config';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
@@ -28,6 +29,14 @@ export type {
     ExtractedPair,
     VerificationState,
     VerifiedPair,
+};
+
+export type CategoryCoaReviewTableMeta = TableMeta<EffectiveVerifiedPair> & {
+    /** Every display label available to the per-row COA combobox. */
+    allCoaLabels: string[];
+    /** Row key + picked display label (or null to clear the override). */
+    onCoaPick: (rowKey: string, value: string | null) => void;
+    onClearOverride: (rowKey: string) => void;
 };
 
 export type CategoryCoaMappingState = {

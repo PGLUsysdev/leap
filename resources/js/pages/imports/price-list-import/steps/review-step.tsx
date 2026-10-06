@@ -24,20 +24,9 @@
 // State lives in the parent (PriceListImportState). This file is a view.
 
 import { Link } from '@inertiajs/react';
-import { useEffect, useState, type ReactNode } from 'react';
-import {
-    AlertCircle,
-    AlertTriangle,
-    Check,
-    ChevronLeft,
-    ChevronRight,
-    ChevronsLeft,
-    ChevronsRight,
-    Minus,
-    Pencil,
-    RefreshCw,
-    X,
-} from 'lucide-react';
+import { useMemo, type ReactNode } from 'react';
+import { AlertCircle, AlertTriangle, Check } from 'lucide-react';
+import DataTable from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -49,42 +38,28 @@ import {
     ComboboxItem,
     ComboboxList,
 } from '@/components/ui/combobox';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { TabsContent } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { formatCoaOption } from '@/lib/ppmp/batch-match';
 import type { ExtractedCoaGroup } from '@/lib/ppmp/batch-match';
 import { cn } from '@/lib/utils';
+import columns, {
+    PAGE_SIZE,
+    rowClassName,
+    stripCoaPrefix,
+} from '../data-table/columns';
 import type {
     PriceListImportState,
+    PriceListReviewTableMeta,
     ReviewFilter,
     VerifiedItem,
 } from '../types';
 
 // ─── constants ──────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 50;
-
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 type ExistingCoa = PriceListImportState['existingCoas'][number];
-
-/** A row is selectable iff it can actually be imported. */
-function isSelectable(v: VerifiedItem): boolean {
-    return v.status !== 'error' && v.status !== 'skipped';
-}
-
-/** Strip the `coa:<id>:` machine prefix from a formatted COA option. */
-function stripCoaPrefix(option: string): string {
-    return option.replace(/^coa:\d+:/, '');
-}
 
 /**
  * Human-facing COA label: `<path> — <account_title>`, without the
@@ -94,16 +69,6 @@ function stripCoaPrefix(option: string): string {
  */
 function formatCoaLabel(coa: ExistingCoa): string {
     return stripCoaPrefix(formatCoaOption(coa));
-}
-
-function parseCoaId(option: string): number | null {
-    const m = option.match(/^coa:(\d+):/);
-
-    return m ? Number(m[1]) : null;
-}
-
-function formatMoney(price: number | null): string {
-    return price !== null ? `₱${price.toLocaleString()}` : '—';
 }
 
 /**
@@ -122,45 +87,17 @@ function buildCoaItems(suggested: ExistingCoa[], all: ExistingCoa[]): string[] {
 // ─── root ───────────────────────────────────────────────────────────────────
 
 export function ReviewStep({ s }: { s: PriceListImportState }) {
-    const [pageIndex, setPageIndex] = useState(0);
-
-    // Reset to first page whenever the filter changes — the row set (and
-    // therefore the page count) may shrink.
-    useEffect(() => {
-        setPageIndex(0);
-    }, [s.reviewFilter]);
-
     if (s.verifiedItems.length === 0) {
         return <EmptyState />;
     }
-
-    const totalRows = s.filteredItems.length;
-    const pageCount = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
-    // Clamp in render: if an override/fix shrinks filteredItems while the
-    // user is on a high page, `pageIndex` can be out of range. `safePage`
-    // keeps the view valid without a state update.
-    const safePage = Math.min(pageIndex, pageCount - 1);
-    const pageItems = s.filteredItems.slice(
-        safePage * PAGE_SIZE,
-        (safePage + 1) * PAGE_SIZE,
-    );
 
     return (
         <TabsContent value="review" className="mt-4 flex flex-col gap-4">
             <SummaryBar s={s} />
             {s.batchGroups.length > 0 && <BatchMatchPanel s={s} />}
             <FilterNote filter={s.reviewFilter} s={s} />
-            <ItemsTable s={s} pageItems={pageItems} />
-            <ImportFooter
-                s={s}
-                pagination={{
-                    pageIndex: safePage,
-                    pageCount,
-                    pageSize: PAGE_SIZE,
-                    totalRows,
-                    onPageChange: setPageIndex,
-                }}
-            />
+            <ItemsTable s={s} />
+            <ImportFooter s={s} />
         </TabsContent>
     );
 }
@@ -653,91 +590,42 @@ function FilterNote({
 
 // ─── items table ────────────────────────────────────────────────────────────
 
-function ItemsTable({
-    s,
-    pageItems,
-}: {
-    s: PriceListImportState;
-    pageItems: VerifiedItem[];
-}) {
+function ItemsTable({ s }: { s: PriceListImportState }) {
     const { filteredItems, selected, setSelected, reviewFilter } = s;
 
-    // Select-all operates on the full filtered set (across pages), matching
-    // the pre-pagination behavior. The header checkbox reflects the whole
-    // set, not just the current page — so a user clicking "select all" once
-    // doesn't have to repeat it on every page.
-    const selectable = filteredItems.filter(isSelectable);
-    const allSelected =
-        selectable.length > 0 && selectable.every((v) => selected.has(v.key));
-    const someSelected = selectable.some((v) => selected.has(v.key));
-
-    function toggleAll(select: boolean) {
-        setSelected((prev) => {
-            const next = new Set(prev);
-
-            if (select) {
-                for (const v of selectable) next.add(v.key);
-            } else {
-                for (const v of filteredItems) next.delete(v.key);
-            }
-
-            return next;
-        });
-    }
+    // Selection is keyed on `key`, so it survives paging. Select-all is
+    // computed against the whole filtered set (see the `select` column), so
+    // clicking it once doesn't have to be repeated on every page.
+    const tableMeta: PriceListReviewTableMeta = useMemo(
+        () => ({
+            selected,
+            setSelected,
+            existingCoas: s.existingCoas,
+            onCoaOverrideChange: s.handleCoaOverrideChange,
+            onClearOverride: s.handleClearOverride,
+            onTruncateDescription: s.handleTruncateDescription,
+        }),
+        [
+            selected,
+            setSelected,
+            s.existingCoas,
+            s.handleCoaOverrideChange,
+            s.handleClearOverride,
+            s.handleTruncateDescription,
+        ],
+    );
 
     return (
-        <div className="overflow-hidden rounded-lg border">
-            <div className="max-h-[65vh] overflow-auto">
-                <Table>
-                    <TableHeader className="bg-muted/50 sticky top-0 z-10 backdrop-blur">
-                        <TableRow>
-                            <TableHead className="w-10">
-                                <Checkbox
-                                    checked={
-                                        allSelected
-                                            ? true
-                                            : someSelected
-                                              ? 'indeterminate'
-                                              : false
-                                    }
-                                    onCheckedChange={(v) =>
-                                        toggleAll(v === true)
-                                    }
-                                    aria-label="Select all importable rows"
-                                    title={`Select all ${selectable.length} importable row${selectable.length === 1 ? '' : 's'} across all pages`}
-                                />
-                            </TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead className="w-[16%]">Category</TableHead>
-                            <TableHead className="min-w-[340px]">
-                                COA (Excel → DB)
-                            </TableHead>
-                            <TableHead className="w-[8%]">Unit</TableHead>
-                            <TableHead className="w-[10%] text-right">
-                                Price
-                            </TableHead>
-                            <TableHead className="w-[20%]">Status</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {pageItems.length === 0 ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={7}
-                                    className="text-muted-foreground p-10 text-center text-sm"
-                                >
-                                    {emptyMessageFor(reviewFilter)}
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            pageItems.map((it) => (
-                                <ItemRow key={it.key} item={it} s={s} />
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-        </div>
+        <DataTable
+            data={filteredItems}
+            columns={columns}
+            meta={tableMeta}
+            getRowClassName={({ original }) => rowClassName(original)}
+            emptyState={emptyMessageFor(reviewFilter)}
+            pageSize={PAGE_SIZE}
+            withColgroup
+            className="h-[65vh]"
+        />
     );
 }
 
@@ -754,388 +642,9 @@ function emptyMessageFor(filter: ReviewFilter): ReactNode {
     return 'No items match filter.';
 }
 
-// ─── single row ─────────────────────────────────────────────────────────────
-
-function ItemRow({ item, s }: { item: VerifiedItem; s: PriceListImportState }) {
-    const { selected, setSelected, handleTruncateDescription } = s;
-
-    const isSelected = selected.has(item.key);
-    const canSelect = isSelectable(item);
-    const isOverridden = item.overrideId !== null;
-
-    return (
-        <TableRow
-            className={cn(
-                !canSelect && 'bg-destructive/5',
-                item.status === 'update' &&
-                    'bg-amber-50/30 dark:bg-amber-950/5',
-                // Overridden rows get a subtle left accent so they stand out
-                // even when the user isn't on the "Overrides" filter.
-                isOverridden &&
-                    'shadow-[inset_3px_0_0_0_var(--color-amber-500)]',
-            )}
-        >
-            <TableCell className="align-top">
-                <Checkbox
-                    checked={isSelected}
-                    disabled={!canSelect}
-                    onCheckedChange={(checked) => {
-                        setSelected((prev) => {
-                            const next = new Set(prev);
-                            if (checked) next.add(item.key);
-                            else next.delete(item.key);
-                            return next;
-                        });
-                    }}
-                    aria-label={`Select ${item.description}`}
-                />
-            </TableCell>
-
-            {/* Description */}
-            <TableCell className="align-top">
-                <div className="flex items-start gap-1.5">
-                    <span
-                        className="max-w-[30ch] truncate text-sm"
-                        title={item.description}
-                    >
-                        {item.description}
-                    </span>
-                    {item.count > 1 && (
-                        <Badge
-                            variant="outline"
-                            className="h-4 shrink-0 px-1 text-[10px]"
-                            title={`${item.count} raw rows collapsed`}
-                        >
-                            ×{item.count}
-                        </Badge>
-                    )}
-                    {!item.descriptionValid && (
-                        <Badge
-                            variant="destructive"
-                            className="h-4 shrink-0 px-1 text-[10px]"
-                            title={`Length ${item.description.trim().length} > 1000`}
-                        >
-                            {item.description.trim().length}/1000
-                        </Badge>
-                    )}
-                </div>
-                {!item.descriptionValid && (
-                    <div className="mt-1 flex items-center gap-1">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleTruncateDescription(item.key)}
-                            className="h-5 px-1 text-[10px] text-amber-600 hover:text-amber-700"
-                        >
-                            Truncate to 1000
-                        </Button>
-                        <span className="text-muted-foreground text-[10px]">
-                            → “…
-                            {item.description.trim().slice(0, 1000).slice(-20)}”
-                        </span>
-                    </div>
-                )}
-            </TableCell>
-
-            {/* Category */}
-            <TableCell className="align-top text-xs">
-                <div className="flex items-start gap-1.5">
-                    <span
-                        className="max-w-[14ch] truncate"
-                        title={item.category}
-                    >
-                        {item.category}
-                    </span>
-                    <CategoryMark item={item} />
-                </div>
-            </TableCell>
-
-            {/* COA */}
-            <CoaCell item={item} s={s} />
-
-            {/* Unit */}
-            <TableCell className="align-top text-xs">{item.unit}</TableCell>
-
-            {/* Price */}
-            <TableCell className="text-right align-top text-xs tabular-nums">
-                {formatMoney(item.price)}
-            </TableCell>
-
-            {/* Status */}
-            <StatusCell item={item} />
-        </TableRow>
-    );
-}
-
-function CategoryMark({ item }: { item: VerifiedItem }) {
-    if (item.catExists) {
-        return (
-            <Check
-                className="mt-0.5 h-3 w-3 shrink-0 text-green-600"
-                aria-label="Category found"
-            />
-        );
-    }
-    if (item.catMatchType === 'partial') {
-        return (
-            <span
-                className="text-muted-foreground mt-0.5 shrink-0 text-xs leading-none"
-                title="Partial match"
-            >
-                ~
-            </span>
-        );
-    }
-    return (
-        <X
-            className="text-destructive mt-0.5 h-3 w-3 shrink-0"
-            aria-label="Category not found"
-        />
-    );
-}
-
-// ─── COA cell ───────────────────────────────────────────────────────────────
-
-function CoaCell({ item, s }: { item: VerifiedItem; s: PriceListImportState }) {
-    const { existingCoas, handleCoaOverrideChange, handleClearOverride } = s;
-
-    const isOverridden = item.overrideId !== null;
-    // Display uses the stripped label. The parent's override handler falls
-    // back to a label → id lookup for values without the machine prefix.
-    const selectedDisplay = item.effectiveCoa
-        ? formatCoaLabel(item.effectiveCoa)
-        : '';
-    const items = buildCoaItems(
-        item.coaTopMatches.map((m) => m.coa),
-        existingCoas,
-    );
-    const suggestedLabels = new Set(
-        item.coaTopMatches.map((m) => formatCoaLabel(m.coa)),
-    );
-
-    return (
-        <TableCell className="align-top">
-            <div className="flex flex-col gap-1">
-                {/* Excel value + match indicator */}
-                <div className="flex items-center gap-1.5 text-[10px]">
-                    <span className="text-muted-foreground tracking-wide uppercase">
-                        Excel
-                    </span>
-                    <span
-                        className="max-w-[24ch] truncate font-mono"
-                        title={item.coa}
-                    >
-                        {item.coa}
-                    </span>
-                    {item.coaExists ? (
-                        <Check className="h-3 w-3 shrink-0 text-green-600" />
-                    ) : item.coaMatchType === 'partial' ? (
-                        <Badge
-                            variant="outline"
-                            className="h-3.5 shrink-0 px-1 text-[9px]"
-                        >
-                            partial
-                        </Badge>
-                    ) : (
-                        <X className="text-destructive h-3 w-3 shrink-0" />
-                    )}
-                </div>
-
-                {/* Combobox */}
-                <div className="flex items-center gap-1">
-                    <Combobox
-                        items={items}
-                        value={selectedDisplay}
-                        onValueChange={(val) =>
-                            handleCoaOverrideChange(
-                                item.key,
-                                val as string | null,
-                            )
-                        }
-                    >
-                        <ComboboxInput
-                            placeholder={
-                                item.coaMatchType === 'partial'
-                                    ? '★ Suggested at top — search…'
-                                    : 'Search COA…'
-                            }
-                            className="h-7 text-xs"
-                        />
-                        <ComboboxContent>
-                            <ComboboxEmpty>No COA found.</ComboboxEmpty>
-                            <ComboboxList>
-                                {(entry: string) => {
-                                    const isSuggested =
-                                        suggestedLabels.has(entry);
-
-                                    return (
-                                        <ComboboxItem
-                                            key={entry}
-                                            value={entry}
-                                            className={
-                                                isSuggested ? 'font-medium' : ''
-                                            }
-                                        >
-                                            {isSuggested ? '★ ' : ''}
-                                            {entry}
-                                        </ComboboxItem>
-                                    );
-                                }}
-                            </ComboboxList>
-                        </ComboboxContent>
-                    </Combobox>
-                    {isOverridden && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 shrink-0 px-1 text-xs"
-                            onClick={() => handleClearOverride(item.key)}
-                            title="Clear override"
-                            aria-label="Clear COA override"
-                        >
-                            <X className="h-3 w-3" />
-                        </Button>
-                    )}
-                </div>
-
-                {/* Resolved DB COA */}
-                {item.effectiveCoa ? (
-                    <div
-                        className={cn(
-                            'truncate text-[11px]',
-                            isOverridden ? 'text-amber-600' : 'text-green-600',
-                        )}
-                        title={`${item.effectiveCoa.path} — ${item.effectiveCoa.account_title}`}
-                    >
-                        {isOverridden ? (
-                            <>
-                                <Pencil className="mr-1 inline h-3 w-3" />
-                                {item.effectiveCoa.path} —{' '}
-                                {item.effectiveCoa.account_title}
-                                <span className="ml-1">(override)</span>
-                            </>
-                        ) : (
-                            <>
-                                ✓ {item.effectiveCoa.path} —{' '}
-                                {item.effectiveCoa.account_title}
-                            </>
-                        )}
-                    </div>
-                ) : item.coaTopMatches.length > 0 ? (
-                    <div
-                        className="text-muted-foreground truncate text-[11px]"
-                        title={item.coaTopMatches
-                            .map(
-                                (m) =>
-                                    `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
-                            )
-                            .join(' | ')}
-                    >
-                        Suggest: {item.coaTopMatches[0].coa.path} —{' '}
-                        {item.coaTopMatches[0].coa.account_title}
-                    </div>
-                ) : null}
-            </div>
-        </TableCell>
-    );
-}
-
-// ─── status cell ────────────────────────────────────────────────────────────
-
-function StatusCell({ item }: { item: VerifiedItem }) {
-    return (
-        <TableCell className="align-top text-xs">
-            <StatusText item={item} />
-            <div className="text-muted-foreground mt-1 text-[10px]">
-                {item.sheets.join(', ')} · row {item.rows.join(', ')}
-            </div>
-        </TableCell>
-    );
-}
-
-function StatusText({ item }: { item: VerifiedItem }) {
-    const base = 'flex items-start gap-1 text-xs';
-
-    if (item.status === 'error') {
-        return (
-            <div className={cn(base, 'text-destructive')}>
-                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>
-                    {item.message}
-                    {!item.catExists && (
-                        <>
-                            {' '}
-                            <Link
-                                href="/imports/category-import"
-                                className="underline"
-                            >
-                                Category Import
-                            </Link>
-                        </>
-                    )}
-                    {!item.effectiveMappingExists &&
-                        item.catExists &&
-                        item.effectiveCoaExists && (
-                            <>
-                                {' '}
-                                <Link
-                                    href="/imports/category-coa-mapping"
-                                    className="underline"
-                                >
-                                    → Map
-                                </Link>
-                            </>
-                        )}
-                </span>
-            </div>
-        );
-    }
-    if (item.status === 'skipped') {
-        return (
-            <div className={cn(base, 'text-muted-foreground')}>
-                <Minus className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>
-                    {item.message}{' '}
-                    <Link href="/imports/category-import" className="underline">
-                        Category Import
-                    </Link>
-                </span>
-            </div>
-        );
-    }
-    if (item.status === 'update') {
-        return (
-            <div className={cn(base, 'text-amber-600')}>
-                <RefreshCw className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>{item.message}</span>
-            </div>
-        );
-    }
-    return (
-        <div className={cn(base, 'text-green-600')}>
-            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>{item.message}</span>
-        </div>
-    );
-}
-
 // ─── footer ─────────────────────────────────────────────────────────────────
 
-type PaginationProps = {
-    pageIndex: number;
-    pageCount: number;
-    pageSize: number;
-    totalRows: number;
-    onPageChange: (page: number) => void;
-};
-
-function ImportFooter({
-    s,
-    pagination,
-}: {
-    s: PriceListImportState;
-    pagination: PaginationProps;
-}) {
+function ImportFooter({ s }: { s: PriceListImportState }) {
     const {
         excludeMissingCategory,
         setExcludeMissingCategory,
@@ -1154,7 +663,6 @@ function ImportFooter({
     const canImport = importableSelected.length > 0 && !importing;
     const newCount = countByStatus(importableSelected, 'ready');
     const updateCount = countByStatus(importableSelected, 'update');
-    const { pageCount } = pagination;
 
     return (
         <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky bottom-0 z-10 flex flex-col gap-2 rounded-lg border p-3 backdrop-blur">
@@ -1188,9 +696,6 @@ function ImportFooter({
                     </label>
                 </div>
 
-                {/* ── Middle: pagination ─────────────────────────── */}
-                {pageCount > 1 && <PaginationControls {...pagination} />}
-
                 {/* ── Right: import action ───────────────────────── */}
                 <Button disabled={!canImport} onClick={handleImport}>
                     {importing
@@ -1209,68 +714,6 @@ function ImportFooter({
                 skipped={skippedCount}
                 errors={errorCount}
             />
-        </div>
-    );
-}
-
-function PaginationControls({
-    pageIndex,
-    pageCount,
-    pageSize,
-    totalRows,
-    onPageChange,
-}: PaginationProps) {
-    const start = pageIndex * pageSize + 1;
-    const end = Math.min((pageIndex + 1) * pageSize, totalRows);
-    const isFirst = pageIndex === 0;
-    const isLast = pageIndex >= pageCount - 1;
-
-    return (
-        <div className="flex items-center gap-0.5">
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => onPageChange(0)}
-                disabled={isFirst}
-                aria-label="First page"
-            >
-                <ChevronsLeft className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => onPageChange(pageIndex - 1)}
-                disabled={isFirst}
-                aria-label="Previous page"
-            >
-                <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            <span className="text-muted-foreground px-2 text-xs whitespace-nowrap tabular-nums">
-                {start.toLocaleString()}–{end.toLocaleString()} of{' '}
-                {totalRows.toLocaleString()}
-            </span>
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => onPageChange(pageIndex + 1)}
-                disabled={isLast}
-                aria-label="Next page"
-            >
-                <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => onPageChange(pageCount - 1)}
-                disabled={isLast}
-                aria-label="Last page"
-            >
-                <ChevronsRight className="h-3.5 w-3.5" />
-            </Button>
         </div>
     );
 }
