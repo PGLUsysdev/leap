@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'workspace' => [
+        'token' => env('WORKSPACE_TOKEN'),
+        'base_url' => env('WORKSPACE_BASE_URL', 'https://api-workspace.launion.gov.ph/api/data/v1'),
+        'timeout' => env('WORKSPACE_TIMEOUT', 30),
+        'retry_times' => env('WORKSPACE_RETRY_TIMES', 3),
+        'retry_delay_ms' => env('WORKSPACE_RETRY_DELAY_MS', 1000),
+    ],
+
 ];

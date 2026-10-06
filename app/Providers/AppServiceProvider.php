@@ -7,6 +7,7 @@ use App\Observers\PpmpObserver;
 use App\Policies\DashboardPolicy;
 use App\Policies\ExpenseClassCodePolicy;
 use App\Policies\ImportPolicy;
+use App\Services\WorkspaceApiClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(
+            WorkspaceApiClient::class,
+            fn (): WorkspaceApiClient => WorkspaceApiClient::fromConfig(),
+        );
     }
 
     /**
