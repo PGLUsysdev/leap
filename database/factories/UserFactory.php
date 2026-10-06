@@ -33,7 +33,21 @@ class UserFactory extends Factory
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
+            'status' => 'active',
         ];
+    }
+
+    /**
+     * Indicate that the model is awaiting administrator approval.
+     *
+     * Fortify's authenticate callback rejects these, mirroring a freshly
+     * registered account.
+     */
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'pending',
+        ]);
     }
 
     /**
