@@ -1,6 +1,6 @@
 # 📋 Full Documentation: Government Salaries, Allowances, and Benefits (2026 Update)
 
-> **Scope**: All 26 account codes from 5-01-01-010 through 5-01-04-990, re-verified against the latest DBM, BIR, GSIS, PhilHealth, Pag-IBIG, and COA issuances as of 2026.
+> **Scope**: All 27 account codes from 5-01-01-010 through 5-01-04-990, re-verified against the latest DBM, BIR, GSIS, PhilHealth, Pag-IBIG, and COA issuances as of 2026.
 > **Applicable to**: National Government Agencies (NGAs), Local Government Units (LGUs) including the **Provincial Government of La Union (PGLU)** , and other covered entities.
 
 ---
@@ -140,6 +140,12 @@ _Source:_ LBC No. 157, Section 6.0.
 - **General non-taxable ceiling** (BIR): **₱400.00 per month** effective January 6, 2026, per RR No. 29-2025.
 
 **Formula for PHWs (partial month)** :
+
+> ⚠️ **Unverified — the monthly base here conflicts with the rate above.** This
+> section derives from a ₱500/month base, while the PHW rate and the Summary
+> Table both state ₱150/month. One of the two is wrong; confirm against RA 7305
+> and its IR before relying on either. The PS Breakdown implementation uses
+> **₱150/month** (`ps-calculations.ts`, `5-01-02-060`).
 
 ```
 LA = (₱500 / 1 month) × (1 month / 22 workdays) × D days of actual service
