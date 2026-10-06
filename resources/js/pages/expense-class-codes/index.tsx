@@ -28,7 +28,7 @@ import { destroy, store } from '@/routes/expense-class-codes';
 
 interface ExpenseClassInfo {
     code: string;
-    class: 'PS' | 'MOOE' | 'CO';
+    class: 'PS' | 'MOOE' | 'FE' | 'CO';
     name: string;
 }
 
@@ -79,6 +79,14 @@ const coaColumns = [
 /** Fixed height applied to every class card so all cards align and
  *  their content areas are identical in size. */
 const CARD_HEIGHT = 'h-[34rem]';
+
+/** Classes with a card above; anything else falls into Unassigned. */
+const LINKED_CLASSES: PostableCoa['expense_class'][] = [
+    'PS',
+    'MOOE',
+    'FE',
+    'CO',
+];
 
 function LinkPicker({
     accounts,
@@ -173,10 +181,7 @@ export default function ExpenseClassCodes({
     const unassigned = useMemo(
         () =>
             chartOfAccounts.filter(
-                (a) =>
-                    a.expense_class !== 'PS' &&
-                    a.expense_class !== 'MOOE' &&
-                    a.expense_class !== 'CO',
+                (a) => !LINKED_CLASSES.includes(a.expense_class),
             ),
         [chartOfAccounts],
     );
@@ -221,7 +226,7 @@ export default function ExpenseClassCodes({
                         </p>
                     </div>
 
-                    <div className="grid gap-4 xl:grid-cols-3">
+                    <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-4">
                         {classes.map((info) => {
                             const linked = linkedByClass[info.class] ?? [];
                             const linkable = chartOfAccounts.filter(
@@ -322,8 +327,8 @@ export default function ExpenseClassCodes({
                                 </Badge>
                             </CardTitle>
                             <CardDescription>
-                                Postable accounts with no PS / MOOE / CO link
-                                are ignored by the funding source totals sync.
+Postable accounts with no PS / MOOE / FE / CO link
+                                 are ignored by the funding source totals sync.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-0 flex-1">

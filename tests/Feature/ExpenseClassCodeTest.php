@@ -159,7 +159,7 @@ test('it renders can flags reflecting expense-class-code permissions', function 
         );
 });
 
-test('it lists the three class codes with postable accounts only', function () {
+test('it lists the four class codes with postable accounts only', function () {
     $user = codeTestUser();
     codeTestCoa('5-02-03-010');
     codeTestCoa('5-02', postable: false);
@@ -168,10 +168,11 @@ test('it lists the three class codes with postable accounts only', function () {
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
-        ->has('classes', 3)
+        ->has('classes', 4)
         ->where('classes.0', ['code' => '100', 'class' => 'PS', 'name' => 'Personal Services'])
         ->where('classes.1.code', '200')
         ->where('classes.2.code', '300')
+        ->where('classes.3', ['code' => '500', 'class' => 'FE', 'name' => 'Financial Expenses'])
         ->has('chartOfAccounts', 1)
         ->where('chartOfAccounts.0.path', '5-02-03-010')
     );
@@ -189,7 +190,7 @@ test('it links a postable account to a class', function () {
     expect($coa->fresh()->expense_class)->toBe('MOOE');
 });
 
-test('it refuses non-postable accounts and fe class', function () {
+test('it refuses non-postable accounts and unknown classes', function () {
     $user = codeTestUser();
     $parent = codeTestCoa('5-02', postable: false);
     $leaf = codeTestCoa('5-02-03-010');
@@ -201,11 +202,23 @@ test('it refuses non-postable accounts and fe class', function () {
 
     $this->actingAs($user)->post('/expense-class-codes', [
         'chart_of_account_id' => $leaf->id,
-        'expense_class' => 'FE',
+        'expense_class' => 'GG',
     ])->assertSessionHasErrors(['expense_class']);
 
     expect($parent->fresh()->expense_class)->toBeNull();
     expect($leaf->fresh()->expense_class)->toBeNull();
+});
+
+test('it links a postable account to the fe class', function () {
+    $user = codeTestUser();
+    $leaf = codeTestCoa('5-03-01-020');
+
+    $this->actingAs($user)->post('/expense-class-codes', [
+        'chart_of_account_id' => $leaf->id,
+        'expense_class' => 'FE',
+    ])->assertRedirect();
+
+    expect($leaf->fresh()->expense_class)->toBe('FE');
 });
 
 test('it unlinks an account back to unassigned', function () {

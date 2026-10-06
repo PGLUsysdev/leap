@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateFiscalYearRequest;
 use App\Models\AipDocument;
 use App\Models\AipEntry;
 use App\Models\ChartOfAccount;
+use App\Models\FeBreakdownItem;
 use App\Models\FiscalYear;
 use App\Models\Office;
 use App\Models\Ppmp;
@@ -246,7 +247,9 @@ class FiscalYearController extends Controller
                     ->sortBy('path')
                     ->values();
 
-                // MOOE / CO / FE detail rows from PPMP lines, grouped by COA.
+                // MOOE / CO detail rows from PPMP lines, grouped by COA.
+                // FE never comes from PPMP — those rows are driven solely by
+                // the FE breakdown page (see the FE block below).
                 $months = [
                     'jan',
                     'feb',
@@ -282,7 +285,7 @@ class FiscalYearController extends Controller
                     );
                 }
 
-                $classRows = ['MOOE' => [], 'CO' => [], 'FE' => []];
+                $classRows = ['MOOE' => [], 'CO' => []];
 
                 foreach ($ppmpQuery->get() as $ppmp) {
                     $coa = $ppmp->ppmpPriceList
@@ -323,7 +326,59 @@ class FiscalYearController extends Controller
 
                 $mooeRows = $toRows($classRows['MOOE']);
                 $coRows = $toRows($classRows['CO']);
-                $feRows = $toRows($classRows['FE']);
+
+                // FE detail rows from the FE breakdown page only, scoped the
+                // same way as PPMP: fiscal year, the office's subtree, and
+                // the cumulative AIP documents when a document is selected.
+                $feQuery = FeBreakdownItem::with('chartOfAccount')
+                    ->whereHas('ppaFundingSource.aipEntry.ppa', function (
+                        $query,
+                    ) use ($fyId, $officeIds) {
+                        $query->where('fiscal_year_id', $fyId)->whereIn(
+                            'office_id',
+                            $officeIds,
+                        );
+                    })
+                    ->whereHas('chartOfAccount', function ($query) {
+                        $query->where('expense_class', 'FE')
+                            ->where('is_active', true)
+                            ->where('is_postable', true);
+                    });
+
+                if ($docIds !== null) {
+                    $feQuery->whereHas(
+                        'ppaFundingSource.aipEntry',
+                        function ($q) use ($docIds) {
+                            $q->whereIn('aip_document_id', $docIds);
+                        },
+                    );
+                }
+
+                $feGrouped = [];
+
+                foreach ($feQuery->get() as $feItem) {
+                    $coa = $feItem->chartOfAccount;
+                    $amount = (float) $feItem->amount;
+
+                    // Accounts left at zero have no line of their own.
+                    if ($amount === 0.0) {
+                        continue;
+                    }
+
+                    $path = $coa->path;
+
+                    if (! isset($feGrouped[$path])) {
+                        $feGrouped[$path] = [
+                            'path' => $path,
+                            'title' => $coa->account_title,
+                            'amount' => 0,
+                        ];
+                    }
+
+                    $feGrouped[$path]['amount'] += $amount;
+                }
+
+                $feRows = $toRows($feGrouped);
 
                 $psTotal = (float) $psRows->sum('amount');
                 $mooeTotal = (float) $mooeRows->sum('amount');

@@ -21,6 +21,7 @@ class ExpenseClassCodeController extends Controller
             ['code' => '100', 'class' => 'PS', 'name' => 'Personal Services'],
             ['code' => '200', 'class' => 'MOOE', 'name' => 'Maintenance and Other Operating Expenditures'],
             ['code' => '300', 'class' => 'CO', 'name' => 'Capital Outlay'],
+            ['code' => '500', 'class' => 'FE', 'name' => 'Financial Expenses'],
         ];
     }
 

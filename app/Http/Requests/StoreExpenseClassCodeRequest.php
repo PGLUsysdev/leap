@@ -29,7 +29,7 @@ class StoreExpenseClassCodeRequest extends FormRequest
             'chart_of_account_id' => ['required_without:chart_of_account_ids', 'integer', $postable],
             'chart_of_account_ids' => ['array', 'min:1'],
             'chart_of_account_ids.*' => ['integer', $postable],
-            'expense_class' => ['required', 'in:PS,MOOE,CO'],
+            'expense_class' => ['required', 'in:PS,MOOE,FE,CO'],
         ];
     }
 }
