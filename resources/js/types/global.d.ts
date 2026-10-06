@@ -38,6 +38,7 @@ declare module '@tanstack/react-table' {
         onDeletePpmpItem?: (item: Ppmp) => void;
         onOpenPpmp?: (id: number) => void;
         onOpenPsBreakdown?: (id: number) => void;
+        onOpenFeBreakdown?: (id: number) => void;
         disabled?: boolean;
         year?: FiscalYear;
 
@@ -95,11 +96,7 @@ declare module '@tanstack/react-table' {
         // Editable PPA funding source columns
         onSaveAmount?: (
             id: number,
-            field:
-                | 'ps_amount'
-                | 'fe_amount'
-                | 'ccet_adaptation'
-                | 'ccet_mitigation',
+            field: 'ps_amount' | 'ccet_adaptation' | 'ccet_mitigation',
             value: number,
         ) => void;
         onSaveCcTypology?: (id: number) => void;

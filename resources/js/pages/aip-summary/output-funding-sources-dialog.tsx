@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { index as ppmpIndex } from '@/routes/aip/summary/ppmp';
 import { index as psBreakdownIndex } from '@/routes/ps-breakdown';
+import { index as feBreakdownIndex } from '@/routes/fe-breakdown';
 import { destroy, store } from '@/routes/aip-outputs/ppa-funding-sources';
 import { update } from '@/routes/ppa-funding-sources';
 import type { AipOutput, FundingSource, CcTypology } from '@/types';
@@ -74,11 +75,7 @@ export default function OutputFundingSourcesDialog({
 
     const saveField = (
         ppaFundingSourceId: number,
-        field:
-            | 'ps_amount'
-            | 'fe_amount'
-            | 'ccet_adaptation'
-            | 'ccet_mitigation',
+        field: 'ps_amount' | 'ccet_adaptation' | 'ccet_mitigation',
         newValue: number,
     ) => {
         setLoadingState('saving');
@@ -196,10 +193,11 @@ export default function OutputFundingSourcesDialog({
                     <DialogHeader className="flex-none px-4 pb-2">
                         <DialogTitle>Manage Funding Sources</DialogTitle>
                         <DialogDescription>
-                            Add or remove funding sources. PS and FE amounts can
-                            be edited directly in the table. PS is only editable
-                            if the parent PPA is a PS Pool, and a PS Pool can
-                            only contain PS amounts.
+                            Add or remove funding sources. PS and CCET
+                            amounts can be edited directly in the table. FE
+                            totals come from the FE Breakdown page. PS is only
+                            editable if the parent PPA is a PS Pool, and a PS
+                            Pool can only contain PS amounts.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -229,6 +227,22 @@ export default function OutputFundingSourcesDialog({
                                 onOpenPsBreakdown: (fsId: number) => {
                                     router.visit(
                                         psBreakdownIndex(
+                                            {
+                                                fiscalYear: fiscalYearId,
+                                                aipEntry: output.aip_entry_id,
+                                            },
+                                            {
+                                                query: {
+                                                    ppa_funding_source_id: fsId,
+                                                },
+                                            },
+                                        ).url,
+                                        { method: 'get' },
+                                    );
+                                },
+                                onOpenFeBreakdown: (fsId: number) => {
+                                    router.visit(
+                                        feBreakdownIndex(
                                             {
                                                 fiscalYear: fiscalYearId,
                                                 aipEntry: output.aip_entry_id,
@@ -355,6 +369,9 @@ export default function OutputFundingSourcesDialog({
                         </li>
                         <li>
                             All PS breakdown entries for this funding source
+                        </li>
+                        <li>
+                            All FE breakdown entries for this funding source
                         </li>
                     </ul>
 

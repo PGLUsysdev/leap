@@ -16,6 +16,7 @@ use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\ChartOfAccountPpmpCategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseClassCodeController;
+use App\Http\Controllers\FeBreakdownController;
 use App\Http\Controllers\FiscalYearController;
 // Disabled for now — PS logic refactor in progress (kept for later).
 // use App\Http\Controllers\PositionController;
@@ -426,6 +427,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //     PsBreakdownController::class,
     //     'recalculate',
     // ])->name('ps-breakdown-items.recalculate');
+
+    // fe breakdown (FE amounts are entered here and total into the funding
+    // source's fe_amount, which is read-only on the funding sources dialog)
+    Route::get('/aip/{fiscalYear}/summary/{aipEntry}/fe-breakdown', [
+        FeBreakdownController::class,
+        'index',
+    ])->name('fe-breakdown.index');
+    Route::put('/aip/{fiscalYear}/summary/{aipEntry}/fe-breakdown/{chartOfAccount}', [
+        FeBreakdownController::class,
+        'update',
+    ])->name('fe-breakdown.update');
 
     // --- Imports Hub + all importers ---
     Route::get('imports', [ImportsController::class, 'index'])->name('imports.index');

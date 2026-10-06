@@ -4,7 +4,7 @@ import {
     Trash,
     List,
     UserRound,
-    // Landmark,
+    Landmark,
     // Construction,
     ShoppingBasket,
 } from 'lucide-react';
@@ -23,11 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import type { CcTypology, PpaFundingSource } from '@/types';
 
-type AmountField =
-    | 'ps_amount'
-    | 'fe_amount'
-    | 'ccet_adaptation'
-    | 'ccet_mitigation';
+type AmountField = 'ps_amount' | 'ccet_adaptation' | 'ccet_mitigation';
 
 function formatAmount(value: string | number | null | undefined): string {
     const num = Number(value);
@@ -218,7 +214,12 @@ const columns = [
             <div className="text-center text-wrap">Financial Expenses (FE)</div>
         ),
         cell: (info) => (
-            <AmountCell row={info.row} table={info.table} field="fe_amount" />
+            <div
+                className="text-center text-wrap"
+                title="FE totals from the FE Breakdown page"
+            >
+                {info.getValue()}
+            </div>
         ),
     }),
     columnHelper.accessor('co_amount', {
@@ -347,6 +348,23 @@ const columns = [
                                 }
                             >
                                 <UserRound /> PS Breakdown
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                disabled={poolLocked}
+                                onClick={() =>
+                                    (
+                                        meta?.onOpenFeBreakdown as
+                                            | ((id: number) => void)
+                                            | undefined
+                                    )?.(rowData.id)
+                                }
+                                title={
+                                    poolLocked
+                                        ? 'FE Breakdown is not available for a PS Pool'
+                                        : undefined
+                                }
+                            >
+                                <Landmark /> FE Breakdown
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
