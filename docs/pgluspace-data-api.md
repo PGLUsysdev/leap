@@ -392,13 +392,21 @@ Employees with their office, division, position, and appointment.
 | `division_name` | string, nullable | Division name, when assigned. |
 | `pos_code` | string, nullable | Position code. |
 | `position_title` | string, nullable | Position title. |
-| `sg_step` | string, nullable | Salary grade and step as recorded, e.g. `"11/8"`. |
-| `salary_grade` | integer, nullable | Salary grade parsed from `sg_step`. |
-| `step` | integer, nullable | Step parsed from `sg_step`. |
+| `salary_grade` | integer, nullable | Salary grade of the employee's position. Values above 33 are employment-type markers, not payable grades — see the note below. |
+| `step` | integer, nullable | Step within the grade. Not bounded by 8: values up to 15 occur. |
 | `appointment_status` | string, nullable | e.g. `PERMANENT`, `CASUAL`, `JOB ORDER`. |
 | `employment_status` | string, nullable | `A` active, `I` inactive, `D` old file, `R`. |
 | `dte_hired` | string, date, nullable | Date hired, exactly as stored. |
 | `updated_at` | string, date-time, nullable | When record last changed. |
+
+> **`salary_grade` above 33 is not a payable grade.** SG 35/36/37 are
+> employment-type flags that the source system stores in the grade column, and
+> SG 40 has no `/salary-grades` row at all. Look a grade up in `/salary-grades`
+> only after ruling these out — otherwise a job-order employee reads as ₱13,530.
+> See [pgluspace-data-exploration.md](pgluspace-data-exploration.md#6-salary-grade-markers-above-33).
+>
+> There is no `sg_step` field. `salary_grade` and `step` are native; any code
+> that split `"11/3"` will break.
 
 ```bash
 curl -H "Authorization: Bearer $PGLUSPACE_DATA_TOKEN" \
@@ -424,9 +432,8 @@ curl -H "Authorization: Bearer $PGLUSPACE_DATA_TOKEN" \
       "division_name": null,
       "pos_code": "95613",
       "position_title": "JOB ORDER EMPLOYEE",
-      "sg_step": null,
-      "salary_grade": null,
-      "step": null,
+      "salary_grade": 37,
+      "step": 1,
       "appointment_status": "JOB ORDER",
       "employment_status": "A",
       "dte_hired": "2023-06-01",
