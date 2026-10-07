@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\WorkspaceApiClient;
+use App\Services\WorkspacePersonnel;
 use App\Services\WorkspacePositionCatalog;
 use App\Services\WorkspaceSalarySchedule;
 use Illuminate\Http\Request;
@@ -11,29 +12,18 @@ use Inertia\Inertia;
 class PersonnelScheduleController extends Controller
 {
     /**
-     * Appointments that never appear on a personnel schedule.
+     * The only appointments that appear on a personnel schedule.
      *
-     * PROVISIONAL — not a finalized rule. Interns, job orders, volunteers and
-     * unrecorded appointments are currently kept off the LBP Form 3, but the
-     * list is expected to change once the open questions are settled: 60 active
-     * rows have no appointment status at all, and `TEMPORARY` is listed despite
-     * being almost entirely inactive. See the "Personnel schedule: which
-     * appointments are listed" section in docs/pgluspace-data-exploration.md
-     * before changing anything here.
+     * The list is shared with the PS Breakdown table so the two pages cannot
+     * drift apart. Every other value — `CONTRACT OF SERVICE`, `JOB ORDER`, `OJT`,
+     * `CONSULTANT`, `VOLUNTEER`, and rows with no appointment recorded — is off
+     * the LBP Form 3.
      *
-     * Values are matched case-insensitively because the filter is case-sensitive
-     * on the API side — one differently-cased row would otherwise slip through.
-     *
-     * @var array<int, string|null>
+     * @see WorkspacePersonnel::LISTED_APPOINTMENT_STATUSES
+     * @see docs/pgluspace-data-api.md for the classification of each value
      */
-    private const EXCLUDED_APPOINTMENT_STATUSES = [
-        null,
-        'CONTRACT OF SERVICE',
-        'ITAX',
-        'JOB ORDER',
-        'OJT',
-        'VOLUNTEER',
-    ];
+    private const LISTED_APPOINTMENT_STATUSES =
+        WorkspacePersonnel::LISTED_APPOINTMENT_STATUSES;
 
     /**
      * Display a listing of the resource.
@@ -72,7 +62,7 @@ class PersonnelScheduleController extends Controller
         }
 
         return $workspace->employees(['dept_code' => $deptCode])
-            ->reject(fn (array $employee): bool => $this->isExcluded($employee))
+            ->filter(fn (array $employee): bool => $this->isListed($employee))
             ->map(function (array $employee) use ($positions, $schedule): array {
                 // Grade/step and rate stand in for both years until a fiscal
                 // year drives the budget side.
@@ -82,6 +72,9 @@ class PersonnelScheduleController extends Controller
 
                 return [
                     'id' => (int) ($employee['pers_id'] ?? 0),
+                    // Carried so the client can split the same rows across LBP
+                    // Form 3 and Form 3A; see the appointment module.
+                    'appointment_status' => $employee['appointment_status'] ?? null,
                     'item_number' => null,
                     'old' => null,
                     'new' => null,
@@ -166,19 +159,16 @@ class PersonnelScheduleController extends Controller
     }
 
     /**
-     * Whether an employee's appointment keeps them off the schedule.
+     * Whether an employee's appointment puts them on the schedule.
      *
      * @param  array<string, mixed>  $employee
      */
-    private function isExcluded(array $employee): bool
+    private function isListed(array $employee): bool
     {
         $status = $employee['appointment_status'] ?? null;
 
-        return in_array(
-            is_string($status) ? strtoupper(trim($status)) : null,
-            self::EXCLUDED_APPOINTMENT_STATUSES,
-            true,
-        );
+        return is_string($status)
+            && in_array(strtoupper(trim($status)), self::LISTED_APPOINTMENT_STATUSES, true);
     }
 
     /**

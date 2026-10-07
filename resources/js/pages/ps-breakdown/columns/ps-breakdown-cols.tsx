@@ -4,6 +4,15 @@ import type { ChartOfAccount, Position } from '@/types';
 
 const columnHelper = createColumnHelper<Position>();
 
+/**
+ * COAs whose amount cannot be computed without months of service in the budget
+ * year. The API exposes no service-length field, so these cells say so instead of
+ * showing a figure derived from an assumed 12 months.
+ */
+const MONTHS_DEPENDENT_COAS = new Set(['5-01-01-020']);
+
+const MONTHS_DEPENDENT_NOTE = 'Needs months of service';
+
 const currency = (value: string | number | null | undefined) => {
     const num = typeof value === 'string' ? parseFloat(value) : (value ?? 0);
 
@@ -13,6 +22,12 @@ const currency = (value: string | number | null | undefined) => {
         minimumFractionDigits: 2,
     });
 };
+
+const note = (text: string) => (
+    <div className="px-1 text-right text-wrap text-muted-foreground text-xs italic">
+        {text}
+    </div>
+);
 
 export default function getColumns(
     coas: ChartOfAccount[],
@@ -48,12 +63,21 @@ export default function getColumns(
             id: 'sg_step',
             size: 100,
             header: () => <div className="px-1">SG/Step</div>,
-            cell: ({ row }) => (
-                <div className="px-1 text-wrap">
-                    {row.original.ios?.salary_grade ?? '—'}/
-                    {Number(row.original.user?.step ?? 1)}
-                </div>
-            ),
+            cell: ({ row }) => {
+                // A marker grade or a missing step leaves the cell blank rather
+                // than claiming a step of 1 the API never reported.
+                const grade = row.original.ios?.salary_grade ?? '—';
+
+                // `User` carries an index signature, so step arrives untyped.
+                const rawStep = row.original.user?.step;
+                const step = typeof rawStep === 'number' ? rawStep : '—';
+
+                return (
+                    <div className="px-1 text-wrap">
+                        {grade}/{step}
+                    </div>
+                );
+            },
         }),
         columnHelper.display({
             id: 'monthly_salary',
@@ -81,12 +105,6 @@ export default function getColumns(
 
                 return <div className="px-1 text-right">{currency(total)}</div>;
             },
-        }),
-        columnHelper.display({
-            id: 'months',
-            size: 100,
-            header: () => <div className="px-1"># of Months</div>,
-            cell: () => <div className="px-1 text-wrap">12</div>,
         }),
         columnHelper.display({
             id: 'annual_salary',
@@ -121,6 +139,10 @@ export default function getColumns(
                     <div className="px-1 text-right">{coa.account_title}</div>
                 ),
                 cell: ({ row }) => {
+                    if (MONTHS_DEPENDENT_COAS.has(coa.path ?? coa.account_number)) {
+                        return note(MONTHS_DEPENDENT_NOTE);
+                    }
+
                     const value = getCellNumericValue(
                         row.original,
                         coa,
@@ -138,6 +160,10 @@ export default function getColumns(
                     );
                 },
                 footer: ({ table }) => {
+                    if (MONTHS_DEPENDENT_COAS.has(coa.path ?? coa.account_number)) {
+                        return note(MONTHS_DEPENDENT_NOTE);
+                    }
+
                     const total = table
                         .getCoreRowModel()
                         .rows.reduce((sum, row) => {

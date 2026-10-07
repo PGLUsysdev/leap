@@ -146,7 +146,7 @@ test('it fetches the positions masterlist once for the whole page of employees',
     fakeEmployeesFor('1022', [
         ['pers_id' => '33085', 'full_name' => 'TORIBIO JASPER VANJO NASTOR', 'pos_code' => '2B002', 'appointment_status' => 'PERMANENT'],
         ['pers_id' => '31234', 'full_name' => 'SANTOS MARIA LARA', 'pos_code' => '12313', 'appointment_status' => 'COTERMINOUS'],
-        ['pers_id' => '41002', 'full_name' => 'REYES JUAN DELA CRUZ', 'pos_code' => null, 'appointment_status' => 'CONSULTANT'],
+        ['pers_id' => '41002', 'full_name' => 'REYES JUAN DELA CRUZ', 'pos_code' => null, 'appointment_status' => 'CONTRACTUAL'],
     ]);
 
     $this->actingAs($user)
@@ -290,32 +290,57 @@ test('it leaves the salary grade blank when the grade is an employment type mark
         );
 });
 
-test('it excludes appointments that never belong on a personnel schedule', function () {
-    // The exclusion list is provisional — see the controller's docblock. This
-    // test pins the current behaviour, not an agreed policy.
+test('it lists only the appointments that belong on a personnel schedule', function () {
     $office = scheduleOffice(18);
     $user = User::factory()->create(['office_id' => $office->id]);
 
     fakeEmployeesFor('1022', [
         ['pers_id' => '1', 'full_name' => 'PERMANENT ONE', 'pos_code' => '2B002', 'appointment_status' => 'PERMANENT'],
-        ['pers_id' => '2', 'full_name' => 'CASUAL ONE', 'pos_code' => '2B002', 'appointment_status' => 'CASUAL'],
-        ['pers_id' => '3', 'full_name' => 'OJT INTERN', 'pos_code' => '2B002', 'appointment_status' => 'OJT'],
-        ['pers_id' => '4', 'full_name' => 'JOB ORDER ONE', 'pos_code' => '2B002', 'appointment_status' => 'JOB ORDER'],
-        ['pers_id' => '5', 'full_name' => 'VOLUNTEER ONE', 'pos_code' => '2B002', 'appointment_status' => 'VOLUNTEER'],
-        ['pers_id' => '6', 'full_name' => 'ITAX ONE', 'pos_code' => '2B002', 'appointment_status' => 'ITAX'],
-        ['pers_id' => '7', 'full_name' => 'UNRECORDED ONE', 'pos_code' => '2B002', 'appointment_status' => null],
-        ['pers_id' => '9', 'full_name' => 'COS ONE', 'pos_code' => '2B002', 'appointment_status' => 'CONTRACT OF SERVICE'],
-        // Casing and padding must not smuggle an excluded row through.
-        ['pers_id' => '8', 'full_name' => 'LOWERCASE OJT', 'pos_code' => '2B002', 'appointment_status' => 'ojt'],
+        ['pers_id' => '2', 'full_name' => 'TEMPORARY ONE', 'pos_code' => '2B002', 'appointment_status' => 'TEMPORARY'],
+        ['pers_id' => '3', 'full_name' => 'COTERMINOUS ONE', 'pos_code' => '2B002', 'appointment_status' => 'COTERMINOUS'],
+        ['pers_id' => '4', 'full_name' => 'ELECTED ONE', 'pos_code' => '2B002', 'appointment_status' => 'ELECTED'],
+        ['pers_id' => '5', 'full_name' => 'CASUAL ONE', 'pos_code' => '2B002', 'appointment_status' => 'CASUAL'],
+        ['pers_id' => '6', 'full_name' => 'CONTRACTUAL ONE', 'pos_code' => '2B002', 'appointment_status' => 'CONTRACTUAL'],
     ]);
 
     $this->actingAs($user)
         ->get(route('personnel-schedule.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('items', 2)
+            ->has('items', 6)
             ->where('items.0.incumbent_name', 'PERMANENT ONE')
-            ->where('items.1.incumbent_name', 'CASUAL ONE')
+            ->where('items.1.incumbent_name', 'TEMPORARY ONE')
+            ->where('items.2.incumbent_name', 'COTERMINOUS ONE')
+            ->where('items.3.incumbent_name', 'ELECTED ONE')
+            ->where('items.4.incumbent_name', 'CASUAL ONE')
+            ->where('items.5.incumbent_name', 'CONTRACTUAL ONE')
+        );
+});
+
+test('it excludes every appointment outside the listed set', function () {
+    $office = scheduleOffice(18);
+    $user = User::factory()->create(['office_id' => $office->id]);
+
+    fakeEmployeesFor('1022', [
+        ['pers_id' => '1', 'full_name' => 'PERMANENT ONE', 'pos_code' => '2B002', 'appointment_status' => 'PERMANENT'],
+        ['pers_id' => '2', 'full_name' => 'COS ONE', 'pos_code' => '2B002', 'appointment_status' => 'CONTRACT OF SERVICE'],
+        ['pers_id' => '3', 'full_name' => 'JOB ORDER ONE', 'pos_code' => '2B002', 'appointment_status' => 'JOB ORDER'],
+        ['pers_id' => '4', 'full_name' => 'OJT INTERN', 'pos_code' => '2B002', 'appointment_status' => 'OJT'],
+        ['pers_id' => '5', 'full_name' => 'CONSULTANT ONE', 'pos_code' => '2B002', 'appointment_status' => 'CONSULTANT'],
+        ['pers_id' => '6', 'full_name' => 'VOLUNTEER ONE', 'pos_code' => '2B002', 'appointment_status' => 'VOLUNTEER'],
+        ['pers_id' => '7', 'full_name' => 'UNRECORDED ONE', 'pos_code' => '2B002', 'appointment_status' => null],
+        // Casing and padding must not smuggle an excluded row through.
+        ['pers_id' => '8', 'full_name' => 'LOWERCASE OJT', 'pos_code' => '2B002', 'appointment_status' => 'ojt'],
+        // An unclassified value is off the schedule until it is classified.
+        ['pers_id' => '9', 'full_name' => 'SOMETHING NEW', 'pos_code' => '2B002', 'appointment_status' => 'SOMETHING NEW'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('personnel-schedule.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('items', 1)
+            ->where('items.0.incumbent_name', 'PERMANENT ONE')
         );
 });
 

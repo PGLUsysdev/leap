@@ -7,6 +7,7 @@ function makeItem(
 ): PersonnelScheduleItem {
     return {
         id: 1,
+        appointment_status: 'PERMANENT',
         item_number: '1',
         old: '1',
         new: '1',

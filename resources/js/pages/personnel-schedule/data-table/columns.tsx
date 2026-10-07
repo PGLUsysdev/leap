@@ -4,6 +4,8 @@ import { Decimal } from 'decimal.js';
 
 export interface PersonnelScheduleItem {
     id: number;
+    /** Used to route the row to LBP Form 3 or Form 3A; not shown as a column. */
+    appointment_status: string | null;
     item_number: string | null;
     old: string | null;
     new: string | null;

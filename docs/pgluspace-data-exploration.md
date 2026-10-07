@@ -341,25 +341,36 @@ None of these follow the ~1% step ladder, and 35/37 have a single flat step.
 
 **Appointment statuses observed:**
 
-13 distinct values, counted over every row with `employment_status=all` (11,083
+12 distinct values, counted over every row with `employment_status=all` (11,083
 records). "Active" is the endpoint default (`employment_status=A`, 3,203 records),
-so the two counts differ a lot for some values.
+so the two counts differ a lot for some values. Grouped by budget treatment; `ID` is
+the classification number.
 
-| `appointment_status` | Active | All | Notes |
-| --- | ---: | ---: | --- |
-| `PERMANENT` | 1419 | 2715 | Plantilla position |
-| `CASUAL` | 558 | 1287 | |
-| `OJT` | 468 | 1390 | Intern/trainee |
-| `CONTRACT OF SERVICE` | 309 | 452 | COS |
-| `JOB ORDER` | 253 | 690 | |
-| `COTERMINOUS` | 79 | 272 | Tied to an official's term |
-| *(null)* | 60 | 1453 | No appointment status recorded |
-| `TEMPORARY` | 20 | 1205 | |
-| `ELECTED` | 16 | 63 | |
-| `CONTRACTUAL` | 12 | 1405 | Distinct from `CONTRACT OF SERVICE` |
-| `CONSULTANT` | 6 | 47 | |
-| `VOLUNTEER` | 3 | 102 | |
-| `ITAX` | — | 2 | Only on inactive/old-file rows |
+| ID | `appointment_status` | Category | Budget form | Active | All |
+| ---: | --- | --- | --- | ---: | ---: |
+| 1 | `PERMANENT` | Plantilla | LBP Form 3 | 1419 | 2715 |
+| 2 | `TEMPORARY` | Plantilla | LBP Form 3 | 20 | 1205 |
+| 7 | `COTERMINOUS` | Plantilla | LBP Form 3 | 79 | 272 |
+| 8 | `ELECTED` | Plantilla | LBP Form 3 | 16 | 63 |
+| 3 | `CASUAL` | Non-plantilla | LBP Form 3A | 558 | 1287 |
+| 4 | `CONTRACTUAL` | Non-plantilla | LBP Form 3A | 12 | 1405 |
+| 5 | `CONTRACT OF SERVICE` | Non-plantilla | Neither — MOOE | 309 | 452 |
+| 6 | `JOB ORDER` | Non-plantilla | Neither — MOOE | 253 | 690 |
+| 9 | `CONSULTANT` | Non-plantilla | Neither — MOOE | 6 | 47 |
+| 10 | `OJT` | Trainee | Neither | 468 | 1390 |
+| 11 | `VOLUNTEER` | Volunteer | Neither | 3 | 102 |
+| — | *(null)* | — | — | 60 | 1453 |
+
+**Budget treatment per status:** Plantilla items (`PERMANENT`, `TEMPORARY`,
+`COTERMINOUS`, `ELECTED`) occupy LBP Form 3 positions. Non-plantilla positions funded
+under PS (`CASUAL`, `CONTRACTUAL`) use LBP Form 3A. Everything else is charged to
+MOOE — `CONTRACT OF SERVICE` under Consulting/General Services, `JOB ORDER` under
+Job Order/General Services, `CONSULTANT` under Professional Services — and so is in
+neither PS nor LBP Form 3/3A. `OJT` is a student placement with no employment or PS
+allocation; `VOLUNTEER` is unpaid with no PS allocation.
+
+`CONTRACTUAL` and `CONTRACT OF SERVICE` are distinct values and are budgeted
+differently: Form 3A under PS versus MOOE, respectively.
 
 Reading notes:
 
@@ -371,24 +382,21 @@ Reading notes:
 - **`TEMPORARY` and `CONTRACTUAL` are not active/inactive discriminators.** They jump
   ~60x from active to all, far more than `PERMANENT` or `CONTRACT OF SERVICE`.
 - **`SPES`** appeared in earlier notes on this endpoint but is absent from the current
-  data; `ITAX` and `VOLUNTEER` are new.
+  data; `VOLUNTEER` is new.
 
-### Personnel schedule: which appointments are listed — **NOT FINALIZED**
+### Personnel schedule: which appointments are listed
 
-`PersonnelScheduleController` currently drops some of these values before rendering, so
-the schedule does **not** yet list every active employee. This is a working decision,
-not a settled one — the exclusion list in the controller is expected to change, and the
-figures below are a snapshot of the current behaviour rather than a policy.
+`PersonnelScheduleController` keeps an allowlist of six appointments and drops everything
+else before rendering, so the schedule does **not** list every active employee. The
+figures below are a snapshot of the current behaviour.
 
 | | Values | Active employees |
 | --- | --- | ---: |
-| **Listed** | `PERMANENT`, `CASUAL`, `COTERMINOUS`, `TEMPORARY`, `ELECTED`, `CONTRACTUAL`, `CONSULTANT` | 2,110 of 3,203 (66%) |
-| **Hidden** | `OJT`, `CONTRACT OF SERVICE`, `JOB ORDER`, *(null)*, `VOLUNTEER`, `ITAX` | 1,093 of 3,203 (34%) |
+| **Listed** | `PERMANENT`, `CASUAL`, `COTERMINOUS`, `TEMPORARY`, `ELECTED`, `CONTRACTUAL` | 2,104 of 3,203 (66%) |
+| **Hidden** | `OJT`, `CONTRACT OF SERVICE`, `JOB ORDER`, `CONSULTANT`, *(null)*, `VOLUNTEER` | 1,099 of 3,203 (34%) |
 
-Of the 1,093 hidden: 468 `OJT`, 309 `CONTRACT OF SERVICE`, 253 `JOB ORDER`, 60 with no
-appointment status, 3 `VOLUNTEER`, and 0 `ITAX` (`ITAX` only occurs outside the active
-set). On PICTO the effect is 53 active employees down to 32 — 18 `OJT` and 3 `CONTRACT
-OF SERVICE` dropped.
+Of the 1,099 hidden: 468 `OJT`, 309 `CONTRACT OF SERVICE`, 253 `JOB ORDER`, 6
+`CONSULTANT`, 60 with no appointment status, and 3 `VOLUNTEER`.
 
 Matching is case-insensitive and trimmed, because the API's own `appointment_status`
 filter is case-sensitive: a differently-cased row would otherwise slip through
@@ -405,9 +413,8 @@ unnoticed.
 - **`TEMPORARY` is listed** while 468 `OJT` interns are hidden, even though `TEMPORARY`
   jumps ~60x from 20 active to 1,205 overall. If the intent is "plantilla only", the
   split between `TEMPORARY` and `COTERMINOUS` needs a decision.
-- **Five of the listed values arrive without a grade or step** — `CASUAL`, `TEMPORARY`,
-  `CONTRACTUAL`, `CONSULTANT`, `ELECTED`. They can be listed on the schedule but not
-  priced from the API.
+- **Four of the listed values arrive without a grade or step** — `CASUAL`, `TEMPORARY`,
+  `CONTRACTUAL`, `ELECTED`. They can be listed on the schedule but not priced from the API.
 - **A hidden employee may still be load-bearing elsewhere.** Nothing else consumes
   `/employees` yet, so this only affects the personnel schedule today.
 
@@ -984,7 +991,7 @@ The PGLU Space Data API is a **read-only, paginated, scoped** REST API covering:
 - **Positions** — 661 local + 2,562 national reference classes (no shared key; match
   by title)
 - **Salaries** — 37 SG rows × 8 steps, 2025 schedule
-- **Employees** — 3,203 records, active by default; 13 `appointment_status` values,
+- **Employees** — 3,203 records, active by default; 12 `appointment_status` values,
   11,083 records with `employment_status=all`
 - **Qualifications** — full DBM IOS tree
 

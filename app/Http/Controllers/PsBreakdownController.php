@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\AipEntry;
 use App\Models\ChartOfAccount;
 use App\Models\FiscalYear;
+use App\Models\Office;
 use App\Models\Ppa;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
 use App\Models\PsBreakdownItem;
 use App\Services\MockPersonnelData;
+use App\Services\WorkspacePersonnel;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -35,6 +37,12 @@ class PsBreakdownController extends Controller
      * (monthly rate / 22 * days worked), so it prorates against
      * $monthsOfService — keyed by position id. Positions absent from
      * that map are budgeted for a full year.
+     *
+     * @param  array<int, array<string, mixed>>  $positions
+     * @param  array<string, float>  $rates
+     * @param  array<int, array{current: float, budget: float}>  $annualRateMap
+     * @param  array<int, int>  $monthsOfService
+     * @return array<string, float>
      */
     public static function computePsCoaTotals(
         $positions,
@@ -170,24 +178,68 @@ class PsBreakdownController extends Controller
     }
 
     /**
-     * Convenience: compute PS COA totals from the mock personnel dataset.
+     * Compute PS COA totals for one office from the personnel API.
      *
-     * The `ios`, `positions` and `salary_standards` tables are deprecated and
-     * are no longer queried; $officeId and $budgetFyId are retained for
-     * signature compatibility with existing callers and are unused until the
-     * personnel API supplies office- and year-scoped data.
+     * The office resolves to the PGLU Space department that carries its employees;
+     * sub-units share their parent's department, so every caller must count a
+     * department once. $budgetFyId is retained for signature compatibility and is
+     * unused while personnel figures are not fiscal-year scoped.
+     *
+     * @param  array<int, int>  $monthsOfService
+     * @return array<string, float>
      */
     public static function computePsCoaTotalsForOffice(
         int $officeId,
         int $budgetFyId,
         array $monthsOfService = [],
     ): array {
-        return self::computePsCoaTotals(
-            MockPersonnelData::positions(),
-            MockPersonnelData::rates(),
-            MockPersonnelData::annualRateMap(),
-            $monthsOfService ?: MockPersonnelData::monthsOfService(),
+        return self::computePsCoaTotalsFromPersonnel(
+            self::personnelForOffice($officeId),
+            $monthsOfService,
         );
+    }
+
+    /**
+     * PS COA totals from already-read personnel rows.
+     *
+     * A null personnel set — an office with no PGLU Space department — totals to
+     * zero rather than raising, so report callers that iterate many offices can
+     * carry on. Anything that *writes* the total must check for null first; see
+     * syncPoolPsAmount.
+     *
+     * @param  array{positions: array<int, array<string, mixed>>, annualRateMap: array<int, array{current: float, budget: float}>}|null  $personnel
+     * @param  array<int, int>  $monthsOfService
+     * @return array<string, float>
+     */
+    private static function computePsCoaTotalsFromPersonnel(?array $personnel, array $monthsOfService): array
+    {
+        if ($personnel === null) {
+            return self::computePsCoaTotals([], MockPersonnelData::rates(), []);
+        }
+
+        return self::computePsCoaTotals(
+            $personnel['positions'],
+            MockPersonnelData::rates(),
+            $personnel['annualRateMap'],
+            $monthsOfService,
+        );
+    }
+
+    /**
+     * Personnel rows for an office, or null when the office has no PGLU Space
+     * department to read employees from.
+     *
+     * @return array{positions: array<int, array<string, mixed>>, annualRateMap: array<int, array{current: float, budget: float}>}|null
+     */
+    private static function personnelForOffice(int $officeId): ?array
+    {
+        $deptCode = Office::find($officeId)?->load('parent')->deptCode();
+
+        if ($deptCode === null) {
+            return null;
+        }
+
+        return app(WorkspacePersonnel::class)->forOffice($deptCode);
     }
 
     /**
@@ -203,10 +255,12 @@ class PsBreakdownController extends Controller
      *   - Only one PPA funding source is allowed (GF Proper, id=1).
      *   - It carries PS only; MOOE, FE, CO (and CCET) are always 0.
      * Any other funding source on this output is deleted (along with its PPMPs).
+     *
+     * @param  array{positions: array<int, array<string, mixed>>, annualRateMap: array<int, array{current: float, budget: float}>}|null  $personnel  Pre-read rows for the office, to avoid a second API round trip.
      */
     public static function syncPoolPsAmount(
         AipEntry $aipEntry,
-        $saipId = null,
+        ?array $personnel = null,
     ): void {
         $ppa = $aipEntry->ppa;
 
@@ -214,11 +268,18 @@ class PsBreakdownController extends Controller
             return;
         }
 
-        $psTotals = self::computePsCoaTotalsForOffice(
-            $ppa->office_id,
-            $ppa->fiscal_year_id,
+        // An office with no PGLU Space department has no personnel to read. Writing
+        // the resulting zero total would erase a figure we cannot compute, so
+        // the pool is left exactly as it is.
+        $personnel ??= self::personnelForOffice($ppa->office_id);
+
+        if ($personnel === null) {
+            return;
+        }
+
+        $totalPs = array_sum(
+            self::computePsCoaTotalsFromPersonnel($personnel, []),
         );
-        $totalPs = array_sum($psTotals);
 
         // Resolve the primary output that carries the pool's funding sources.
         $output = $aipEntry
@@ -228,9 +289,12 @@ class PsBreakdownController extends Controller
 
         if (! $output) {
             $output = $aipEntry->outputs()->create([
-                'office_id' => $ppa->office_id,
                 'sort_order' => 0,
             ]);
+
+            // Outputs link to offices through a pivot; there is no office_id
+            // column on aip_outputs.
+            $output->offices()->sync([$ppa->office_id]);
         }
 
         // Remove any non-GF-Proper funding source on this output,
@@ -242,11 +306,6 @@ class PsBreakdownController extends Controller
                     'funding_source_id',
                 );
             })
-            ->when(
-                $saipId,
-                fn ($q) => $q->where('supplemental_aip_id', $saipId),
-                fn ($q) => $q->whereNull('supplemental_aip_id'),
-            )
             ->get();
 
         if ($nonGfSources->isNotEmpty()) {
@@ -259,11 +318,13 @@ class PsBreakdownController extends Controller
         }
 
         // Find or create the GF Proper funding source (id=1) with PS only.
+        //
+        // An output carries at most one row per funding source — the unique
+        // index is (aip_output_id, funding_source_id) — so this keys on the
+        // funding source alone. The `supplemental_aip_id` / `is_supplemental`
+        // columns no longer exist on this table.
         $output->fundingSources()->updateOrCreate(
-            [
-                'funding_source_id' => 1,
-                'supplemental_aip_id' => $saipId ?: null,
-            ],
+            ['funding_source_id' => 1],
             [
                 'ps_amount' => $totalPs,
                 'mooe_amount' => 0,
@@ -272,9 +333,137 @@ class PsBreakdownController extends Controller
                 'ccet_adaptation' => 0,
                 'ccet_mitigation' => 0,
                 'cc_typology_id' => null,
-                'is_supplemental' => (bool) $saipId,
             ],
         );
+    }
+
+    /**
+     * The office ids that hold a PS pool in the given fiscal year.
+     *
+     * `PSPoolService::setPool` designates one pool per fiscal year, so this is
+     * normally a single id. Callers aggregating many offices use it to sync only
+     * the pools actually in view.
+     *
+     * @return array<int, int>
+     */
+    public static function poolOfficeIdsForFiscalYear(int $fiscalYearId): array
+    {
+        return Ppa::psPoolForFiscalYear($fiscalYearId)
+            ->pluck('office_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * Sync the PS pool of one fiscal year to the PS breakdown total of its office.
+     *
+     * This is the entry point the page and the "set as PS pool" action both use. The
+     * pool is resolved by fiscal year rather than by any one AIP entry's PPA, because
+     * the entry being viewed is usually not itself the pool.
+     *
+     * Returns the total written, or null when there was nothing to sync — no pool
+     * for the year, or an office with no PGLU Space department to read personnel
+     * from (which is left untouched rather than zeroed).
+     *
+     * @param  int|null  $onlyOfficeId  Sync only when the pool belongs to this office.
+     *                                  Report callers viewing a single office pass
+     *                                  their selection, so a pool belonging to a
+     *                                  different office is never written from the
+     *                                  wrong department's personnel.
+     */
+    public static function syncPoolForFiscalYear(int $fiscalYearId, ?int $onlyOfficeId = null): ?float
+    {
+        $ppa = Ppa::psPoolForFiscalYear($fiscalYearId)->with('aipEntries')->first();
+
+        if (! $ppa) {
+            return null;
+        }
+
+        if ($onlyOfficeId !== null && (int) $ppa->office_id !== $onlyOfficeId) {
+            return null;
+        }
+
+        $personnel = self::personnelForOffice($ppa->office_id);
+
+        if ($personnel === null) {
+            return null;
+        }
+
+        $totalPs = array_sum(self::computePsCoaTotalsFromPersonnel($personnel, []));
+
+        foreach ($ppa->aipEntries as $entry) {
+            if (self::poolAmountFor($entry) === $totalPs) {
+                continue;
+            }
+
+            self::syncPoolPsAmount($entry, $personnel);
+        }
+
+        return $totalPs;
+    }
+
+    /**
+     * Sync every PS pool's funding source to the PS breakdown total of its office.
+     *
+     * Personnel is read once per office and reused across that office's entries,
+     * since several AIP entries can sit under one pool.
+     *
+     * @return array{synced: int, unchanged: int, skipped: int}
+     */
+    public static function syncAllPsPools(): array
+    {
+        $result = ['synced' => 0, 'unchanged' => 0, 'skipped' => 0];
+
+        $pools = Ppa::where('is_ps_pool', true)->with('aipEntries')->get();
+
+        foreach ($pools as $ppa) {
+            $personnel = self::personnelForOffice($ppa->office_id);
+
+            if ($personnel === null) {
+                // No department to read employees from; leave these pools alone.
+                $result['skipped'] += $ppa->aipEntries->count();
+
+                continue;
+            }
+
+            $totalPs = array_sum(
+                self::computePsCoaTotalsFromPersonnel($personnel, []),
+            );
+
+            foreach ($ppa->aipEntries as $entry) {
+                if (self::poolAmountFor($entry) === $totalPs) {
+                    $result['unchanged']++;
+
+                    continue;
+                }
+
+                self::syncPoolPsAmount($entry, $personnel);
+
+                $result['synced']++;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * The PS amount currently written on an entry's pool funding source, or null
+     * when the entry has no output or no pool funding source yet.
+     */
+    private static function poolAmountFor(AipEntry $entry): ?float
+    {
+        $output = $entry->outputs()->orderBy('sort_order')->first();
+
+        if (! $output) {
+            return null;
+        }
+
+        $source = $output
+            ->fundingSources()
+            ->where('funding_source_id', 1)
+            ->first();
+
+        return $source ? round((float) $source->ps_amount, 2) : null;
     }
 
     /**
@@ -305,17 +494,27 @@ class PsBreakdownController extends Controller
     /**
      * Page props for the PS Breakdown table.
      *
-     * Only the chart of accounts comes from the database. Positions, salary
-     * rates and the annual rate map come from the mock personnel dataset while
-     * the personnel API lands; the `ios`, `positions` and `salary_standards`
-     * tables are deprecated and are no longer queried here.
+     * The chart of accounts comes from the database; personnel comes from the
+     * PGLU Space API, scoped to the signed-in user's office so the table matches
+     * the personnel schedule page.
+     *
+     * Opening this page also syncs the fiscal year's PS pool to the same total, so
+     * the PS figure the AIP summary shows cannot sit stale while anyone is working
+     * through the breakdown.
+     *
+     * The `ios`, `positions` and `salary_standards` tables are deprecated and are
+     * no longer queried here. `MockPersonnelData` still supplies the statutory PS
+     * rates, which are not personnel data.
      */
-    public function index($fiscalYear, $aipEntry)
+    public function index($fiscalYear, $aipEntry, WorkspacePersonnel $personnel)
     {
         Gate::authorize('viewAny', PsBreakdownItem::class);
 
         AipEntry::findOrFail($aipEntry);
         $fy = FiscalYear::findOrFail($fiscalYear);
+
+        // The pool belongs to the fiscal year, not to the entry being viewed.
+        self::syncPoolForFiscalYear((int) $fy->id);
 
         $ppaFundingSourceId = request()->query('ppa_funding_source_id');
 
@@ -334,6 +533,12 @@ class PsBreakdownController extends Controller
             $officeId = $fundingSource?->aipEntry?->ppa?->office_id;
         }
 
+        // The table follows the signed-in user's office, not the PPA's — see the
+        // prop comment below.
+        $deptCode = request()->user()->office?->load('parent')->deptCode();
+
+        $personnelRows = $personnel->forOffice($deptCode);
+
         return Inertia::render('ps-breakdown/index', [
             'chartOfAccounts' => $chartOfAccounts,
             'ppaFundingSourceId' => $ppaFundingSourceId
@@ -343,11 +548,15 @@ class PsBreakdownController extends Controller
                 'id' => $fy->id,
                 'year' => $fy->year,
             ],
+            // The PPA's office, retained for callers that need it. The personnel
+            // rows below are scoped to the signed-in user's office instead.
             'officeId' => $officeId,
-            'positions' => MockPersonnelData::positions(),
+            'positions' => $personnelRows['positions'],
             'rates' => MockPersonnelData::rates(),
-            'annualRateMap' => MockPersonnelData::annualRateMap(),
-            'monthsOfService' => MockPersonnelData::monthsOfService(),
+            'annualRateMap' => $personnelRows['annualRateMap'],
+            // PROVISIONAL — empty, so casual/contractual proration stays inert
+            // and the column that showed it has been removed.
+            'monthsOfService' => [],
         ]);
     }
 }

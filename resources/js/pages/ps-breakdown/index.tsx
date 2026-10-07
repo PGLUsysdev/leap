@@ -1,15 +1,18 @@
 import { useMemo } from 'react';
 import DataTable from '@/components/data-table';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { index as aipIndex, summary } from '@/routes/aip';
 import type { ChartOfAccount, Position } from '@/types';
 import getPsBreakdownCols from './columns/ps-breakdown-cols';
 
 /**
- * Positions, salary rates and the annual rate map come from the server's
- * mock personnel dataset while the personnel API lands; the `ios`, `positions`
- * and `salary_standards` tables are deprecated and are no longer queried.
+ * Personnel rows come from the PGLU Space API, scoped to the signed-in user's
+ * office, and carry the same appointment allowlist as the personnel schedule
+ * page. Salary rates still come from the server's statutory PS rate table.
+ *
+ * The `# of Months` column has been removed: the API exposes no service-length
+ * field, so the COAs that depend on it render a descriptive note instead of a
+ * figure derived from an assumed 12 months.
  */
 interface PsBreakdownProps {
     chartOfAccounts: ChartOfAccount[];
@@ -46,11 +49,7 @@ export default function PsBreakdown({
                 data={positions}
                 columns={psBreakdownCols}
                 showFooter={true}
-            >
-                <div>
-                    <Badge variant="outline">Mock data — temporary</Badge>
-                </div>
-            </DataTable>
+            />
 
             <ScrollBar orientation="vertical" />
         </ScrollArea>

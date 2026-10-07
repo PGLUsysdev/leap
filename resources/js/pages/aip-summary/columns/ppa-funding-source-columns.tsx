@@ -157,14 +157,15 @@ function AmountCell({
     const meta = table.options.meta;
     const isPs = field === 'ps_amount';
     const isPool = Boolean(meta?.isPsPool);
-    // A PS pool holds only PS — every other amount is locked on it,
-    // and PS is locked everywhere else.
-    const isDisabled = isPs ? !isPool : isPool;
-    const tooltip = isDisabled
-        ? isPs
-            ? 'PS can only be edited for PS Pool PPAs'
-            : 'A PS Pool can only contain PS amounts'
-        : '';
+    // PS is derived from the personnel schedule on the server and is never
+    // entered by hand. A PS pool holds only PS, so every other amount is
+    // locked on it.
+    const isDisabled = isPs || isPool;
+    const tooltip = isPs
+        ? 'Personal Services is derived from the personnel schedule'
+        : isPool
+          ? 'A PS Pool can only contain PS amounts'
+          : '';
 
     return (
         <EditableAmountCell

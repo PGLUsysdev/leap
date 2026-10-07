@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PsBreakdownController;
 use App\Models\AipDocument;
 use App\Models\AipEntry;
 use App\Models\ChartOfAccount;
@@ -17,7 +18,10 @@ use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\MockPersonnelData;
+use App\Services\WorkspacePersonnel;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     $pdo = DB::connection()->getPdo();
@@ -287,4 +291,172 @@ test('it returns no lbp form 2 data without office scope', function () {
         ->assertInertia(fn ($page) => $page
             ->missing('lbp2')
         );
+});
+
+/**
+ * A PS pool in the given office and year, carrying a stale figure the report
+ * click is expected to refresh.
+ *
+ * @return array{0: Ppa, 1: PpaFundingSource}
+ */
+function lbp2TestPsPool(Office $office, FiscalYear $fy): array
+{
+    FundingSource::firstOrCreate(
+        ['id' => 1],
+        ['fund_type' => 'General Fund', 'code' => 'GF Proper', 'title' => 'General Fund'],
+    );
+
+    $ppa = Ppa::create([
+        'office_id' => $office->id,
+        'parent_id' => null,
+        'name' => 'LBP2 PS Pool',
+        'type' => 'Program',
+        'code_suffix' => 'lbp2pool'.random_int(1000, 9999),
+        'fiscal_year_id' => $fy->id,
+        'is_ps_pool' => true,
+    ]);
+
+    $entry = AipEntry::create(['ppa_id' => $ppa->id]);
+    $output = $entry->outputs()->create(['sort_order' => 0]);
+    $output->offices()->sync([$office->id]);
+
+    $source = PpaFundingSource::create([
+        'aip_output_id' => $output->id,
+        'funding_source_id' => 1,
+        'ps_amount' => 42.0,
+    ]);
+
+    return [$ppa, $source];
+}
+
+function lbp2TestUser(): User
+{
+    $role = Role::create(['name' => 'lbp2-sync-'.uniqid()]);
+    $permission = Permission::firstOrCreate(['name' => 'fiscal-year.view']);
+    PermissionRole::create(['role_id' => $role->id, 'permission_id' => $permission->id]);
+
+    return User::factory()->create(['role_id' => $role->id]);
+}
+
+/**
+ * The partial-reload headers the "LBP Form No. 2" menu item sends. The `lbp2`
+ * prop is Inertia::optional, so it is skipped on a full page load — the sync can
+ * only be reached by the partial request the UI actually makes.
+ *
+ * @return array<string, string>
+ */
+function lbp2TestPartialHeaders(): array
+{
+    return [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => hash_file('xxh128', public_path('build/manifest.json')),
+        'X-Inertia-Partial-Component' => 'aip/index',
+        'X-Inertia-Partial-Data' => 'lbp2',
+    ];
+}
+
+function lbp2TestFakePersonnel(): void
+{
+    Http::fake([
+        'api.example.test/api/data/v1/employees?*' => Http::response([
+            'data' => [[
+                'pers_id' => '1',
+                'full_name' => 'PERMANENT ONE',
+                'pos_code' => '2B002',
+                'appointment_status' => 'PERMANENT',
+                'salary_grade' => 11,
+                'step' => 1,
+            ]],
+            'meta' => ['current_page' => 1, 'per_page' => 500, 'total' => 1, 'last_page' => 1],
+        ]),
+        'api.example.test/api/data/v1/positions*' => Http::response([
+            'data' => [['id' => 500, 'pos_code' => '2B002', 'pos_name' => 'COMPUTER PROGRAMMER I', 'salary_grade' => 11]],
+            'meta' => ['current_page' => 1, 'per_page' => 500, 'total' => 1, 'last_page' => 1],
+        ]),
+        'api.example.test/api/data/v1/salary-grades*' => Http::response([
+            'data' => [['id' => 1, 'salary_grade' => 11, 'year' => 2025, 'steps' => ['1' => 30024]]],
+            'meta' => ['current_page' => 1, 'per_page' => 500, 'total' => 1, 'last_page' => 1],
+        ]),
+    ]);
+}
+
+test('it syncs the ps pool when lbp form 2 is opened for an office', function () {
+    config([
+        'services.workspace.token' => 'pdapi_test_token',
+        'services.workspace.base_url' => 'https://api.example.test/api/data/v1',
+    ]);
+
+    $user = lbp2TestUser();
+    $fy = FiscalYear::factory()->create(['status' => 'draft']);
+
+    // Office 18 maps to department 1022, so personnel can be read for it.
+    $office = Office::factory()->create(['id' => 18, 'acronym' => 'OFF-18']);
+    [, $source] = lbp2TestPsPool($office, $fy);
+
+    lbp2TestFakePersonnel();
+
+    $this->actingAs($user)
+        ->withHeaders(lbp2TestPartialHeaders())
+        ->get("/aip?lbp2_fiscal_year_id={$fy->id}&lbp2_office_id={$office->id}")
+        ->assertOk();
+
+    // Derived independently from the personnel the fake API serves.
+    $rows = app(WorkspacePersonnel::class)->forOffice('1022');
+    $expected = array_sum(PsBreakdownController::computePsCoaTotals(
+        $rows['positions'],
+        MockPersonnelData::rates(),
+        $rows['annualRateMap'],
+    ));
+
+    expect($expected)->toBeGreaterThan(0.0)
+        ->and(round((float) $source->fresh()->ps_amount, 2))->toBe(round($expected, 2));
+});
+
+test('it does not sync a ps pool belonging to another office', function () {
+    // The report reads the selected office; writing that department's figures
+    // onto a different office's pool would be wrong.
+    config([
+        'services.workspace.token' => 'pdapi_test_token',
+        'services.workspace.base_url' => 'https://api.example.test/api/data/v1',
+    ]);
+
+    $user = lbp2TestUser();
+    $fy = FiscalYear::factory()->create(['status' => 'draft']);
+
+    $poolOffice = Office::factory()->create(['id' => 18, 'acronym' => 'OFF-18']);
+    $viewedOffice = Office::factory()->create(['id' => 7, 'acronym' => 'OFF-7']);
+
+    [, $source] = lbp2TestPsPool($poolOffice, $fy);
+
+    lbp2TestFakePersonnel();
+
+    $this->actingAs($user)
+        ->withHeaders(lbp2TestPartialHeaders())
+        ->get("/aip?lbp2_fiscal_year_id={$fy->id}&lbp2_office_id={$viewedOffice->id}")
+        ->assertOk();
+
+    expect((float) $source->fresh()->ps_amount)->toBe(42.0);
+});
+
+test('it does not sync any pool for the consolidated all offices view', function () {
+    // 'all' spans every department, far too many to write on a GET.
+    config([
+        'services.workspace.token' => 'pdapi_test_token',
+        'services.workspace.base_url' => 'https://api.example.test/api/data/v1',
+    ]);
+
+    $user = lbp2TestUser();
+    $fy = FiscalYear::factory()->create(['status' => 'draft']);
+
+    $office = Office::factory()->create(['id' => 18, 'acronym' => 'OFF-18']);
+    [, $source] = lbp2TestPsPool($office, $fy);
+
+    lbp2TestFakePersonnel();
+
+    $this->actingAs($user)
+        ->withHeaders(lbp2TestPartialHeaders())
+        ->get("/aip?lbp2_fiscal_year_id={$fy->id}&lbp2_office_id=all")
+        ->assertOk();
+
+    expect((float) $source->fresh()->ps_amount)->toBe(42.0);
 });

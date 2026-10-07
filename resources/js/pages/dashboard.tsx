@@ -73,6 +73,8 @@ type DashboardProps = {
     ccExpenditure: { adaptation: number; mitigation: number } | null;
     coaBudget: {
         id: number;
+        /** Full chart code, e.g. 5-01-02-020 — unique, unlike account_number. */
+        path: string;
         account_number: string;
         account_title: string;
         expense_class: string;
@@ -229,9 +231,9 @@ export default function Dashboard({
         fundingData.map((item) => [item.label, { label: item.label }]),
     ) satisfies ChartConfig;
 
-    const coaTop = [...coaBudget]
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 10);
+    // Every account that carries an amount. The server already drops zero
+    // amounts and sorts descending, so no client-side cap.
+    const coaData = coaBudget;
     const classColor: Record<string, string> = {
         ps: PALETTE[0],
         mooe: PALETTE[1],
@@ -562,27 +564,38 @@ export default function Dashboard({
                             <Card>
                                 <CardHeader>
                                     <CardTitle>
-                                        Budget by Account (Top 10)
+                                        Budget by Account
                                     </CardTitle>
                                     <CardDescription>
-                                        PS from funding sources; MOOE/FE/CO
-                                        from procurement
+                                        PS from personnel; MOOE and CO from
+                                        procurement; FE from the FE
+                                        breakdown. Accounts with no amount
+                                        are omitted.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    {coaTop.length > 0 ? (
-                                    <ChartContainer
+                                    {coaData.length > 0 ? (
+                                        <ChartContainer
                                             config={{
                                                 value: { label: 'Amount' },
                                             }}
-                                            className="min-h-[300px] w-full"
+                                            // Tall enough that each bar
+                                            // stays legible as accounts
+                                            // are added.
+                                            className="w-full"
+                                            style={{
+                                                height: `${Math.max(
+                                                    300,
+                                                    coaData.length * 36 + 40,
+                                                )}px`,
+                                            }}
                                         >
                                             <BarChart
                                                 accessibilityLayer
                                                 layout="vertical"
-                                                data={coaTop.map((c) => ({
+                                                data={coaData.map((c) => ({
                                                     ...c,
-                                                    name: `${c.account_number} ${c.account_title}`,
+                                                    name: `${c.path} ${c.account_title}`,
                                                 }))}
                                                 margin={{ left: 12, right: 16 }}
                                             >
@@ -602,7 +615,7 @@ export default function Dashboard({
                                                     dataKey="name"
                                                     tickLine={false}
                                                     axisLine={false}
-                                                    width={260}
+                                                    width={300}
                                                 />
                                                 <ChartTooltip
                                                     content={
@@ -624,7 +637,7 @@ export default function Dashboard({
                                                     dataKey="value"
                                                     radius={[0, 4, 4, 0]}
                                                 >
-                                                    {coaTop.map((entry) => (
+                                                    {coaData.map((entry) => (
                                                         <Cell
                                                             key={entry.id}
                                                             fill={

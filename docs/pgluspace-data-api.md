@@ -372,7 +372,7 @@ Employees with their office, division, position, and appointment.
 | `per_page` | integer | Rows per page. Default `100`, max `500`. |
 | `employment_status` | string | `A` active, default; `I` inactive; `D` old file; `R`; or `all`. |
 | `dept_code` | string | Employees of one office. |
-| `appointment_status` | string | Comma-separated, e.g. `PERMANENT,CASUAL`. |
+| `appointment_status` | string | Comma-separated, e.g. `PERMANENT,CASUAL`. Case-sensitive; valid values listed below. |
 | `pers_id` | string | One employee. |
 | `updated_since` | string | Date or date-time; rows changed since then, best effort. |
 
@@ -394,10 +394,41 @@ Employees with their office, division, position, and appointment.
 | `position_title` | string, nullable | Position title. |
 | `salary_grade` | integer, nullable | Salary grade of the employee's position. Values above 33 are employment-type markers, not payable grades — see the note below. |
 | `step` | integer, nullable | Step within the grade. Not bounded by 8: values up to 15 occur. |
-| `appointment_status` | string, nullable | e.g. `PERMANENT`, `CASUAL`, `JOB ORDER`. |
+| `appointment_status` | string, nullable | One of 12 values — see the table below. |
 | `employment_status` | string, nullable | `A` active, `I` inactive, `D` old file, `R`. |
 | `dte_hired` | string, date, nullable | Date hired, exactly as stored. |
 | `updated_at` | string, date-time, nullable | When record last changed. |
+
+**`appointment_status` values**
+
+12 distinct string values, plus `null` when no appointment was recorded. Grouped by
+budget treatment; `ID` is the classification number. "Active" counts are the endpoint
+default (`employment_status=A`); "All" is `employment_status=all`.
+
+| ID | `appointment_status` | Category | Budget form | Notes | Active | All |
+| ---: | --- | --- | --- | --- | ---: | ---: |
+| 1 | `PERMANENT` | Plantilla | LBP Form 3 | Regular plantilla item funded under PS | 1419 | 2715 |
+| 2 | `TEMPORARY` | Plantilla | LBP Form 3 | Plantilla item filled temporarily — occupies a Form 3 position | 20 | 1205 |
+| 7 | `COTERMINOUS` | Plantilla | LBP Form 3 | Plantilla item tied to an official's term/project tenure (e.g. Executive Assistant, Private Secretary) | 79 | 272 |
+| 8 | `ELECTED` | Plantilla | LBP Form 3 | Plantilla item for elective officials (Governor, Mayor, Vice, Sanggunian members) | 16 | 63 |
+| 3 | `CASUAL` | Non-plantilla | LBP Form 3A | Non-plantilla position funded under PS (requires LBP Form 3A breakdown) | 558 | 1287 |
+| 4 | `CONTRACTUAL` | Non-plantilla | LBP Form 3A | Non-plantilla position funded under PS for specific projects/programs | 12 | 1405 |
+| 5 | `CONTRACT OF SERVICE` | Non-plantilla | Neither | Charged to MOOE under Consulting/General Services. Not in PS/LBP 3/3A | 309 | 452 |
+| 6 | `JOB ORDER` | Non-plantilla | Neither | Charged to MOOE under Job Order/General Services. Not in PS/LBP 3/3A | 253 | 690 |
+| 9 | `CONSULTANT` | Non-plantilla | Neither | Charged to MOOE under Professional Services | 6 | 47 |
+| 10 | `OJT` | Trainee | Neither | Student placement; no employment or PS allocation | 468 | 1390 |
+| 11 | `VOLUNTEER` | Volunteer | Neither | Unpaid; no PS allocation | 3 | 102 |
+| — | *(null)* | — | — | No appointment status recorded | 60 | 1453 |
+
+`CONTRACTUAL` and `CONTRACT OF SERVICE` are distinct values and are budgeted
+differently: Form 3A under PS versus MOOE, respectively.
+
+- **Values are upper case and trimmed, and the filter is case-sensitive.**
+  `appointment_status=permanent` returns 0 rows, not an error.
+- **`null` is a value in its own right** — 1,453 rows overall and 60 active rows carry
+  no appointment status, so filtering has to decide what to do with them.
+- **`TEMPORARY` and `CONTRACTUAL` are not active/inactive discriminators.** They jump
+  ~60x from active to all, far more than `PERMANENT` or `CONTRACT OF SERVICE`.
 
 > **`salary_grade` above 33 is not a payable grade.** SG 35/36/37 are
 > employment-type flags that the source system stores in the grade column, and

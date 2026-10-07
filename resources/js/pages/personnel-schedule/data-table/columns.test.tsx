@@ -12,6 +12,7 @@ import type { PersonnelScheduleItem } from './columns';
 const ITEMS: PersonnelScheduleItem[] = [
     {
         id: 1,
+        appointment_status: 'PERMANENT',
         item_number: '1',
         old: '1',
         new: '1',
@@ -26,6 +27,7 @@ const ITEMS: PersonnelScheduleItem[] = [
     },
     {
         id: 2,
+        appointment_status: 'PERMANENT',
         item_number: '2',
         old: '2',
         new: '2',
@@ -40,6 +42,7 @@ const ITEMS: PersonnelScheduleItem[] = [
     },
     {
         id: 3,
+        appointment_status: 'PERMANENT',
         item_number: '3',
         old: '3',
         new: '3',

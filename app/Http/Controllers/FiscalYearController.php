@@ -211,6 +211,10 @@ class FiscalYearController extends Controller
                     }
                 }
 
+                // One office per distinct PGLU Space department: a sub-unit
+                // reports its employees under the parent's department code, so
+                // summing every office in scope would bill the same employees
+                // once per sub-unit.
                 $officeIds = $officeId === 'all'
                     ? Office::pluck('id')
                     : Office::where('id', $officeId)
@@ -221,13 +225,31 @@ class FiscalYearController extends Controller
                     ? 'All Offices (Consolidated)'
                     : (Office::where('id', $officeId)->value('name') ?? '');
 
+                // This report recomputes PS from the personnel API anyway, so
+                // refresh the stored pool amount from the same figures. Scoped
+                // to a single selected office: 'all' spans up to every
+                // department, which is far too many to write on a GET.
+                if ($officeId !== 'all') {
+                    try {
+                        PsBreakdownController::syncPoolForFiscalYear(
+                            (int) $fy->id,
+                            (int) $officeId,
+                        );
+                    } catch (\Exception $e) {
+                        // The report below reads personnel regardless, so a
+                        // failure here only means the stored figure is left
+                        // stale. Never fail the report over it.
+                        report($e);
+                    }
+                }
+
                 // PS detail rows from the breakdown computation.
                 $psTotals = [];
 
-                foreach ($officeIds as $oid) {
+                foreach (Office::onePerDepartment($officeIds) as $oid) {
                     foreach (
                         PsBreakdownController::computePsCoaTotalsForOffice(
-                            (int) $oid,
+                            $oid,
                             (int) $fyId,
                         ) as $path => $amount
                     ) {

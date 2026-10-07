@@ -533,6 +533,7 @@ export interface DashboardCcExpenditure {
 
 export interface DashboardCoaBudget {
     id: number;
+    path: string;
     account_number: string;
     account_title: string;
     expense_class: string;

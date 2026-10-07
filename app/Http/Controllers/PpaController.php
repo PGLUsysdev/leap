@@ -546,30 +546,36 @@ class PpaController extends Controller
      * Set a PPA as the PS pool.
      * Moves the previous pool's ps_amount over and rebuilds this PPA as a
      * single PS-only funding source (funding_source_id = 1).
+     *
+     * The pool's PS amount is then recomputed from the personnel API, which
+     * supersedes the transferred figure.
      */
     public function setAsPsPool(Ppa $ppa, PSPoolService $poolService)
     {
         Gate::authorize('setPsPool', AipEntry::class);
 
         try {
-            $transferred = DB::transaction(function () use ($ppa, $poolService) {
+            DB::transaction(function () use ($ppa, $poolService) {
                 $oldPool = Ppa::psPoolForFiscalYear($ppa->fiscal_year_id)->lockForUpdate()->first();
 
-                $transferred = $poolService->handoff($oldPool, $ppa);
+                $poolService->handoff($oldPool, $ppa);
 
                 $poolService->setPool($ppa);
-
-                return $transferred;
             });
 
-            $message = "{$ppa->name} is now the PS pool.";
-
-            if ($transferred > 0) {
-                $message .=
-                    ' '.
-                    number_format($transferred, 2).
-                    ' in PS was transferred from the previous pool.';
+            // After the transaction: never hold a DB transaction open across a
+            // call to the personnel API. The pool is already designated by now,
+            // so a failure here is logged and leaves the transferred figure in
+            // place rather than failing an otherwise successful designation.
+            try {
+                PsBreakdownController::syncPoolForFiscalYear(
+                    (int) $ppa->fiscal_year_id,
+                );
+            } catch (\Exception $e) {
+                report($e);
             }
+
+            $message = "{$ppa->name} is now the PS pool.";
 
             Inertia::flash('toast', [
                 'type' => 'success',

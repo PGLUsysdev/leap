@@ -132,6 +132,32 @@ class Office extends Model
     }
 
     /**
+     * Reduce a set of offices to one per PGLU Space department.
+     *
+     * `deptCode()` walks up to the nearest ancestor carrying a department code, so a
+     * sub-unit and its parent read the same employees. Anything summing personnel
+     * across offices must count each department once, or sub-units are billed
+     * twice. Offices with no department are dropped — they contribute nothing.
+     *
+     * @param  iterable<int, int>  $officeIds
+     * @return array<int, int>
+     */
+    public static function onePerDepartment(iterable $officeIds): array
+    {
+        $byDepartment = [];
+
+        foreach ($officeIds as $id) {
+            $deptCode = self::find($id)?->load('parent')->deptCode();
+
+            if ($deptCode !== null && ! isset($byDepartment[$deptCode])) {
+                $byDepartment[$deptCode] = (int) $id;
+            }
+        }
+
+        return array_values($byDepartment);
+    }
+
+    /**
      * Limit the query to the office mapped to a PGLU Space department code.
      */
     public function scopeForDeptCode(Builder $query, string $deptCode): Builder

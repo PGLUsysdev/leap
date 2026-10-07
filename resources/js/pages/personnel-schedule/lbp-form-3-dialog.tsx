@@ -12,6 +12,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { PdfPreviewPane } from '@/lib/pdf/pdf-preview-pane';
 import { usePdfPreview } from '@/lib/pdf/use-pdf-preview';
+import { itemsForLbpForm } from './appointments';
 import type { PersonnelScheduleItem } from './data-table/columns';
 
 export type LbpFormNo = '3' | '3A';
@@ -66,19 +67,26 @@ export default function LbpForm3Dialog({
         onOpenChange(nextOpen);
     }
 
+    // Each form carries only the appointments charged to it, so a row appears on
+    // Form 3 or Form 3A but never both.
+    const formItems = useMemo(
+        () => itemsForLbpForm(items, formNo),
+        [items, formNo],
+    );
+
     // Built from primitive-stable dependencies so an unstable parent-side
     // object identity cannot trigger needless worker regenerations.
     const payload = useMemo(
         () =>
             open
                 ? {
-                      items,
+                      items: formItems,
                       fiscalYear,
                       formLabel,
                       signatories: debouncedSignatories,
                   }
                 : null,
-        [open, items, fiscalYear, formLabel, debouncedSignatories],
+        [open, formItems, fiscalYear, formLabel, debouncedSignatories],
     );
 
     const { url, status } = usePdfPreview('lbp-form-3', payload);
