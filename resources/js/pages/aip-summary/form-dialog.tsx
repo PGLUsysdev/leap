@@ -205,8 +205,8 @@ export default function FormDialog({
                                                     setFromExistingOpen(true)
                                                 }
                                                 disabled={
-                                                    loadingState ===
-                                                        'saving' || isPsPool
+                                                    loadingState === 'saving' ||
+                                                    isPsPool
                                                 }
                                                 title="Add an output carried from the same PPA in Regular or earlier supplementals (lineage preserved)"
                                             >
@@ -278,9 +278,7 @@ export default function FormDialog({
                 ccTypologies={ccTypologies}
                 fiscalYearId={fiscalYearId}
                 isPsPool={data?.ppa?.is_ps_pool ?? false}
-                isSupplemental={
-                    data?.aip_document?.kind === 'supplemental'
-                }
+                isSupplemental={data?.aip_document?.kind === 'supplemental'}
             />
 
             <AddOutputFromExistingDialog

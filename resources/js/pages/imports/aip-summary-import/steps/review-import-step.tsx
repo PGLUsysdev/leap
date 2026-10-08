@@ -35,8 +35,8 @@ export function ReviewImportStep({
                     Review &amp; Import — DB mapping
                 </h2>
                 <p className="text-muted-foreground text-sm">
-                    Review and import PPA, Expected Outputs, and Funding
-                    Sources — all DB connecting mapping in one tab.
+                    Review and import PPA, Expected Outputs, and Funding Sources
+                    — all DB connecting mapping in one tab.
                 </p>
             </div>
             <Tabs
@@ -45,9 +45,7 @@ export function ReviewImportStep({
             >
                 <TabsList>
                     <TabsTrigger value="ppa">PPA</TabsTrigger>
-                    <TabsTrigger value="outputs">
-                        Expected Outputs
-                    </TabsTrigger>
+                    <TabsTrigger value="outputs">Expected Outputs</TabsTrigger>
                     <TabsTrigger value="funding">Funding Source</TabsTrigger>
                 </TabsList>
                 {ppaContent}

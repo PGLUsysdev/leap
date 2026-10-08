@@ -192,17 +192,16 @@ export function ImportOutputsStep({
                         setTokenMapping(
                             record.key,
                             token,
-                            value === null || value === '' ? null : Number(value),
+                            value === null || value === ''
+                                ? null
+                                : Number(value),
                         );
                     }
 
                     function dismissToken(token: string) {
                         setDismissedTokens((prev) => ({
                             ...prev,
-                            [record.key]: [
-                                ...(prev[record.key] ?? []),
-                                token,
-                            ],
+                            [record.key]: [...(prev[record.key] ?? []), token],
                         }));
                     }
 
@@ -309,7 +308,7 @@ export function ImportOutputsStep({
                 size: 90,
                 header: () => <div className="px-1">Start Date</div>,
                 cell: ({ getValue }) => (
-                    <span className="block whitespace-nowrap px-1">
+                    <span className="block px-1 whitespace-nowrap">
                         {formatAipScheduleShort(getValue()) ?? '—'}
                     </span>
                 ),
@@ -318,7 +317,7 @@ export function ImportOutputsStep({
                 size: 90,
                 header: () => <div className="px-1">Completion Date</div>,
                 cell: ({ getValue }) => (
-                    <span className="block whitespace-nowrap px-1">
+                    <span className="block px-1 whitespace-nowrap">
                         {formatAipScheduleShort(getValue()) ?? '—'}
                     </span>
                 ),
@@ -498,7 +497,9 @@ export function ImportOutputsStep({
                             <span className="text-muted-foreground">
                                 Total rows:
                             </span>{' '}
-                            <span className="font-medium">{records.length}</span>
+                            <span className="font-medium">
+                                {records.length}
+                            </span>
                         </div>
                         <div>
                             <span className="text-muted-foreground">

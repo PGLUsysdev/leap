@@ -227,7 +227,10 @@ export default function AipSummaryImport({
         }
 
         setExtractResult(
-            extractAipSummaryRecords(ws, { ...config, headerRow: config.headerRow }),
+            extractAipSummaryRecords(ws, {
+                ...config,
+                headerRow: config.headerRow,
+            }),
         );
     }
 
@@ -276,9 +279,7 @@ export default function AipSummaryImport({
                     name: record.name,
                     type: record.type,
                     rows: [],
-                    status: existingByCode.has(
-                        normalize(record.fullCode),
-                    )
+                    status: existingByCode.has(normalize(record.fullCode))
                         ? 'exists'
                         : 'new',
                 };
@@ -382,7 +383,7 @@ export default function AipSummaryImport({
         officeId: number | null,
     ) {
         setTokenMappings((prev) => {
-            const current = { ...(prev[key] ?? {}) };
+            const current = { ...prev[key] };
 
             if (officeId === null) {
                 delete current[token];
@@ -434,12 +435,7 @@ export default function AipSummaryImport({
             end_date: record.endDate,
             office_ids: officeIdsForRecord(record.key),
         }));
-    }, [
-        extractResult,
-        selectedOffice,
-        selectedFiscalYear,
-        officeIdsForRecord,
-    ]);
+    }, [extractResult, selectedOffice, selectedFiscalYear, officeIdsForRecord]);
 
     const outputStatuses = useMemo(() => {
         const next = new Map<string, OutputImportStatus>();
@@ -969,13 +965,13 @@ export default function AipSummaryImport({
                         fundStatuses={fundStatuses}
                         newFunds={newFunds}
                         unmatchedFundEntries={unmatchedFundEntries}
-                fundIdForRecord={fundIdForRecord}
-                fundPickerKey={fundPickerKey}
-                setFundPickerKey={setFundPickerKey}
-                bulkFundToken={bulkFundToken}
-                setBulkFundToken={setBulkFundToken}
-                onBulkConfirm={handleBulkFundMap}
-                importingFunds={importingFunds}
+                        fundIdForRecord={fundIdForRecord}
+                        fundPickerKey={fundPickerKey}
+                        setFundPickerKey={setFundPickerKey}
+                        bulkFundToken={bulkFundToken}
+                        setBulkFundToken={setBulkFundToken}
+                        onBulkConfirm={handleBulkFundMap}
+                        importingFunds={importingFunds}
                         onConfirm={handleConfirmFunds}
                         onBack={() => setStep('extract')}
                     />

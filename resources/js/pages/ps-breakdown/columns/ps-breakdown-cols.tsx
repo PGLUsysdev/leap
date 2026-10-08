@@ -24,7 +24,7 @@ const currency = (value: string | number | null | undefined) => {
 };
 
 const note = (text: string) => (
-    <div className="px-1 text-right text-wrap text-muted-foreground text-xs italic">
+    <div className="text-muted-foreground px-1 text-right text-xs text-wrap italic">
         {text}
     </div>
 );
@@ -139,7 +139,11 @@ export default function getColumns(
                     <div className="px-1 text-right">{coa.account_title}</div>
                 ),
                 cell: ({ row }) => {
-                    if (MONTHS_DEPENDENT_COAS.has(coa.path ?? coa.account_number)) {
+                    if (
+                        MONTHS_DEPENDENT_COAS.has(
+                            coa.path ?? coa.account_number,
+                        )
+                    ) {
                         return note(MONTHS_DEPENDENT_NOTE);
                     }
 
@@ -160,7 +164,11 @@ export default function getColumns(
                     );
                 },
                 footer: ({ table }) => {
-                    if (MONTHS_DEPENDENT_COAS.has(coa.path ?? coa.account_number)) {
+                    if (
+                        MONTHS_DEPENDENT_COAS.has(
+                            coa.path ?? coa.account_number,
+                        )
+                    ) {
                         return note(MONTHS_DEPENDENT_NOTE);
                     }
 
@@ -178,7 +186,9 @@ export default function getColumns(
                             return sum + (val ?? 0);
                         }, 0);
 
-                    return <div className="px-1 text-right">{currency(total)}</div>;
+                    return (
+                        <div className="px-1 text-right">{currency(total)}</div>
+                    );
                 },
             }),
         ),

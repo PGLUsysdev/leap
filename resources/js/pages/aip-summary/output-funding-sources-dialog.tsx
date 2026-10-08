@@ -193,11 +193,11 @@ export default function OutputFundingSourcesDialog({
                     <DialogHeader className="flex-none px-4 pb-2">
                         <DialogTitle>Manage Funding Sources</DialogTitle>
                         <DialogDescription>
-                            Add or remove funding sources. PS and CCET
-                            amounts can be edited directly in the table. FE
-                            totals come from the FE Breakdown page. PS is only
-                            editable if the parent PPA is a PS Pool, and a PS
-                            Pool can only contain PS amounts.
+                            Add or remove funding sources. PS and CCET amounts
+                            can be edited directly in the table. FE totals come
+                            from the FE Breakdown page. PS is only editable if
+                            the parent PPA is a PS Pool, and a PS Pool can only
+                            contain PS amounts.
                         </DialogDescription>
                     </DialogHeader>
 

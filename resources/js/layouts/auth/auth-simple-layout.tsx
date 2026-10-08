@@ -22,7 +22,7 @@ export default function AuthSimpleLayout({
                             <img
                                 src="/images/leap-temp-logo.png"
                                 alt="LEAP - Local Expenditure Administration Program"
-                                className="-ml-4 aspect-square size-14 rounded-full object-cover ring-2 ring-background"
+                                className="ring-background -ml-4 aspect-square size-14 rounded-full object-cover ring-2"
                             />
                         </div>
 

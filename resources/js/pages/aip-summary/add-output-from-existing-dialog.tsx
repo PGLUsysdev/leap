@@ -117,8 +117,8 @@ export default function AddOutputFromExistingDialog({
                     </div>
                 ) : rows.length === 0 ? (
                     <p className="text-muted-foreground py-8 text-center text-sm">
-                        No outputs for this PPA in other documents yet. Create
-                        a new blank output instead.
+                        No outputs for this PPA in other documents yet. Create a
+                        new blank output instead.
                     </p>
                 ) : (
                     <ul className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">

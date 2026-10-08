@@ -365,8 +365,8 @@ export default function PpaPage({
                                 </EmptyMedia>
                                 <EmptyTitle>No office selected</EmptyTitle>
                                 <EmptyDescription>
-                                    Select an LGU office above to view its
-                                    PPA library.
+                                    Select an LGU office above to view its PPA
+                                    library.
                                 </EmptyDescription>
                             </EmptyHeader>
                             <EmptyContent>
@@ -399,7 +399,8 @@ export default function PpaPage({
 
             <PpaFormDialog
                 isOpen={isFormOpen}
-                onOpenChange={handleDialogOpenChange}                mode={formMode}
+                onOpenChange={handleDialogOpenChange}
+                mode={formMode}
                 targetType={targetType}
                 parentPpa={parentPpa}
                 editPpa={editPpa}

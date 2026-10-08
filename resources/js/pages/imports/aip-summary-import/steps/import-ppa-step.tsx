@@ -18,11 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type {
-    FiscalYear,
-    ImportOffice,
-    PpaBlock,
-} from '../types';
+import type { FiscalYear, ImportOffice, PpaBlock } from '../types';
 
 const columnHelper = createColumnHelper<PpaBlock>();
 

@@ -14,7 +14,7 @@ export default function AppLogo() {
                 <img
                     src="/images/leap-temp-logo.png"
                     alt="LEAP - Local Expenditure Administration Program"
-                    className="-ml-2 aspect-square size-8 rounded-full object-cover ring-2 ring-sidebar"
+                    className="ring-sidebar -ml-2 aspect-square size-8 rounded-full object-cover ring-2"
                 />
             </div>
             <div className="ml-1 grid flex-1 text-left text-sm">

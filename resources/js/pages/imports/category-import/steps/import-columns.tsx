@@ -119,14 +119,10 @@ export function getCategoryReviewColumns() {
                     | CategoryReviewTableMeta
                     | undefined;
                 const newItem = newDecisionItem(u.raw);
-                const suggestedNames = new Set(
-                    u.topMatches.map((t) => t.name),
-                );
+                const suggestedNames = new Set(u.topMatches.map((t) => t.name));
                 const items = [
                     newItem,
-                    ...u.topMatches.map((t) =>
-                        suggestedDecisionItem(t.name),
-                    ),
+                    ...u.topMatches.map((t) => suggestedDecisionItem(t.name)),
                     ...(meta?.allNames ?? []).filter(
                         (n) => n !== u.raw && !suggestedNames.has(n),
                     ),
@@ -162,14 +158,11 @@ export function getCategoryReviewColumns() {
                                 </ComboboxEmpty>
                                 <ComboboxList>
                                     {(item: string) => {
-                                        const isSuggested =
-                                            u.topMatches.some(
-                                                (t) =>
-                                                    item ===
-                                                    suggestedDecisionItem(
-                                                        t.name,
-                                                    ),
-                                            );
+                                        const isSuggested = u.topMatches.some(
+                                            (t) =>
+                                                item ===
+                                                suggestedDecisionItem(t.name),
+                                        );
 
                                         return (
                                             <ComboboxItem

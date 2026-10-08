@@ -74,7 +74,7 @@ function getExtractPreviewColumns() {
             header: () => <div className="px-1">Offices</div>,
             cell: ({ getValue }) => (
                 <span
-                    className="block max-w-[20ch] truncate whitespace-nowrap px-1"
+                    className="block max-w-[20ch] truncate px-1 whitespace-nowrap"
                     title={getValue()}
                 >
                     {getValue()}
@@ -85,7 +85,7 @@ function getExtractPreviewColumns() {
             size: 90,
             header: () => <div className="px-1">Start</div>,
             cell: ({ getValue }) => (
-                <span className="block whitespace-nowrap px-1">
+                <span className="block px-1 whitespace-nowrap">
                     {formatAipScheduleShort(getValue()) ?? '—'}
                 </span>
             ),
@@ -94,7 +94,7 @@ function getExtractPreviewColumns() {
             size: 90,
             header: () => <div className="px-1">End</div>,
             cell: ({ getValue }) => (
-                <span className="block whitespace-nowrap px-1">
+                <span className="block px-1 whitespace-nowrap">
                     {formatAipScheduleShort(getValue()) ?? '—'}
                 </span>
             ),
@@ -123,7 +123,7 @@ function getExtractPreviewColumns() {
 
                 return (
                     <span
-                        className="block max-w-[20ch] truncate whitespace-nowrap px-1"
+                        className="block max-w-[20ch] truncate px-1 whitespace-nowrap"
                         title={value}
                     >
                         {value}
@@ -135,7 +135,7 @@ function getExtractPreviewColumns() {
             size: 90,
             header: () => <div className="px-1">Adapt.</div>,
             cell: ({ getValue }) => (
-                <span className="block whitespace-nowrap px-1">
+                <span className="block px-1 whitespace-nowrap">
                     {getValue() ?? '—'}
                 </span>
             ),
@@ -144,7 +144,7 @@ function getExtractPreviewColumns() {
             size: 90,
             header: () => <div className="px-1">Mitig.</div>,
             cell: ({ getValue }) => (
-                <span className="block whitespace-nowrap px-1">
+                <span className="block px-1 whitespace-nowrap">
                     {getValue() ?? '—'}
                 </span>
             ),
@@ -157,7 +157,7 @@ function getExtractPreviewColumns() {
 
                 return (
                     <span
-                        className="block max-w-[16ch] truncate whitespace-nowrap px-1"
+                        className="block max-w-[16ch] truncate px-1 whitespace-nowrap"
                         title={value}
                     >
                         {value}

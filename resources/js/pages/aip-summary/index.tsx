@@ -260,8 +260,7 @@ export default function AipSummary({
         : currentDocument
           ? String(currentDocument.id)
           : '';
-    const isDeletableDoc =
-        !isCumulative && currentDocument?.is_latest === true;
+    const isDeletableDoc = !isCumulative && currentDocument?.is_latest === true;
     const readOnly = isCumulative;
 
     const exportScope = useMemo(() => {
@@ -494,9 +493,7 @@ export default function AipSummary({
                                     size="icon"
                                     type="button"
                                     title={`Delete ${currentDocument?.name}`}
-                                    onClick={() =>
-                                        setIsSettingsAlertOpen(true)
-                                    }
+                                    onClick={() => setIsSettingsAlertOpen(true)}
                                 >
                                     <Settings />
                                 </Button>
@@ -514,19 +511,13 @@ export default function AipSummary({
                     meta={{
                         onEdit: readOnly ? undefined : handleEdit,
                         onAdd: readOnly ? undefined : handleAddEntry,
-                        onDelete: readOnly
-                            ? undefined
-                            : handleDeleteDialogOpen,
-                        canDelete: readOnly
-                            ? false
-                            : (can?.delete ?? false),
+                        onDelete: readOnly ? undefined : handleDeleteDialogOpen,
+                        canDelete: readOnly ? false : (can?.delete ?? false),
                         canSetPsPool: readOnly
                             ? false
                             : (can?.setPsPool ?? false),
                         psPoolPpaId,
-                        onSetAsPsPool: readOnly
-                            ? undefined
-                            : handleSetAsPsPool,
+                        onSetAsPsPool: readOnly ? undefined : handleSetAsPsPool,
                         readOnly,
                     }}
                     showFooter={true}
@@ -804,10 +795,7 @@ export default function AipSummary({
     );
 }
 
-AipSummary.layout = ({
-    currentDocument,
-    isCumulative,
-}: AipSummaryProps) => ({
+AipSummary.layout = ({ currentDocument, isCumulative }: AipSummaryProps) => ({
     breadcrumbs: [
         { title: 'Annual Investment Programs', href: '/aip' },
         {

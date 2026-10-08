@@ -727,7 +727,9 @@ export const LbpForm2Document: React.FC<LbpForm2DocumentProps> = ({
                                                 },
                                             ]}
                                         >
-                                            <Text style={styles.subTotalCellRight}>
+                                            <Text
+                                                style={styles.subTotalCellRight}
+                                            >
                                                 -
                                             </Text>
                                         </View>
@@ -739,7 +741,9 @@ export const LbpForm2Document: React.FC<LbpForm2DocumentProps> = ({
                                                 },
                                             ]}
                                         >
-                                            <Text style={styles.subTotalCellRight}>
+                                            <Text
+                                                style={styles.subTotalCellRight}
+                                            >
                                                 -
                                             </Text>
                                         </View>
@@ -751,7 +755,9 @@ export const LbpForm2Document: React.FC<LbpForm2DocumentProps> = ({
                                                 },
                                             ]}
                                         >
-                                            <Text style={styles.subTotalCellRight}>
+                                            <Text
+                                                style={styles.subTotalCellRight}
+                                            >
                                                 -
                                             </Text>
                                         </View>
@@ -761,14 +767,18 @@ export const LbpForm2Document: React.FC<LbpForm2DocumentProps> = ({
                                                 { width: COL_WIDTHS.total },
                                             ]}
                                         >
-                                            <Text style={styles.subTotalCellRight}>
+                                            <Text
+                                                style={styles.subTotalCellRight}
+                                            >
                                                 -
                                             </Text>
                                         </View>
                                         <View
                                             style={{ width: COL_WIDTHS.budget }}
                                         >
-                                            <Text style={styles.subTotalCellRight}>
+                                            <Text
+                                                style={styles.subTotalCellRight}
+                                            >
                                                 {fmt(section.total)}
                                             </Text>
                                         </View>
@@ -834,9 +844,7 @@ export const LbpForm2Document: React.FC<LbpForm2DocumentProps> = ({
                                     { width: COL_WIDTHS.pastYear },
                                 ]}
                             >
-                                <Text style={styles.subTotalCellRight}>
-                                    -
-                                </Text>
+                                <Text style={styles.subTotalCellRight}>-</Text>
                             </View>
                             <View
                                 style={[
@@ -844,9 +852,7 @@ export const LbpForm2Document: React.FC<LbpForm2DocumentProps> = ({
                                     { width: COL_WIDTHS.firstSem },
                                 ]}
                             >
-                                <Text style={styles.subTotalCellRight}>
-                                    -
-                                </Text>
+                                <Text style={styles.subTotalCellRight}>-</Text>
                             </View>
                             <View
                                 style={[
@@ -854,9 +860,7 @@ export const LbpForm2Document: React.FC<LbpForm2DocumentProps> = ({
                                     { width: COL_WIDTHS.secondSem },
                                 ]}
                             >
-                                <Text style={styles.subTotalCellRight}>
-                                    -
-                                </Text>
+                                <Text style={styles.subTotalCellRight}>-</Text>
                             </View>
                             <View
                                 style={[
@@ -864,9 +868,7 @@ export const LbpForm2Document: React.FC<LbpForm2DocumentProps> = ({
                                     { width: COL_WIDTHS.total },
                                 ]}
                             >
-                                <Text style={styles.subTotalCellRight}>
-                                    -
-                                </Text>
+                                <Text style={styles.subTotalCellRight}>-</Text>
                             </View>
                             <View style={{ width: COL_WIDTHS.budget }}>
                                 <Text style={styles.subTotalCellRight}>

@@ -40,16 +40,7 @@ const PROCUREMENT_ROWS: (string | number)[][] = [
         'ream',
         250,
     ],
-    /*  5 */ [
-        '',
-        '',
-        '',
-        'Office Supplies Expenses',
-        '2',
-        'Ballpen',
-        'pc',
-        15,
-    ],
+    /*  5 */ ['', '', '', 'Office Supplies Expenses', '2', 'Ballpen', 'pc', 15],
     /*  6 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
     /*  7 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
     /*  8 */ [

@@ -1,8 +1,4 @@
-import {
-    getCategoryMatch,
-    getCoaMatch,
-    normalize,
-} from '@/lib/ppmp/normalize';
+import { getCategoryMatch, getCoaMatch, normalize } from '@/lib/ppmp/normalize';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import type { UniqueQuantityItem } from '@/lib/ppmp/quantities-extract';
 

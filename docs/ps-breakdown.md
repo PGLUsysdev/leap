@@ -25,12 +25,12 @@ personnel data, so the PS Breakdown table and the LBP Form 2 report cannot
 disagree. **Swapping in the API should touch that one file only**; no caller
 needs to change.
 
-| Accessor | Returns | Shape |
-|---|---|---|
-| `positions()` | 8 positions | `id`, `office_id`, `item_number`, `employment_type`, `is_funded`, `status`, nested `ios` (`id`, `class`, `class_id`, `salary_grade`), nested `user` (`id`, `name`, `step`) or `null` |
-| `rates()` | 11 statutory rates | keyed as `PsRate::rate_key` |
-| `annualRateMap()` | `position id → {current, budget}` | `budget` = authorized monthly rate × 12 |
-| `monthsOfService()` | empty | positions absent from this map are budgeted for a full year |
+| Accessor            | Returns                           | Shape                                                                                                                                                                                |
+| ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `positions()`       | 8 positions                       | `id`, `office_id`, `item_number`, `employment_type`, `is_funded`, `status`, nested `ios` (`id`, `class`, `class_id`, `salary_grade`), nested `user` (`id`, `name`, `step`) or `null` |
+| `rates()`           | 11 statutory rates                | keyed as `PsRate::rate_key`                                                                                                                                                          |
+| `annualRateMap()`   | `position id → {current, budget}` | `budget` = authorized monthly rate × 12                                                                                                                                              |
+| `monthsOfService()` | empty                             | positions absent from this map are budgeted for a full year                                                                                                                          |
 
 Mock composition: 8 positions, SG 1–24, 6 permanent / 1 casual / 1 contractual,
 6 occupied / 2 vacant, 6 with a named incumbent. All 16 computed COAs resolve to
@@ -38,15 +38,15 @@ non-zero totals; grand total ₱5,357,519.16.
 
 ## Current wiring
 
-| Piece | File | State |
-|---|---|---|
-| Page shell + props | `resources/js/pages/ps-breakdown/index.tsx` | Receives `positions` / `rates` / `annualRateMap` / `monthsOfService` as Inertia props |
-| Mock dataset | `app/Services/MockPersonnelData.php` | Server-side; see above |
-| Dynamic columns | `columns/ps-breakdown-cols.tsx` | `coas.filter(expense_class === 'PS')` → one col per PS COA |
-| Cell formulas | `resources/js/lib/ps-calculations.ts` | Hardcoded switch on `coa.path` (note: `account_number` holds only the last segment, e.g. `010`; full code is `path`, e.g. `5-01-01-010`) |
-| Backend totals | `PsBreakdownController::computePsCoaTotals` | Mirrors the frontend switch; feeds the LBP Form 2 report |
-| Column source | `PsBreakdownController@index` | `chart_of_accounts` where `expense_class='PS'` + `is_active`, ordered by `path` |
-| Prop source | `PsBreakdownController@index` | `MockPersonnelData::*` |
+| Piece              | File                                        | State                                                                                                                                    |
+| ------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Page shell + props | `resources/js/pages/ps-breakdown/index.tsx` | Receives `positions` / `rates` / `annualRateMap` / `monthsOfService` as Inertia props                                                    |
+| Mock dataset       | `app/Services/MockPersonnelData.php`        | Server-side; see above                                                                                                                   |
+| Dynamic columns    | `columns/ps-breakdown-cols.tsx`             | `coas.filter(expense_class === 'PS')` → one col per PS COA                                                                               |
+| Cell formulas      | `resources/js/lib/ps-calculations.ts`       | Hardcoded switch on `coa.path` (note: `account_number` holds only the last segment, e.g. `010`; full code is `path`, e.g. `5-01-01-010`) |
+| Backend totals     | `PsBreakdownController::computePsCoaTotals` | Mirrors the frontend switch; feeds the LBP Form 2 report                                                                                 |
+| Column source      | `PsBreakdownController@index`               | `chart_of_accounts` where `expense_class='PS'` + `is_active`, ordered by `path`                                                          |
+| Prop source        | `PsBreakdownController@index`               | `MockPersonnelData::*`                                                                                                                   |
 
 Footer = per-column sum. Cells without a deterministic rule render `-`.
 
@@ -124,9 +124,9 @@ ordinance or rate decision, not just a code change:
 - **RA/TA rates are fabricated.** The SG bands (`rata_sg_24_above` = ₱4,000,
   `rata_sg_16_23` = ₱2,000, `ta_sg_24_above` = ₱2,000, `ta_sg_16_23` = ₱1,000)
   appear nowhere in the doc, which specifies **LBC No. 157 Annex B** — varying
-  by *rank and LGU income class*, not salary grade.
+  by _rank and LGU income class_, not salary grade.
 - **RA/TA exclude contractual officials** (gated on `employment_type ===
-  'permanent'`), though LBC No. 157 covers officials regardless of plantilla
+'permanent'`), though LBC No. 157 covers officials regardless of plantilla
   status.
 - **Hazard pay is granted to every occupied post**; the doc scopes it to Public
   Health Workers under RA 7305. No PHW flag exists in the data.
@@ -134,7 +134,7 @@ ordinance or rate decision, not just a code change:
 ### Coverage gap
 
 6 of the 11 unimplemented accounts are **Mandatory** per the doc's Part V
-classification, while 2 of the 7 *optional* accounts are auto-granted:
+classification, while 2 of the 7 _optional_ accounts are auto-granted:
 
 - Mandatory, unimplemented: subsistence (`050`), overseas (`090`),
   overtime/NSD (`130`), pension (`5-01-04-010`), retirement gratuity (`020`),
@@ -149,10 +149,10 @@ credits, service years, post index, PHW designation).
 
 These are no longer read by any application code:
 
-| Table | Note |
-|---|---|
-| `ps_rates` | 18 rows. Superseded by `MockPersonnelData::rates()`. `PsRate` model and `PsRateSeeder` remain but have no callers |
-| `fe_breakdown_items` | Already had **zero** code references before this work — no model, controller or route |
+| Table                | Note                                                                                                                          |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `ps_rates`           | 18 rows. Superseded by `MockPersonnelData::rates()`. `PsRate` model and `PsRateSeeder` remain but have no callers             |
+| `fe_breakdown_items` | Already had **zero** code references before this work — no model, controller or route                                         |
 | `ps_breakdown_items` | 0 rows. Its `store` / `destroy` / `recalculate` methods and routes were deleted; still holds the `position_id → positions` FK |
 
 ### Not verified

@@ -53,8 +53,9 @@ export default function CategoryImport({
     const [extractResult, setExtractResult] = useState<ExtractResult | null>(
         null,
     );
-    const [ppmpExtract, setPpmpExtract] =
-        useState<PpmpExtractResult | null>(null);
+    const [ppmpExtract, setPpmpExtract] = useState<PpmpExtractResult | null>(
+        null,
+    );
     const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
     const [rawSheet, setRawSheet] = useState<RawSheet | null>(null);
     const [step, setStep] = useState<CimpStep>('upload');
@@ -98,10 +99,7 @@ export default function CategoryImport({
 
     // Adapter: shared Extract tab still takes a single-entry Record.
     const rawSheetsForStep = useMemo(
-        () =>
-            rawSheet && selectedSheet
-                ? { [selectedSheet]: rawSheet }
-                : {},
+        () => (rawSheet && selectedSheet ? { [selectedSheet]: rawSheet } : {}),
         [rawSheet, selectedSheet],
     );
 
@@ -192,8 +190,8 @@ export default function CategoryImport({
         // new category, picking an existing name resolves as a duplicate.
         // Decision-resolved duplicates are dropped client-side so the
         // payload matches the Review count (backend would skip them anyway).
-        const toImport = extractResult
-            .unique.filter((u) => selected.has(u.normalized))
+        const toImport = extractResult.unique
+            .filter((u) => selected.has(u.normalized))
             .map((u) => {
                 const chosen = stripDecisionPrefix(
                     decisions[u.normalized] ?? newDecisionItem(u.raw),

@@ -160,9 +160,7 @@ export function getCellNumericValue(
                 : null;
         // 5-01-02-080 — PEI: flat annual ceiling
         case '5-01-02-080':
-            return isOccupied(pos)
-                ? Number(rates['pei_max'] ?? 5000)
-                : null;
+            return isOccupied(pos) ? Number(rates['pei_max'] ?? 5000) : null;
         // 5-01-02-110 — Hazard Pay: SG-banded % of monthly basic x 12
         case '5-01-02-110': {
             if (!isOccupied(pos) || sg === null) {
@@ -176,9 +174,7 @@ export function getCellNumericValue(
             return isBudgeted(pos) ? monthlyRate : null;
         // 5-01-02-150 — Cash Gift: flat annual
         case '5-01-02-150':
-            return isOccupied(pos)
-                ? Number(rates['cash_gift'] ?? 5000)
-                : null;
+            return isOccupied(pos) ? Number(rates['cash_gift'] ?? 5000) : null;
         // 5-01-02-990 — Other Bonuses & Allowances: 1 month basic pay placeholder
         case '5-01-02-990':
             return isBudgeted(pos) ? monthlyRate : null;
@@ -209,8 +205,7 @@ export function getCellNumericValue(
         case '5-01-03-040':
             return isBudgeted(pos)
                 ? Math.min(
-                      budgetAnnualRate *
-                          ((rates['ecip_percent'] ?? 1) / 100),
+                      budgetAnnualRate * ((rates['ecip_percent'] ?? 1) / 100),
                       1200,
                   )
                 : null;

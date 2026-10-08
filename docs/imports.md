@@ -239,8 +239,8 @@ The full pipeline every imported value travels, in order:
 
 ## Backend behavior
 
-| Importer   | Endpoint                           | Result                                                                                                                                    |
-| ---------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Importer   | Endpoint                                   | Result                                                                                                                                    |
+| ---------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Category   | `POST /imports/category-import`            | Creates missing categories (`is_non_procurement=false`); strict-normalized dupes skipped (`inserted`/`skipped` report)                    |
 | Mapping    | `POST /imports/category-coa-mappings/bulk` | Creates missing pairs transactionally; existing pairs skipped                                                                             |
 | Price list | `POST /imports/price-list-import`          | Validates rows; requires the mapping junction; upserts on junction + normalized description + unit (`inserted`/`updated`/`errors` report) |

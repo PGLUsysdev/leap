@@ -48,8 +48,9 @@ export default function CategoryCoaMappingImport({
 }: CategoryCoaMappingProps) {
     const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
     const [config, setConfig] = useState<CategoryCoaSheetConfig | null>(null);
-    const [ppmpExtract, setPpmpExtract] =
-        useState<PpmpExtractResult | null>(null);
+    const [ppmpExtract, setPpmpExtract] = useState<PpmpExtractResult | null>(
+        null,
+    );
     const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
     const [rawSheet, setRawSheet] = useState<RawSheet | null>(null);
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>(
@@ -89,14 +90,10 @@ export default function CategoryCoaMappingImport({
     const hasFormatResult = formatResult !== null;
     const formatValid = formatResult?.valid === true;
     const canExtract = canVerifyFormat && hasFormatResult && formatValid;
-    const canReview =
-        canExtract && !!verification && verification.total > 0;
+    const canReview = canExtract && !!verification && verification.total > 0;
 
     const rawSheetsForStep = useMemo(
-        () =>
-            rawSheet && selectedSheet
-                ? { [selectedSheet]: rawSheet }
-                : {},
+        () => (rawSheet && selectedSheet ? { [selectedSheet]: rawSheet } : {}),
         [rawSheet, selectedSheet],
     );
 

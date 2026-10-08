@@ -200,9 +200,7 @@ export default function PdfPreviewDialog({
                                                 >
                                                     <div className="grid w-full grid-cols-3">
                                                         <span className="col-span-1">
-                                                            {
-                                                                office.acronym
-                                                            }
+                                                            {office.acronym}
                                                         </span>
 
                                                         <span className="col-span-2">

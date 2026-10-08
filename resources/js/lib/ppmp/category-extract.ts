@@ -163,7 +163,12 @@ export function extractCategoryCandidates(
         if (itemRaw && !coaNorm) continue;
 
         if (isTotalRow(dataNorm)) {
-            excludedTotal.push({ row: r, raw: dataRaw, normalized: dataNorm, sheet });
+            excludedTotal.push({
+                row: r,
+                raw: dataRaw,
+                normalized: dataNorm,
+                sheet,
+            });
             continue;
         }
 

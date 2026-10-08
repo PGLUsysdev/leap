@@ -41,7 +41,9 @@ export function useImportWorkbook(onReset?: () => void) {
             await wb.xlsx.load(buf);
             setWorkbook(wb);
             setSheets(
-                wb.worksheets.map((ws) => ws.name.trim()).filter((n) => n.length > 0),
+                wb.worksheets
+                    .map((ws) => ws.name.trim())
+                    .filter((n) => n.length > 0),
             );
         } catch {
             setSheets([]);

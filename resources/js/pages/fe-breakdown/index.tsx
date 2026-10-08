@@ -62,7 +62,14 @@ export default function FeBreakdown({
                         Math.max(0, count + (saving ? 1 : -1)),
                     ),
             }),
-        [amounts, total, fiscalYear.id, aipEntryId, fundingSource?.id, can.edit],
+        [
+            amounts,
+            total,
+            fiscalYear.id,
+            aipEntryId,
+            fundingSource?.id,
+            can.edit,
+        ],
     );
 
     return (

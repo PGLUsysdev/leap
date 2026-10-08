@@ -226,9 +226,7 @@ function extractRelationshipsForSection(
                 const nextCoaRaw = cellText(
                     ws.getRow(r + 1).getCell(coaColumn),
                 );
-                const nextCoaNorm = nextCoaRaw
-                    ? normalize(nextCoaRaw)
-                    : null;
+                const nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
 
                 if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm)
                     isCoaLabel = true;
@@ -334,8 +332,7 @@ export function applyCoaOverrides(
         const effectiveCoa = overrideId
             ? (existingCoas.find((c) => c.id === overrideId) ?? null)
             : v.coaMatch;
-        const effectiveCoaExists =
-            overrideId !== null ? true : v.coaExists;
+        const effectiveCoaExists = overrideId !== null ? true : v.coaExists;
         const effectiveCoaId = overrideId ?? v.coaId;
         const effectiveCoaMatchType =
             overrideId !== null ? ('strict' as const) : v.coaMatchType;
@@ -420,9 +417,7 @@ export function extractMappingPairs(
         },
         {
             name: 'additional',
-            start: additionalItemsHeaderRow
-                ? additionalItemsHeaderRow + 1
-                : -1,
+            start: additionalItemsHeaderRow ? additionalItemsHeaderRow + 1 : -1,
             end: nonProcurementHeaderRow
                 ? nonProcurementHeaderRow - 1
                 : lastRow,

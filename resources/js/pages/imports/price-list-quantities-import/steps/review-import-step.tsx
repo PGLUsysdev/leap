@@ -97,8 +97,7 @@ function getMappedItemColumns(isUnclassified: (m: MappedItem) => boolean) {
             header: () => <div className="px-1">Status</div>,
             cell: ({ row }) => {
                 const m = row.original;
-                const noClass =
-                    m.status === 'matched' && isUnclassified(m);
+                const noClass = m.status === 'matched' && isUnclassified(m);
 
                 return (
                     <div className="px-1">
@@ -254,12 +253,8 @@ export function ReviewImportStep({
     const filteredItems = useMemo(
         () =>
             mappedItems
-                .filter(
-                    (m) => !showOnlyUnmapped || m.status !== 'matched',
-                )
-                .filter(
-                    (m) => !showOnlyWithQty || m.monthTotal > 0,
-                ),
+                .filter((m) => !showOnlyUnmapped || m.status !== 'matched')
+                .filter((m) => !showOnlyWithQty || m.monthTotal > 0),
         [mappedItems, showOnlyUnmapped, showOnlyWithQty],
     );
 
@@ -363,9 +358,7 @@ export function ReviewImportStep({
                                         : ''
                                 }
                                 onValueChange={(v) => {
-                                    onFiscalYearChange(
-                                        v ? Number(v) : null,
-                                    );
+                                    onFiscalYearChange(v ? Number(v) : null);
                                 }}
                             >
                                 <SelectTrigger className="h-9">
@@ -565,9 +558,8 @@ export function ReviewImportStep({
                             {withQtyCount > 0 && ` (${withQtyCount})`}
                         </label>
                         <span className="text-muted-foreground text-xs">
-                            Sheet: {effectiveImportSheet} —{' '}
-                            {importableCount} of {mappedItems.length}{' '}
-                            queued for import.
+                            Sheet: {effectiveImportSheet} — {importableCount} of{' '}
+                            {mappedItems.length} queued for import.
                         </span>
                     </div>
 

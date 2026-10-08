@@ -327,8 +327,9 @@ export default function ExpenseClassCodes({
                                 </Badge>
                             </CardTitle>
                             <CardDescription>
-Postable accounts with no PS / MOOE / FE / CO link
-                                 are ignored by the funding source totals sync.
+                                Postable accounts with no PS / MOOE / FE / CO
+                                link are ignored by the funding source totals
+                                sync.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-0 flex-1">

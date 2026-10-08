@@ -31,7 +31,11 @@ export function extractRawSheet(
 ): RawSheet | null {
     if (!workbook) return null;
 
-    const rawName = Array.isArray(sheetName) ? String((sheetName as unknown[])[0] ?? sheetName) : typeof sheetName === 'string' ? sheetName : String(sheetName ?? '');
+    const rawName = Array.isArray(sheetName)
+        ? String((sheetName as unknown[])[0] ?? sheetName)
+        : typeof sheetName === 'string'
+          ? sheetName
+          : String(sheetName ?? '');
     const trimmed = rawName.trim();
     const numId = Number(trimmed);
     const ws =
@@ -39,7 +43,9 @@ export function extractRawSheet(
         workbook.getWorksheet(trimmed) ??
         (Number.isFinite(numId) ? workbook.getWorksheet(numId) : undefined) ??
         workbook.worksheets.find((w) => w.name.trim() === trimmed) ??
-        workbook.worksheets.find((w) => w.name.trim().toLowerCase() === trimmed.toLowerCase());
+        workbook.worksheets.find(
+            (w) => w.name.trim().toLowerCase() === trimmed.toLowerCase(),
+        );
 
     if (!ws) return null;
 
@@ -50,13 +56,25 @@ export function extractRawSheet(
     let startRow = 1;
     let headerRowNumber: number | undefined;
 
-    if (cfg && typeof cfg === 'object' && 'columnConfig' in (cfg as Record<string, unknown>)) {
-        const c = cfg as { columnConfig: Record<string, string>; rowConfig?: { headerRow?: number | '' } };
+    if (
+        cfg &&
+        typeof cfg === 'object' &&
+        'columnConfig' in (cfg as Record<string, unknown>)
+    ) {
+        const c = cfg as {
+            columnConfig: Record<string, string>;
+            rowConfig?: { headerRow?: number | '' };
+        };
         const cols = new Set<string>();
         for (const v of Object.values(c.columnConfig)) {
-            if (typeof v === 'string' && v.trim()) cols.add(v.trim().toUpperCase());
+            if (typeof v === 'string' && v.trim())
+                cols.add(v.trim().toUpperCase());
             // qtyStart is a single col, but quantities has 12 cols — expand if present
-            if (typeof v === 'string' && /^[A-Z]+$/.test(v.trim().toUpperCase()) && 'qtyStart' in c.columnConfig) {
+            if (
+                typeof v === 'string' &&
+                /^[A-Z]+$/.test(v.trim().toUpperCase()) &&
+                'qtyStart' in c.columnConfig
+            ) {
                 // qtyStart handled separately below
             }
         }
@@ -65,14 +83,23 @@ export function extractRawSheet(
         if (qtyStart && typeof qtyStart === 'string' && qtyStart.trim()) {
             const startNum = columnToNumber(qtyStart.trim().toUpperCase());
             if (startNum > 0) {
-                for (let i = 0; i < 12; i++) cols.add(numberToColumn(startNum + i * 2));
+                for (let i = 0; i < 12; i++)
+                    cols.add(numberToColumn(startNum + i * 2));
             }
         }
         // Sort by column number for stable order
-        columnLetters = [...cols].sort((a, b) => columnToNumber(a) - columnToNumber(b));
+        columnLetters = [...cols].sort(
+            (a, b) => columnToNumber(a) - columnToNumber(b),
+        );
         if (columnLetters.length === 0) {
-            const fallbackCount = (ws as unknown as { columnCount: number }).columnCount || (ws as unknown as { actualColumnCount: number }).actualColumnCount || 15;
-            columnLetters = Array.from({ length: fallbackCount }, (_, i) => numberToColumn(i + 1));
+            const fallbackCount =
+                (ws as unknown as { columnCount: number }).columnCount ||
+                (ws as unknown as { actualColumnCount: number })
+                    .actualColumnCount ||
+                15;
+            columnLetters = Array.from({ length: fallbackCount }, (_, i) =>
+                numberToColumn(i + 1),
+            );
         }
         const hr = c.rowConfig?.headerRow;
         if (typeof hr === 'number' && hr > 0) {
@@ -80,8 +107,14 @@ export function extractRawSheet(
             headerRowNumber = hr;
         }
     } else {
-        const columnCount = (ws as unknown as { columnCount: number }).columnCount || (ws as unknown as { actualColumnCount: number }).actualColumnCount || 15;
-        columnLetters = Array.from({ length: columnCount }, (_, i) => numberToColumn(i + 1));
+        const columnCount =
+            (ws as unknown as { columnCount: number }).columnCount ||
+            (ws as unknown as { actualColumnCount: number })
+                .actualColumnCount ||
+            15;
+        columnLetters = Array.from({ length: columnCount }, (_, i) =>
+            numberToColumn(i + 1),
+        );
     }
 
     const columnCount = columnLetters.length;
@@ -113,7 +146,10 @@ export function extractRawSheets(
     sheetNames: unknown[],
     getCfg?: (sheet: string) => unknown,
 ): Record<string, RawSheet> {
-    const flat = (sheetNames as unknown[]).flat(Infinity).map((s) => String(s).trim()).filter(Boolean) as string[];
+    const flat = (sheetNames as unknown[])
+        .flat(Infinity)
+        .map((s) => String(s).trim())
+        .filter(Boolean) as string[];
     const out: Record<string, RawSheet> = {};
     for (const name of flat) {
         const cfg = getCfg ? getCfg(name) : undefined;

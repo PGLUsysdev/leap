@@ -78,7 +78,9 @@ describe('itemsForLbpForm', () => {
         const items = [makeItem(1, ' permanent '), makeItem(2, 'Casual')];
 
         expect(itemsForLbpForm(items, '3').map((item) => item.id)).toEqual([1]);
-        expect(itemsForLbpForm(items, '3A').map((item) => item.id)).toEqual([2]);
+        expect(itemsForLbpForm(items, '3A').map((item) => item.id)).toEqual([
+            2,
+        ]);
     });
 
     it('should_ReturnEmptyArray_When_NoAppointmentMatches', () => {
@@ -99,9 +101,9 @@ describe('itemsForLbpForm', () => {
 
     it('should_ReturnNothing_When_TheStatusKeyIsAbsent', () => {
         // A row that predates the field carries no key at all.
-        const item = { ...makeItem(1, 'PERMANENT') } as Partial<
-            PersonnelScheduleItem
-        >;
+        const item = {
+            ...makeItem(1, 'PERMANENT'),
+        } as Partial<PersonnelScheduleItem>;
         delete item.appointment_status;
 
         expect(itemsForLbpForm([item as PersonnelScheduleItem], '3')).toEqual(

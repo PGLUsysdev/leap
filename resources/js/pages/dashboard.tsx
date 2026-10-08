@@ -267,8 +267,7 @@ export default function Dashboard({
                                         <Badge variant="secondary">
                                             {officeSelect.selectedItem
                                                 .acronym ||
-                                                officeSelect.selectedItem
-                                                    .name}
+                                                officeSelect.selectedItem.name}
                                         </Badge>
                                     ) : (
                                         <Badge variant="secondary">
@@ -336,54 +335,56 @@ export default function Dashboard({
                                     </CardHeader>
                                     <CardContent>
                                         {expenseData.length > 0 ? (
-                                        <ChartContainer
-                                            config={expenseConfig}
-                                            className="min-h-[240px] w-full"
-                                        >
-                                            <PieChart>
-                                                <ChartTooltip
-                                                    content={
-                                                        <ChartTooltipContent
-                                                            hideLabel
-                                                            formatter={(
-                                                                value,
-                                                            ) =>
-                                                                pesoFull(
-                                                                    Number(
-                                                                        value,
-                                                                    ),
-                                                                )
-                                                            }
-                                                        />
-                                                    }
-                                                />
-                                                <ChartLegend
-                                                    content={
-                                                        <ChartLegendContent nameKey="key" />
-                                                    }
-                                                />
-                                                <Pie
-                                                    data={expenseData}
-                                                    dataKey="value"
-                                                    nameKey="key"
-                                                    innerRadius={55}
-                                                    minAngle={3}
-                                                    stroke="var(--background)"
-                                                    strokeWidth={1}
-                                                >
-                                                    {expenseData.map(
-                                                        (entry) => (
-                                                            <Cell
-                                                                key={entry.key}
-                                                                fill={
-                                                                    entry.fill
+                                            <ChartContainer
+                                                config={expenseConfig}
+                                                className="min-h-[240px] w-full"
+                                            >
+                                                <PieChart>
+                                                    <ChartTooltip
+                                                        content={
+                                                            <ChartTooltipContent
+                                                                hideLabel
+                                                                formatter={(
+                                                                    value,
+                                                                ) =>
+                                                                    pesoFull(
+                                                                        Number(
+                                                                            value,
+                                                                        ),
+                                                                    )
                                                                 }
                                                             />
-                                                        ),
-                                                    )}
-                                                </Pie>
-                                            </PieChart>
-                                        </ChartContainer>
+                                                        }
+                                                    />
+                                                    <ChartLegend
+                                                        content={
+                                                            <ChartLegendContent nameKey="key" />
+                                                        }
+                                                    />
+                                                    <Pie
+                                                        data={expenseData}
+                                                        dataKey="value"
+                                                        nameKey="key"
+                                                        innerRadius={55}
+                                                        minAngle={3}
+                                                        stroke="var(--background)"
+                                                        strokeWidth={1}
+                                                    >
+                                                        {expenseData.map(
+                                                            (entry) => (
+                                                                <Cell
+                                                                    key={
+                                                                        entry.key
+                                                                    }
+                                                                    fill={
+                                                                        entry.fill
+                                                                    }
+                                                                />
+                                                            ),
+                                                        )}
+                                                    </Pie>
+                                                </PieChart>
+                                            </ChartContainer>
                                         ) : (
                                             <Empty>
                                                 <EmptyHeader>
@@ -412,10 +413,10 @@ export default function Dashboard({
                                     </CardHeader>
                                     <CardContent>
                                         {fundingData.length > 0 ? (
-                                        <ChartContainer
-                                            config={fundingConfig}
-                                            className="min-h-[240px] w-full"
-                                        >
+                                            <ChartContainer
+                                                config={fundingConfig}
+                                                className="min-h-[240px] w-full"
+                                            >
                                                 <PieChart>
                                                     <ChartTooltip
                                                         content={
@@ -461,8 +462,8 @@ export default function Dashboard({
                                                             ),
                                                         )}
                                                     </Pie>
-                                            </PieChart>
-                                        </ChartContainer>
+                                                </PieChart>
+                                            </ChartContainer>
                                         ) : (
                                             <Empty>
                                                 <EmptyHeader>
@@ -472,8 +473,8 @@ export default function Dashboard({
                                                     <EmptyDescription>
                                                         No funding source
                                                         budgets for FY{' '}
-                                                        {draftYear.year} in
-                                                        this scope yet.
+                                                        {draftYear.year} in this
+                                                        scope yet.
                                                     </EmptyDescription>
                                                 </EmptyHeader>
                                             </Empty>
@@ -485,16 +486,14 @@ export default function Dashboard({
                             {/* PPA types */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>
-                                        PPA Type Distribution
-                                    </CardTitle>
+                                    <CardTitle>PPA Type Distribution</CardTitle>
                                     <CardDescription>
                                         FY {draftYear.year}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     {ppaTypeDistribution.length > 0 ? (
-                                    <ChartContainer
+                                        <ChartContainer
                                             config={{
                                                 count: { label: 'PPAs' },
                                             }}
@@ -541,8 +540,8 @@ export default function Dashboard({
                                             </EmptyHeader>
                                         </Empty>
                                     )}
-                                    </CardContent>
-                                </Card>
+                                </CardContent>
+                            </Card>
 
                             {/* Climate change expenditure */}
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -563,14 +562,11 @@ export default function Dashboard({
                             {/* COA budget */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>
-                                        Budget by Account
-                                    </CardTitle>
+                                    <CardTitle>Budget by Account</CardTitle>
                                     <CardDescription>
                                         PS from personnel; MOOE and CO from
-                                        procurement; FE from the FE
-                                        breakdown. Accounts with no amount
-                                        are omitted.
+                                        procurement; FE from the FE breakdown.
+                                        Accounts with no amount are omitted.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
@@ -658,15 +654,15 @@ export default function Dashboard({
                                                     No data to display
                                                 </EmptyTitle>
                                                 <EmptyDescription>
-                                                    No account-level budgets
-                                                    for FY {draftYear.year} in
-                                                    this scope yet.
+                                                    No account-level budgets for
+                                                    FY {draftYear.year} in this
+                                                    scope yet.
                                                 </EmptyDescription>
                                             </EmptyHeader>
                                         </Empty>
                                     )}
-                                    </CardContent>
-                                </Card>
+                                </CardContent>
+                            </Card>
                         </>
                     )}
                 </div>

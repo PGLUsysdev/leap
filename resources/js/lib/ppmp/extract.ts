@@ -46,8 +46,10 @@ type PpmpSheetCfg = SharedSheetConfig | QuantitiesSheetConfig;
 function hasQtyStart(cfg: PpmpSheetCfg): cfg is QuantitiesSheetConfig {
     return (
         'qtyStart' in cfg.columnConfig &&
-        typeof (cfg.columnConfig as unknown as { qtyStart?: string }).qtyStart === 'string' &&
-        (cfg.columnConfig as QuantitiesSheetConfig['columnConfig']).qtyStart !== ''
+        typeof (cfg.columnConfig as unknown as { qtyStart?: string })
+            .qtyStart === 'string' &&
+        (cfg.columnConfig as QuantitiesSheetConfig['columnConfig']).qtyStart !==
+            ''
     );
 }
 
@@ -63,7 +65,10 @@ export function extractPpmpSheet(
     sheetName: unknown,
     cfg: PpmpSheetCfg,
 ): PpmpExtractResult {
-    const makeFail = (message: string, errors: PpmpExtractIssue[] = [{ row: 0, message }]): PpmpExtractResult => ({
+    const makeFail = (
+        message: string,
+        errors: PpmpExtractIssue[] = [{ row: 0, message }],
+    ): PpmpExtractResult => ({
         valid: false,
         message,
         errors,
@@ -73,7 +78,11 @@ export function extractPpmpSheet(
 
     if (!workbook) return makeFail('Workbook not loaded');
 
-    const rawName = Array.isArray(sheetName) ? String((sheetName as unknown[])[0] ?? sheetName) : typeof sheetName === 'string' ? sheetName : String(sheetName ?? '');
+    const rawName = Array.isArray(sheetName)
+        ? String((sheetName as unknown[])[0] ?? sheetName)
+        : typeof sheetName === 'string'
+          ? sheetName
+          : String(sheetName ?? '');
     const trimmedName = rawName.trim();
     const numId = Number(trimmedName);
     const ws =
@@ -81,16 +90,27 @@ export function extractPpmpSheet(
         workbook.getWorksheet(trimmedName) ??
         (Number.isFinite(numId) ? workbook.getWorksheet(numId) : undefined) ??
         workbook.worksheets.find((w) => w.name.trim() === trimmedName) ??
-        workbook.worksheets.find((w) => w.name.trim().toLowerCase() === trimmedName.toLowerCase());
+        workbook.worksheets.find(
+            (w) => w.name.trim().toLowerCase() === trimmedName.toLowerCase(),
+        );
 
     if (!ws) {
-        const available = workbook.worksheets.map((w) => `"${w.name}"`).join(', ');
-        return makeFail(`Worksheet "${rawName}" not found — available: ${available || 'none'}`, [
-            { row: 0, message: `Worksheet "${rawName}" not found — available: ${available || 'none'}` },
-        ]);
+        const available = workbook.worksheets
+            .map((w) => `"${w.name}"`)
+            .join(', ');
+        return makeFail(
+            `Worksheet "${rawName}" not found — available: ${available || 'none'}`,
+            [
+                {
+                    row: 0,
+                    message: `Worksheet "${rawName}" not found — available: ${available || 'none'}`,
+                },
+            ],
+        );
     }
 
-    const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg.rowConfig;
+    const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } =
+        cfg.rowConfig;
     const { coaLabelMode } = cfg;
     const dataColumn = cfg.columnConfig.category;
     const descColumn = cfg.columnConfig.description || dataColumn;
@@ -100,33 +120,53 @@ export function extractPpmpSheet(
     const itemColumn = cfg.columnConfig.itemNumber;
     const lastRow = ws.actualRowCount;
 
-    if (headerRow === '' || headerRow == null) return makeFail('Header Row is required — check calibration');
-    if (additionalItemsHeaderRow === '' || additionalItemsHeaderRow == null) return makeFail('Additional Items Header Row is required');
+    if (headerRow === '' || headerRow == null)
+        return makeFail('Header Row is required — check calibration');
+    if (additionalItemsHeaderRow === '' || additionalItemsHeaderRow == null)
+        return makeFail('Additional Items Header Row is required');
     // Non-Procurement is optional — ranges below fall back to lastRow / skip.
 
     let qtyCols: string[] | null = null;
     if (hasQtyStart(cfg)) {
         const qtyStartNum = columnToNumber(cfg.columnConfig.qtyStart);
         if (qtyStartNum > 0) {
-            qtyCols = Array.from({ length: 12 }, (_, i) => numberToColumn(qtyStartNum + i * 2));
+            qtyCols = Array.from({ length: 12 }, (_, i) =>
+                numberToColumn(qtyStartNum + i * 2),
+            );
         }
     }
 
     const procurementStart = headerRow + 1;
-    const procurementEnd = additionalItemsHeaderRow ? additionalItemsHeaderRow - 1 : nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : lastRow;
-    const additionalStart = additionalItemsHeaderRow ? additionalItemsHeaderRow + 1 : -1;
-    const additionalEnd = nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : lastRow;
-    const nonProcStart = nonProcurementHeaderRow ? nonProcurementHeaderRow + 1 : -1;
+    const procurementEnd = additionalItemsHeaderRow
+        ? additionalItemsHeaderRow - 1
+        : nonProcurementHeaderRow
+          ? nonProcurementHeaderRow - 1
+          : lastRow;
+    const additionalStart = additionalItemsHeaderRow
+        ? additionalItemsHeaderRow + 1
+        : -1;
+    const additionalEnd = nonProcurementHeaderRow
+        ? nonProcurementHeaderRow - 1
+        : lastRow;
+    const nonProcStart = nonProcurementHeaderRow
+        ? nonProcurementHeaderRow + 1
+        : -1;
     const nonProcEnd = lastRow;
 
     const details: string[] = [];
-    details.push(`Ranges: procurement [${procurementStart}..${procurementEnd}] additional [${additionalStart}..${additionalEnd}] non-proc [${nonProcStart}..${nonProcEnd}]`);
+    details.push(
+        `Ranges: procurement [${procurementStart}..${procurementEnd}] additional [${additionalStart}..${additionalEnd}] non-proc [${nonProcStart}..${nonProcEnd}]`,
+    );
     if (qtyCols) details.push(`Qty columns: ${qtyCols.join(', ')}`);
 
     const rawItems: RawPpmpItem[] = [];
     let skippedLabels = 0;
 
-    const extractSection = (section: RawPpmpItem['section'], startRow: number, endRow: number) => {
+    const extractSection = (
+        section: RawPpmpItem['section'],
+        startRow: number,
+        endRow: number,
+    ) => {
         if (startRow < 0 || endRow < 0 || startRow > endRow) return;
         for (let r = startRow; r <= endRow && r <= lastRow; r++) {
             const row = ws.getRow(r);
@@ -161,9 +201,14 @@ export function extractPpmpSheet(
             let isCoaLabel = false;
             if (coaLabelMode === 'with-label' && !coaRaw && dataRaw) {
                 if (r + 1 <= lastRow) {
-                    const nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
-                    const nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
-                    if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
+                    const nextCoaRaw = cellText(
+                        ws.getRow(r + 1).getCell(coaColumn),
+                    );
+                    const nextCoaNorm = nextCoaRaw
+                        ? normalize(nextCoaRaw)
+                        : null;
+                    if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm)
+                        isCoaLabel = true;
                 }
             }
             if (isCoaLabel) {
@@ -179,7 +224,9 @@ export function extractPpmpSheet(
                 continue;
             }
 
-            const priceNum = priceRaw ? Number(priceRaw.replace(/,/g, '')) : NaN;
+            const priceNum = priceRaw
+                ? Number(priceRaw.replace(/,/g, ''))
+                : NaN;
             const item: RawPpmpItem = {
                 sheet: rawName,
                 row: r,
@@ -196,7 +243,10 @@ export function extractPpmpSheet(
             if (qtyCols) {
                 const qtyRaws = qtyCols.map((c) => cellText(row.getCell(c)));
                 const qtys = qtyRaws.map((q) => parseQty(q));
-                const monthTotal = qtys.reduce<number>((sum, q) => sum + (q ?? 0), 0);
+                const monthTotal = qtys.reduce<number>(
+                    (sum, q) => sum + (q ?? 0),
+                    0,
+                );
                 item.qtyRaws = qtyRaws;
                 item.qtys = qtys;
                 item.monthTotal = monthTotal;
@@ -207,10 +257,14 @@ export function extractPpmpSheet(
     };
 
     extractSection('procurement', procurementStart, procurementEnd);
-    if (additionalItemsHeaderRow) extractSection('additional', additionalStart, additionalEnd);
-    if (nonProcurementHeaderRow) extractSection('non-procurement', nonProcStart, nonProcEnd);
+    if (additionalItemsHeaderRow)
+        extractSection('additional', additionalStart, additionalEnd);
+    if (nonProcurementHeaderRow)
+        extractSection('non-procurement', nonProcStart, nonProcEnd);
 
-    details.push(`Extracted ${rawItems.length} raw item rows, skipped ${skippedLabels} label/total rows`);
+    details.push(
+        `Extracted ${rawItems.length} raw item rows, skipped ${skippedLabels} label/total rows`,
+    );
 
     return {
         valid: true,
@@ -226,7 +280,10 @@ export function extractPpmpSheets(
     sheetNames: unknown[],
     getCfg: (sheet: string) => PpmpSheetCfg,
 ): Record<string, PpmpExtractResult> {
-    const flat = (sheetNames as unknown[]).flat(Infinity).map((s) => String(s).trim()).filter(Boolean) as string[];
+    const flat = (sheetNames as unknown[])
+        .flat(Infinity)
+        .map((s) => String(s).trim())
+        .filter(Boolean) as string[];
     const out: Record<string, PpmpExtractResult> = {};
     for (const sheet of flat) {
         out[sheet] = extractPpmpSheet(workbook, sheet, getCfg(sheet));

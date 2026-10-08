@@ -31,15 +31,45 @@ function cfg(
 }
 
 const CATS = [
-    { id: 1, name: 'OFFICE SUPPLIES', is_non_procurement: false, is_additional: false },
-    { id: 276, name: 'Additional Items (Uncategorized)', is_non_procurement: false, is_additional: true },
-    { id: 277, name: 'Non-Procurement (Uncategorized)', is_non_procurement: true, is_additional: false },
+    {
+        id: 1,
+        name: 'OFFICE SUPPLIES',
+        is_non_procurement: false,
+        is_additional: false,
+    },
+    {
+        id: 276,
+        name: 'Additional Items (Uncategorized)',
+        is_non_procurement: false,
+        is_additional: true,
+    },
+    {
+        id: 277,
+        name: 'Non-Procurement (Uncategorized)',
+        is_non_procurement: true,
+        is_additional: false,
+    },
 ];
 
 const COAS = [
-    { id: 10, account_number: '5-02-03-010', path: '5-02-03-010', account_title: 'Office Supplies Expenses' },
-    { id: 11, account_number: '5-02-03-020', path: '5-02-03-020', account_title: 'Accountable Forms Expenses' },
-    { id: 12, account_number: '5-02-99-010', path: '5-02-99-010', account_title: 'Welfare Goods Expenses' },
+    {
+        id: 10,
+        account_number: '5-02-03-010',
+        path: '5-02-03-010',
+        account_title: 'Office Supplies Expenses',
+    },
+    {
+        id: 11,
+        account_number: '5-02-03-020',
+        path: '5-02-03-020',
+        account_title: 'Accountable Forms Expenses',
+    },
+    {
+        id: 12,
+        account_number: '5-02-99-010',
+        path: '5-02-99-010',
+        account_title: 'Welfare Goods Expenses',
+    },
 ];
 
 describe('extractMappingPairs', () => {
@@ -48,20 +78,55 @@ describe('extractMappingPairs', () => {
             /*  1 */ ['', '', '', 'COA', 'Item#', 'Category', 'Unit', 'Price'],
             /*  2 */ ['', '', '', '', '', 'OFFICE SUPPLIES', '', ''],
             /*  3 */ ['', '', '', '', '', 'Office Supplies Expenses', '', ''],
-            /*  4 */ ['', '', '', 'Office Supplies Expenses', '1', 'Bond paper', 'ream', 250],
-            /*  5 */ ['', '', '', 'Office Supplies Expenses', '2', 'Ballpen', 'pc', 15],
+            /*  4 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '1',
+                'Bond paper',
+                'ream',
+                250,
+            ],
+            /*  5 */ [
+                '',
+                '',
+                '',
+                'Office Supplies Expenses',
+                '2',
+                'Ballpen',
+                'pc',
+                15,
+            ],
             /*  6 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
             /*  7 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
-            /*  8 */ ['', '', '', 'Accountable Forms Expenses', '1', 'Stapler', 'pc', 100],
+            /*  8 */ [
+                '',
+                '',
+                '',
+                'Accountable Forms Expenses',
+                '1',
+                'Stapler',
+                'pc',
+                100,
+            ],
             /*  9 */ ['', '', '', '', '', 'ADDITIONAL ITEMS - TOTAL', '', ''],
             /* 10 */ ['', '', '', '', '', 'PROCUREMENT - TOTAL', '', ''],
         ]);
 
         const res = extractMappingPairs(
             ws,
-            cfg({ headerRow: 1, additionalItemsHeaderRow: 7, nonProcurementHeaderRow: '' }),
+            cfg({
+                headerRow: 1,
+                additionalItemsHeaderRow: 7,
+                nonProcurementHeaderRow: '',
+            }),
             'Sheet1',
-            { existingCategories: CATS, existingCoas: COAS, existingMappings: [] },
+            {
+                existingCategories: CATS,
+                existingCoas: COAS,
+                existingMappings: [],
+            },
         );
 
         expect(res.total).toBe(2);
@@ -88,17 +153,48 @@ describe('extractMappingPairs', () => {
             /*  4 */ ['', '', '', 'Ink', '2', 'Ballpen', 'pc', 15],
             /*  5 */ ['', '', '', '', '', 'OFFICE SUPPLIES - TOTAL', '', ''],
             /*  6 */ ['', '', '', '', '', 'ADDITIONAL ITEMS', '', ''],
-            /*  7 */ ['', '', '', 'Accountable Forms Expenses', '1', 'Stapler', 'pc', 100],
+            /*  7 */ [
+                '',
+                '',
+                '',
+                'Accountable Forms Expenses',
+                '1',
+                'Stapler',
+                'pc',
+                100,
+            ],
             /*  8 */ ['', '', '', '', '', 'ADDITIONAL ITEMS - TOTAL', '', ''],
-            /*  9 */ ['', '', '', '', '', 'NON-PROCUREMENT REQUIREMENTS', '', ''],
-            /* 10 */ ['', '', '', 'Welfare Goods Expenses', '1', 'Fee', 'lot', 500],
+            /*  9 */ [
+                '',
+                '',
+                '',
+                '',
+                '',
+                'NON-PROCUREMENT REQUIREMENTS',
+                '',
+                '',
+            ],
+            /* 10 */ [
+                '',
+                '',
+                '',
+                'Welfare Goods Expenses',
+                '1',
+                'Fee',
+                'lot',
+                500,
+            ],
             /* 11 */ ['', '', '', '', '', 'NON-PROCUREMENT - TOTAL', '', ''],
         ]);
 
         const res = extractMappingPairs(
             ws,
             cfg(
-                { headerRow: 1, additionalItemsHeaderRow: 6, nonProcurementHeaderRow: 9 },
+                {
+                    headerRow: 1,
+                    additionalItemsHeaderRow: 6,
+                    nonProcurementHeaderRow: 9,
+                },
                 'without-label',
             ),
             'Sheet1',
@@ -129,9 +225,17 @@ describe('extractMappingPairs', () => {
 
         const res = extractMappingPairs(
             ws,
-            cfg({ headerRow: '', additionalItemsHeaderRow: '', nonProcurementHeaderRow: '' }),
+            cfg({
+                headerRow: '',
+                additionalItemsHeaderRow: '',
+                nonProcurementHeaderRow: '',
+            }),
             'Sheet1',
-            { existingCategories: CATS, existingCoas: COAS, existingMappings: [] },
+            {
+                existingCategories: CATS,
+                existingCoas: COAS,
+                existingMappings: [],
+            },
         );
 
         expect(res.total).toBe(0);

@@ -259,7 +259,7 @@ export function ImportFundingStep({
                 size: 90,
                 header: () => <div className="px-1">Adapt.</div>,
                 cell: ({ getValue }) => (
-                    <span className="block whitespace-nowrap px-1">
+                    <span className="block px-1 whitespace-nowrap">
                         {getValue() ?? '—'}
                     </span>
                 ),
@@ -268,7 +268,7 @@ export function ImportFundingStep({
                 size: 90,
                 header: () => <div className="px-1">Mitig.</div>,
                 cell: ({ getValue }) => (
-                    <span className="block whitespace-nowrap px-1">
+                    <span className="block px-1 whitespace-nowrap">
                         {getValue() ?? '—'}
                     </span>
                 ),
@@ -282,7 +282,7 @@ export function ImportFundingStep({
                     const match = fundMatches.get(record.key);
 
                     return (
-                        <span className="block whitespace-nowrap px-1">
+                        <span className="block px-1 whitespace-nowrap">
                             {match?.typology ? (
                                 <Badge
                                     variant="secondary"
@@ -361,9 +361,7 @@ export function ImportFundingStep({
     const existsCount = importableFunds.filter(
         (r) => fundStatuses.get(r.key) === 'exists',
     ).length;
-    const emptyCount = records.filter(
-        (r) => r.fundingSource == null,
-    ).length;
+    const emptyCount = records.filter((r) => r.fundingSource == null).length;
     const [hideEmpty, setHideEmpty] = useState(false);
     const visibleRecords = useMemo(
         () =>
@@ -624,12 +622,14 @@ export function ImportFundingStep({
                 }
                 description={
                     bulkFundToken
-                        ? `Applies to ${records.filter(
-                              (r) =>
-                                  r.fundingSource != null &&
-                                  normalizeCode(r.fundingSource) ===
-                                      normalizeCode(bulkFundToken),
-                          ).length} row(s) sharing this token. Rows already mapped or dismissed are skipped.`
+                        ? `Applies to ${
+                              records.filter(
+                                  (r) =>
+                                      r.fundingSource != null &&
+                                      normalizeCode(r.fundingSource) ===
+                                          normalizeCode(bulkFundToken),
+                              ).length
+                          } row(s) sharing this token. Rows already mapped or dismissed are skipped.`
                         : 'Click a row to map every matching token at once.'
                 }
                 className="sm:max-w-[30rem]"

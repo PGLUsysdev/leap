@@ -54,8 +54,7 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                 (c) => normalize(c.name) === normalize(def.name),
             );
 
-            if (!found)
-                return { ...def, status: 'missing' as const };
+            if (!found) return { ...def, status: 'missing' as const };
 
             if (
                 found.is_non_procurement !== def.is_non_procurement ||
@@ -140,8 +139,8 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
             );
 
             return (
-                getCategoryMatch(normalize(chosen), existingCategories)
-                    .type !== 'strict'
+                getCategoryMatch(normalize(chosen), existingCategories).type !==
+                'strict'
             );
         }).length;
     }, [extractResult, selected, decisions, existingCategories]);
@@ -287,10 +286,9 @@ export function ImportStep({ s }: { s: CategoryImportState }) {
                             {selectedSheet ? ` — ${selectedSheet}` : ''}
                         </h3>
                         <p className="text-muted-foreground text-xs">
-                            Procurement-only dedupe by normalized name. Check
-                            to import — use the DB Match picker to resolve
-                            similar names to an existing category or keep as
-                            new.
+                            Procurement-only dedupe by normalized name. Check to
+                            import — use the DB Match picker to resolve similar
+                            names to an existing category or keep as new.
                         </p>
                     </div>
                     <Badge variant="secondary" className="shrink-0">

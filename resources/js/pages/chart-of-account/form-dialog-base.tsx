@@ -377,8 +377,7 @@ export default function FormDialog({
                     contra_account: last.slice(2, 3) ?? '',
                     account_title: initialData?.account_title ?? '',
                     account_type: (initialData?.account_type as any) ?? 'ASSET',
-                    expense_class:
-                        (initialData?.expense_class as any) ?? '',
+                    expense_class: (initialData?.expense_class as any) ?? '',
                     account_series: initialData?.account_series ?? '',
                     is_postable:
                         initialData?.is_postable ?? derivedLevel === 'GL',
@@ -402,8 +401,7 @@ export default function FormDialog({
                     contra_account: last.slice(2, 3) ?? '',
                     account_title: initialData?.account_title ?? '',
                     account_type: (initialData?.account_type as any) ?? 'ASSET',
-                    expense_class:
-                        (initialData?.expense_class as any) ?? '',
+                    expense_class: (initialData?.expense_class as any) ?? '',
                     account_series: initialData?.account_series ?? '',
                     is_postable:
                         initialData?.is_postable ?? derivedLevel === 'GL',
@@ -427,8 +425,7 @@ export default function FormDialog({
                     contra_account: last.slice(2, 3) ?? '',
                     account_title: initialData?.account_title ?? '',
                     account_type: (initialData?.account_type as any) ?? 'ASSET',
-                    expense_class:
-                        (initialData?.expense_class as any) ?? '',
+                    expense_class: (initialData?.expense_class as any) ?? '',
                     account_series: initialData?.account_series ?? '',
                     is_postable:
                         initialData?.is_postable ?? derivedLevel === 'GL',

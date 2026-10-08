@@ -455,7 +455,14 @@ export function verifyAipSummarySheet(
         };
     }
 
-    console.log('[verifyAipSummarySheet] sheetName:', sheetName, 'type:', typeof sheetName, 'isArray:', Array.isArray(sheetName));
+    console.log(
+        '[verifyAipSummarySheet] sheetName:',
+        sheetName,
+        'type:',
+        typeof sheetName,
+        'isArray:',
+        Array.isArray(sheetName),
+    );
     const rawName = Array.isArray(sheetName)
         ? String((sheetName as unknown[])[0] ?? sheetName)
         : typeof sheetName === 'string'
@@ -473,7 +480,9 @@ export function verifyAipSummarySheet(
         );
 
     if (!ws) {
-        const available = workbook.worksheets.map((w) => `"${w.name}"`).join(', ');
+        const available = workbook.worksheets
+            .map((w) => `"${w.name}"`)
+            .join(', ');
         return {
             valid: false,
             message: `Worksheet "${rawName}" not found — available: ${available || 'none'}`,
