@@ -6,7 +6,9 @@ Partner-facing documentation for read-only access to the PPMP Price List catalog
 
 ## Overview
 
-This API provides read-only access to the PPMP (Philippine Procurement Management Plan) price list catalog. It is intended for authorized partner systems only. Access is granted per-account, scoped to the `read:procurement` ability, and rate-limited per token.
+This API provides read-only access to the PPMP (Philippine Procurement Management Plan) price list catalog. It is intended for authorized partner systems only. Access is granted per API client, scoped to the `read:procurement` ability, and rate-limited per token.
+
+Tokens are issued by an administrator in **Settings → API Clients** (`/settings/api-clients`, requires the `manage-api-clients` permission). Each client gets its own service account plus a single Sanctum token.
 
 **Current version:** `v1`
 **Protocol:** HTTPS only (production)
@@ -62,13 +64,22 @@ read:procurement
 
 If your token lacks this scope, all requests return `403 Forbidden`.
 
+### Getting a token
+
+1. An admin opens **Settings → API Clients** and clicks **New client**.
+2. They enter a name (e.g. `XYZ Budget Office — sync service`), an optional purpose, and an expiry (defaults to 1 year).
+3. The token is shown **once** — copy it immediately. It cannot be viewed again; if lost, the admin must **Rotate** it.
+
 ### Token expiry
 
-Tokens are issued with a fixed expiry (typically 1 year). You will receive the expiry date along with your token. Before it expires, contact us to request a new one — do not wait until the last day.
+Tokens are issued with a fixed expiry (default 1 year, shown in the client list). Before it expires, contact us to request rotation — do not wait until the last day.
 
-### Revoking a token
+### Rotating and revoking
 
-If a token is lost, compromised, or no longer needed, contact us to revoke it immediately. Revocation takes effect on the next request.
+- **Rotate:** admin clicks **Rotate** on the client row. The old token stops working immediately and a new one is shown once. Deliver the new token to the partner over a secure channel.
+- **Revoke:** admin clicks **Revoke**. The token stops working on the next request. The client row is kept for auditing.
+
+If a token is lost, compromised, or no longer needed, contact us to rotate or revoke it immediately.
 
 ---
 

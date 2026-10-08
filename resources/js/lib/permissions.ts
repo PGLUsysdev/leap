@@ -431,6 +431,11 @@ export const permissionTree: PermissionNode[] = [
         ],
     },
     {
+        key: 'api-client',
+        label: 'API Clients',
+        permissions: ['manage-api-clients'],
+    },
+    {
         key: 'imports',
         label: 'Imports',
         permissions: [],

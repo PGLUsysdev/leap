@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\ApiClientController;
 use App\Http\Controllers\AipDocumentController;
 use App\Http\Controllers\AipEntryController;
 use App\Http\Controllers\AipOutputController;
@@ -476,6 +477,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // personnel schedule / form 3 & 3a
     Route::get('/personnel-schedule', [PersonnelScheduleController::class, 'index'])->name('personnel-schedule.index');
+
+    // API clients (admin-managed Sanctum tokens)
+    Route::get('settings/api-clients', [ApiClientController::class, 'index'])->name('api-clients.index');
+    Route::post('settings/api-clients', [ApiClientController::class, 'store'])->name('api-clients.store');
+    Route::post('settings/api-clients/{apiClient}/rotate', [ApiClientController::class, 'rotate'])->name('api-clients.rotate');
+    Route::post('settings/api-clients/{apiClient}/revoke', [ApiClientController::class, 'revoke'])->name('api-clients.revoke');
 });
 
 require __DIR__.'/settings.php';

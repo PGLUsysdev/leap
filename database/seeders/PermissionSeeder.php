@@ -140,6 +140,7 @@ class PermissionSeeder extends Seeder
             'imports.price-list',
             'imports.price-list-quantities',
             'imports.aip-summary',
+            'manage-api-clients',
         ];
 
         foreach ($names as $name) {

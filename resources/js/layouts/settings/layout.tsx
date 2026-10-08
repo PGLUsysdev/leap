@@ -26,6 +26,11 @@ const sidebarNavItems: NavItem[] = [
         href: editAppearance(),
         icon: null,
     },
+    {
+        title: 'API Clients',
+        href: '/settings/api-clients',
+        icon: null,
+    },
 ];
 
 export default function SettingsLayout({ children }: PropsWithChildren) {

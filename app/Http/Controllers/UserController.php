@@ -26,7 +26,7 @@ class UserController extends Controller
 
         $isSuperAdmin = $user->role->name === 'super admin';
 
-        $usersQuery = User::with(['office', 'role']);
+        $usersQuery = User::with(['office', 'role'])->where('is_service_account', false);
 
         if (! $permissions->contains('user.show.all')) {
             $usersQuery->where('office_id', $user->office_id);
